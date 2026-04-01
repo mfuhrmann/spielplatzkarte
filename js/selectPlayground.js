@@ -21,7 +21,6 @@ import { objDevices } from './objPlaygroundEquipment.js';
 import { objColors } from '../style/VectorStyles.js';
 
 import { geoServer, geoServerWorkspace } from './config.js';
-import { fetchPlaygroundGeom } from './overpass.js';
 
 export var sourceSelected; // globale Variable, in der der jeweils ausgewählte Spielplatz enthalten ist
 var lastSelectedFeature = null; // zuletzt angeklicktes OpenLayers-Feature (für Overpass-Nachfrage)
@@ -124,18 +123,23 @@ function getPlaygroundGeom(coord) {
     const feature = lastSelectedFeature;
     if (!feature) return Promise.resolve(false);
 
-    const osmType = feature.get('osm_type');
-    const osmId = feature.get('osm_id');
     const props = { ...feature.getProperties() };
     delete props.geometry; // OL geometry-Objekt entfernen
 
-    return fetchPlaygroundGeom(osmType, osmId)
-        .then(geojson => {
-            if (!geojson) return false;
-            // OSM-Tags aus dem Centroid-Feature in die Geometrie übernehmen
-            Object.assign(geojson.features[0].properties, props);
-            return geojson;
-        });
+    // Polygon-Geometrie aus dem bereits geladenen Feature verwenden (kein zweiter Overpass-Request)
+    const olGeom = feature.getGeometry().clone().transform('EPSG:3857', 'EPSG:4326');
+    const geojson = {
+        type: 'FeatureCollection',
+        features: [{
+            type: 'Feature',
+            geometry: {
+                type: olGeom.getType(),
+                coordinates: olGeom.getCoordinates()
+            },
+            properties: props
+        }]
+    };
+    return Promise.resolve(geojson);
 }
 
 // Spielgerätelayer anzeigen
@@ -623,6 +627,7 @@ export function getPlaygroundLocation(attr) {
         location_str = site;
     } else {
         var highway = attr["nearest_highway"];
+        if (!highway) return location_str;
         var prefix = 'in der Nähe von';
 
         // Straßennamen nach Möglichkeit um eine Präposition ergänzen ("am XY-Platz", "an der XY-Straße" etc.)
@@ -640,7 +645,7 @@ export function getPlaygroundLocation(attr) {
                     prefix = 'an der';
                     break;
                 }
-            }    
+            }
         }
         location_str = `${prefix} ${highway}`;
     }

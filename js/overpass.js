@@ -6,59 +6,29 @@ import { osmRelationId } from './config.js';
 
 const OVERPASS_API = 'https://overpass-api.de/api/interpreter';
 
-// Alle Spielplätze in der konfigurierten Region als Mittelpunkt-Punkte laden
+// Alle Spielplätze in der konfigurierten Region als Polygone laden (inkl. Geometrie und Tags)
 export async function fetchPlaygrounds() {
     const query = `[out:json][timeout:60];
 area(${3600000000 + osmRelationId})->.a;
-(
-  way[leisure=playground](area.a);
-  relation[leisure=playground](area.a);
-);
-out center tags;`;
+way[leisure=playground](area.a);
+out geom tags;`;
     const data = await overpassPost(query);
     return {
         type: 'FeatureCollection',
         features: data.elements
-            .filter(el => el.center)
+            .filter(el => el.geometry && el.geometry.length > 1)
             .map(el => ({
                 type: 'Feature',
                 geometry: {
-                    type: 'Point',
-                    coordinates: [el.center.lon, el.center.lat]
+                    type: 'Polygon',
+                    coordinates: [el.geometry.map(p => [p.lon, p.lat])]
                 },
                 properties: {
                     osm_id: el.id,
-                    osm_type: el.type === 'way' ? 'W' : 'R',
+                    osm_type: 'W',
                     ...el.tags
                 }
             }))
-    };
-}
-
-// Polygongeometrie eines einzelnen Spielplatzes per OSM-Typ und ID laden
-export async function fetchPlaygroundGeom(osmType, osmId) {
-    const keyword = osmType === 'R' ? 'relation' : 'way';
-    const query = `[out:json][timeout:30];
-${keyword}(${osmId});
-out body geom;`;
-    const data = await overpassPost(query);
-    const el = data.elements[0];
-    if (!el || !el.geometry) return null;
-
-    return {
-        type: 'FeatureCollection',
-        features: [{
-            type: 'Feature',
-            geometry: {
-                type: 'Polygon',
-                coordinates: [el.geometry.map(p => [p.lon, p.lat])]
-            },
-            properties: {
-                osm_id: el.id,
-                osm_type: osmType,
-                ...el.tags
-            }
-        }]
     };
 }
 

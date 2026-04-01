@@ -14,7 +14,7 @@ import VectorSource from 'ol/source/Vector.js';
 import XYZ from 'ol/source/XYZ.js';
 import SourceOSM from 'ol/source/OSM';
 import GeoJSON from 'ol/format/GeoJSON.js';
-import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
+import { Fill, Stroke, Style } from 'ol/style.js';
 import { transform, transformExtent } from 'ol/proj';
 import MousePosition from 'ol/control/MousePosition.js';
 import { ScaleLine, defaults as defaultControls } from 'ol/control.js';
@@ -83,11 +83,8 @@ let basemapEsriWorldImagery = new TileLayer({
 
 // Spielplatzblasen (Overpass API)
 const playgroundStyle = new Style({
-    image: new CircleStyle({
-        radius: 8,
-        fill: new Fill({ color: 'rgba(34, 139, 34, 0.55)' }),
-        stroke: new Stroke({ color: '#155215', width: 1.5 })
-    })
+    fill: new Fill({ color: 'rgba(34, 139, 34, 0.25)' }),
+    stroke: new Stroke({ color: '#155215', width: 1.5 })
 });
 
 const playgroundSource = new VectorSource();
