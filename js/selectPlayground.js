@@ -20,7 +20,7 @@ import { addShadowLayer, fillShadowMatrix } from './shadow.js';
 import { objDevices } from './objPlaygroundEquipment.js';
 import { objColors } from '../style/VectorStyles.js';
 
-import { geoServer } from './map.js';
+import { geoServer, geoServerWorkspace } from './config.js';
 
 export var sourceSelected; // globale Variable, in der der jeweils ausgewählte Spielplatz enthalten ist
 
@@ -89,8 +89,8 @@ function showSelection(coord, backupGeojson) {
         // Spielplatzgeometrie als Selektionsrahmen anzeigen
         showPlaygroundGeometry();
         // Spielgerätelayer anzeigen
-        addEquipmentLayer(expandExtent(sourceSelected.getExtent(), 20), "spielplatzkarte:playground_equipment_polygon,spielplatzkarte:playground_equipment_way");
-        addEquipmentLayer(expandExtent(sourceSelected.getExtent(), 20), "spielplatzkarte:playground_equipment_node");
+        addEquipmentLayer(expandExtent(sourceSelected.getExtent(), 20), `${geoServerWorkspace}:playground_equipment_polygon,${geoServerWorkspace}:playground_equipment_way`);
+        addEquipmentLayer(expandExtent(sourceSelected.getExtent(), 20), `${geoServerWorkspace}:playground_equipment_node`);
         // Ausstattungs-Switch anschalten, da nach Selektion sets mindestens die Spielplatzausstattung sichtbar sein soll
         $('#layer-switch-ausstattung').prop('checked', true);
         // Schattenlayer anzeigen, falls aktiviert
@@ -727,8 +727,8 @@ function showAttributes(visibility) {
 // Layer über Switch an-/abwählen
 $('#layer-switch-ausstattung').on('change', function() {
     if ($(this).is(':checked')) {
-        addEquipmentLayer(expandExtent(sourceSelected.getExtent(), 20), "spielplatzkarte:playground_equipment_polygon,spielplatzkarte:playground_equipment_way");
-        addEquipmentLayer(expandExtent(sourceSelected.getExtent(), 20), "spielplatzkarte:playground_equipment_node");
+        addEquipmentLayer(expandExtent(sourceSelected.getExtent(), 20), `${geoServerWorkspace}:playground_equipment_polygon,${geoServerWorkspace}:playground_equipment_way`);
+        addEquipmentLayer(expandExtent(sourceSelected.getExtent(), 20), `${geoServerWorkspace}:playground_equipment_node`);
     } else {
         removeLayer('equipment');
     }

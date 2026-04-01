@@ -8,11 +8,10 @@ import ImageWMS from 'ol/source/ImageWMS.js';
 import { Image as ImageLayer } from 'ol/layer.js';
 
 import map from './map.js';
-import { mapCenter } from './map.js';
 import { showNotification } from './map.js';
 import { sourceSelected } from './selectPlayground.js';
 
-import { geoServer } from './map.js';
+import { mapCenter, geoServer, geoServerWorkspace } from './config.js';
 
 // Slider auf aktuellen Monat und Uhrzeit einstellen
 var shadowSliderInit = true;
@@ -265,7 +264,7 @@ function getLayerString(month, hour) {
     if (validHour == 9) {
         subs = "0";
     }
-    var layerString = `spielplatzkarte:shadow_0${validMonth}_${subs}${validHour}`;
+    var layerString = `${geoServerWorkspace}:shadow_0${validMonth}_${subs}${validHour}`;
     return layerString;
 }
 
@@ -339,7 +338,7 @@ export function fillShadowMatrix(attr) {
             }
             var validMonth = getValidMonth(month);
             var layerString = getLayerString(month, hour);
-            var shadowString = layerString.replace("spielplatzkarte:", "");
+            var shadowString = layerString.replace(`${geoServerWorkspace}:`, "");
             var shadowShare = attr[shadowString];
             shadowMatrix[hour][month - 1] = shadowShare;
             var color = '#e0e0e0';

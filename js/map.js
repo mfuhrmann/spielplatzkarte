@@ -23,15 +23,8 @@ import { getFilter } from './filter.js';
 import { selectPlayground, getSelectedPlaygroundSource, getSelectionExtent, checkZoomDeselection } from './selectPlayground.js';
 import { showPopup } from './popup.js';
 
-// Anpassbare Karteneinstellungen
-//--------------------------------
-export const mapCenter = [13.3888, 52.5170];            // Kartenzentrum (wird auch für die Formel zur Berechnung des Sonnenstands an diesem Ort verwendet)
-const mapZoom = 12;                                     // Zoomstufe bei Start
-const mapMinZoom = 12;                                  // kleinste mögliche Zoomstufe
-export const mapExtent = [12.9494, 52.2577, 13.8126, 52.7928]; // Kartenausdehnung
-
-// URL des GeoServers
-export const geoServer = 'https://osmbln.uber.space/'; //'http://localhost:8080/'; //'https://osmbln.uber.space/';
+import { mapCenter, mapExtent, mapZoom, mapMinZoom, geoServer, geoServerWorkspace } from './config.js';
+export { mapCenter, mapExtent, geoServer };
 
 // Basemaps
 //----------
@@ -88,7 +81,7 @@ let basemapEsriWorldImagery = new TileLayer({
 var sourcePlaygrounds = new ImageWMS({
     url: geoServer + 'geoserver/wms',
     params: {
-        'LAYERS': 'spielplatzkarte:playgrounds',
+        'LAYERS': `${geoServerWorkspace}:playgrounds`,
         'CQL_FILTER': getFilter()
     },
     ratio: 1,
@@ -108,7 +101,7 @@ export var dataPlaygrounds = new ImageLayer({
 var sourceIssues = new ImageWMS({
     url: geoServer + 'geoserver/wms',
     params: {
-        'LAYERS': 'spielplatzkarte:completeness',
+        'LAYERS': `${geoServerWorkspace}:completeness`,
         'CQL_FILTER': ""
     },
     ratio: 1,
@@ -128,7 +121,7 @@ export var dataIssues = new ImageLayer({
 export var sourceFilteredEquipment = new ImageWMS({
     url: geoServer + 'geoserver/wms',
     params: {
-        'LAYERS': 'spielplatzkarte:playground_equipment',
+        'LAYERS': `${geoServerWorkspace}:playground_equipment`,
         'CQL_FILTER': ""
     },
     ratio: 1,
