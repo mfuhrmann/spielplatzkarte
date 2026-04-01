@@ -3,6 +3,7 @@
 //---------------------------------------------------------------//
 
 import $ from 'jquery';
+import { getArea } from 'ol/sphere.js';
 import { Vector as VectorLayer } from 'ol/layer.js';
 import Vector from 'ol/source/Vector.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
@@ -131,6 +132,9 @@ function getPlaygroundGeom(coord) {
 
     const props = { ...feature.getProperties() };
     delete props.geometry; // OL geometry-Objekt entfernen
+
+    // Fläche aus der Polygongeometrie berechnen (EPSG:3857 → geodätische m²)
+    props.area = Math.round(getArea(feature.getGeometry()));
 
     // Polygon-Geometrie aus dem bereits geladenen Feature verwenden (kein zweiter Overpass-Request)
     const olGeom = feature.getGeometry().clone().transform('EPSG:3857', 'EPSG:4326');

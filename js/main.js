@@ -11,6 +11,12 @@ import { getMapScale, mapExtent } from './map.js';
 import { setCurrentDate } from './shadow.js';
 import { showLocation, hideLocation } from './locate.js';
 import { searchLocation } from './search.js';
+import { regionName } from './config.js';
+
+// Seitenname aus Konfiguration setzen
+const appTitle = `${regionName}er Spielplatzkarte`;
+document.title = appTitle;
+$('.navbar-brand b').text(appTitle);
 
 // Schieberegler der Schattenberechnung auf aktuelles Datum setzen
 setCurrentDate();

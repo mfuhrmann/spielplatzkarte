@@ -9,3 +9,4 @@ export const geoServer = 'https://osmbln.uber.space/';
 export const geoServerWorkspace = 'spielplatzkarte';
 
 export const osmRelationId = 454863;
+export const regionName = 'Fulda';
