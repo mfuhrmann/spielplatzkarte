@@ -40,7 +40,7 @@ export function getRegionExtent() { return regionExtent; }
 export function applyRegionInfo({ center, extent }) {
     regionExtent = extent;
     view.fit(transformExtent(extent, 'EPSG:4326', 'EPSG:3857'), {
-        padding: [20, 390, 20, 20], // leave room for info panel on desktop
+        padding: [20, 20, 20, 390], // leave room for info panel on desktop (left side)
         duration: 0
     });
 }
