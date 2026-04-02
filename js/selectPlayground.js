@@ -79,6 +79,7 @@ export function showNearbyPlaygrounds(lon, lat, label = 'diesem Ort') {
 
     html += '</div>';
     $('#info-more').html(html);
+    $('#info').addClass('panel-open');
 
     $('#info-more').off('click.nearby').on('click.nearby', '.nearby-item', function() {
         const feature = nearbyListFeatures[$(this).data('idx')];
