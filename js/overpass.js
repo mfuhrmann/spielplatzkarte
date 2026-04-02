@@ -73,6 +73,8 @@ export async function fetchPlaygroundEquipment(extentEPSG3857, osmId = null) {
   node[amenity=bench](${bboxStr});
   node[amenity=shelter](${bboxStr});
   node[leisure=picnic_table](${bboxStr});
+  node[leisure=pitch](${bboxStr});
+  way[leisure=pitch](${bboxStr});
 );
 out body geom;`;
     let data;

@@ -10,15 +10,37 @@ import Point from 'ol/geom/Point.js';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
 import { Vector as VectorSource } from 'ol/source.js';
 import { Vector as VectorLayer } from 'ol/layer.js';
+import { unByKey } from 'ol/Observable.js';
 
 import map from './map.js';
 import { showNearbyPlaygrounds } from './selectPlayground.js';
 import { transform } from 'ol/proj';
 
 // Einmalige Standortbestimmung: Karte zentrieren, Spielplätze in der Nähe anzeigen
+let locationListenerKey = null;
+
 $('#btn-location').on('click', function() {
+    // Vorherigen Listener entfernen, falls Button erneut geklickt wird bevor GPS antwortet
+    if (locationListenerKey) {
+        unByKey(locationListenerKey);
+        locationListenerKey = null;
+    }
     geolocation.setTracking(true);
     locatorLayer.setProperties({"visible": true});
+
+    locationListenerKey = geolocation.once('change:position', function () {
+        locationListenerKey = null;
+        const coordinates = geolocation.getPosition();
+        if (!coordinates) return;
+
+        positionFeature.setGeometry(new Point(coordinates));
+        map.getView().animate({ center: coordinates, zoom: Math.max(map.getView().getZoom(), 14) });
+
+        geolocation.setTracking(false);
+
+        const [lon, lat] = transform(coordinates, 'EPSG:3857', 'EPSG:4326');
+        showNearbyPlaygrounds(lon, lat, 'deinem Standort');
+    });
 });
 
 export function showLocation() {
@@ -65,20 +87,6 @@ positionFeature.setStyle(
         }),
     }),
 );
-
-geolocation.once('change:position', function () {
-    const coordinates = geolocation.getPosition();
-    if (!coordinates) return;
-
-    positionFeature.setGeometry(new Point(coordinates));
-    map.getView().animate({ center: coordinates, zoom: Math.max(map.getView().getZoom(), 14) });
-
-    // Tracking wieder stoppen — einmalige Positionsbestimmung
-    geolocation.setTracking(false);
-
-    const [lon, lat] = transform(coordinates, 'EPSG:3857', 'EPSG:4326');
-    showNearbyPlaygrounds(lon, lat, 'deinem Standort');
-});
 
 const locatorLayer = new VectorLayer({
     map: map,

@@ -46,8 +46,14 @@ export function showNearbyPlaygrounds(lon, lat, label = 'diesem Ort') {
     if (!source) return;
     const features = source.getFeatures();
     if (!features.length) {
-        // Overpass still loading — retry once it's done
-        source.once('change', () => showNearbyPlaygrounds(lon, lat, label));
+        // Overpass still loading — warten bis Daten wirklich da sind
+        const retry = () => {
+            if (source.getFeatures().length) {
+                source.un('change', retry);
+                showNearbyPlaygrounds(lon, lat, label);
+            }
+        };
+        source.on('change', retry);
         return;
     }
 
@@ -332,11 +338,27 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
     const benchCount = features.filter(f => f.properties.amenity === 'bench').length;
     const shelterCount = features.filter(f => f.properties.amenity === 'shelter').length;
     const picnicCount = features.filter(f => f.properties.leisure === 'picnic_table').length;
+    const tableTennisCount = features.filter(f => f.properties.leisure === 'pitch' && f.properties.sport === 'table_tennis').length;
+    const soccerCount = features.filter(f => f.properties.leisure === 'pitch' && f.properties.sport === 'soccer').length;
+    const basketballCount = features.filter(f => f.properties.leisure === 'pitch' && f.properties.sport === 'basketball').length;
+    const pitchCount = features.filter(f => f.properties.leisure === 'pitch' && !['table_tennis', 'soccer', 'basketball'].includes(f.properties.sport)).length;
 
     let equipment_str = '<ul>';
     equipment_str += deviceCount
         ? `<li>${deviceCount} Spielgerät${deviceCount !== 1 ? 'e' : ''}</li>`
         : '<li>noch keine Spielgeräte erfasst</li>';
+    if (tableTennisCount) {
+        equipment_str += tableTennisCount === 1 ? '<li>1 Tischtennisplatte</li>' : `<li>${tableTennisCount} Tischtennisplatten</li>`;
+    }
+    if (soccerCount) {
+        equipment_str += soccerCount === 1 ? '<li>1 Bolzplatz</li>' : `<li>${soccerCount} Bolzplätze</li>`;
+    }
+    if (basketballCount) {
+        equipment_str += basketballCount === 1 ? '<li>1 Basketballfeld</li>' : `<li>${basketballCount} Basketballfelder</li>`;
+    }
+    if (pitchCount) {
+        equipment_str += pitchCount === 1 ? '<li>1 Sportfeld</li>' : `<li>${pitchCount} Sportfelder</li>`;
+    }
     if (benchCount) {
         equipment_str += benchCount === 1 ? '<li>1 Sitzbank</li>' : `<li>${benchCount} Sitzbänke</li>`;
     }
