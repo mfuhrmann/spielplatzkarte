@@ -17,6 +17,7 @@ import { transform } from 'ol/proj';
 
 const btnLocator = $('#btn-location')[0];
 var btnLocatorActive = false;
+var nearbyShownForLocation = false;
 
 // Standort verfolgen de-/aktivieren
 $('#btn-location').on('click', function() {
@@ -41,6 +42,7 @@ export function hideLocation() {
     geolocation.setTracking(false);
     locatorLayer.setProperties({"visible": false});
     locatorLayer.getSource().changed();
+    nearbyShownForLocation = false;
 }
 
 // Geolocation-Handling
@@ -82,7 +84,8 @@ geolocation.on('change:position', function () {
     const coordinates = geolocation.getPosition();
     positionFeature.setGeometry(coordinates ? new Point(coordinates) : null);
     map.getView().animate({ center: coordinates });
-    if (coordinates) {
+    if (coordinates && !nearbyShownForLocation) {
+        nearbyShownForLocation = true;
         const [lon, lat] = transform(coordinates, 'EPSG:3857', 'EPSG:4326');
         showNearbyPlaygrounds(lon, lat, 'deinem Standort');
     }
