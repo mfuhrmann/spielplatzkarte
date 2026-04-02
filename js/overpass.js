@@ -15,11 +15,73 @@ const EQUIPMENT_CACHE_TTL_MS  =  7 * 24 * 60 * 60 * 1000;  // 7 Tage
 const NEARBY_CACHE_TTL_MS     = 24 * 60 * 60 * 1000;       // 24 Stunden
 const CACHE_KEY = `spielplatzkarte_playgrounds_${osmRelationId}`;
 
+const OSM_TYPE_MAP = { way: 'W', relation: 'R', node: 'N' };
+
+function normalizeStaticFeature(f) {
+    const atId = f.properties['@id'] ?? '';
+    const [type, id] = atId.split('/');
+    return {
+        ...f,
+        properties: {
+            osm_id: parseInt(id) || null,
+            osm_type: OSM_TYPE_MAP[type] ?? 'W',
+            ...f.properties,
+        }
+    };
+}
+
+function featureCenter(f) {
+    const geom = f.geometry;
+    if (geom.type === 'Point') return { lon: geom.coordinates[0], lat: geom.coordinates[1] };
+    if (geom.type === 'Polygon') {
+        const coords = geom.coordinates[0];
+        return {
+            lon: coords.reduce((s, c) => s + c[0], 0) / coords.length,
+            lat: coords.reduce((s, c) => s + c[1], 0) / coords.length,
+        };
+    }
+    return null;
+}
+
+function haversineM(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// In-memory cache für statische Dateien (verhindert mehrfaches Laden)
+let staticEquipmentPromise = null;
+let staticPoiPromise = null;
+
+async function loadStaticFile(path) {
+    const res = await fetch(path);
+    if (!res.ok) throw new Error(`Static file not available: ${path}`);
+    return res.json();
+}
+
 // Alle Spielplätze in der konfigurierten Region als Polygone laden (inkl. Geometrie und Tags)
 export async function fetchPlaygrounds() {
     // Frischen Cache zurückgeben, falls vorhanden
     const cached = loadCache(CACHE_KEY, PLAYGROUND_CACHE_TTL_MS, false);
     if (cached) return cached;
+
+    // Statische GeoJSON-Datei bevorzugen (kein Overpass-Timeout möglich)
+    try {
+        const res = await fetch('./data/export.geojson');
+        if (res.ok) {
+            const raw = await res.json();
+            const geojson = {
+                type: 'FeatureCollection',
+                features: raw.features.map(normalizeStaticFeature)
+            };
+            saveCache(CACHE_KEY, geojson);
+            return geojson;
+        }
+    } catch (e) {
+        console.warn('Statische Spielplatzdaten nicht verfügbar – lade von Overpass.');
+    }
 
     const query = `[out:json][timeout:60];
 area(${3600000000 + osmRelationId})->.a;
@@ -69,6 +131,24 @@ export async function fetchPlaygroundEquipment(extentEPSG3857, osmId = null) {
         if (cached) return cached;
     }
     const [minLon, minLat, maxLon, maxLat] = transformExtent(extentEPSG3857, 'EPSG:3857', 'EPSG:4326');
+
+    // Statische Datei bevorzugen — nur per bbox filtern, kein Overpass nötig
+    try {
+        if (!staticEquipmentPromise) staticEquipmentPromise = loadStaticFile('./data/playgrounds.geojson');
+        const raw = await staticEquipmentPromise;
+        const features = raw.features
+            .map(normalizeStaticFeature)
+            .filter(f => {
+                const c = featureCenter(f);
+                return c && c.lon >= minLon && c.lon <= maxLon && c.lat >= minLat && c.lat <= maxLat;
+            });
+        const geojson = { type: 'FeatureCollection', features };
+        if (equipCacheKey) saveCache(equipCacheKey, geojson);
+        return geojson;
+    } catch (e) {
+        console.warn('Statische Ausstattungsdaten nicht verfügbar – lade von Overpass.');
+    }
+
     const bboxStr = `${minLat},${minLon},${maxLat},${maxLon}`;
     const query = `[out:json][timeout:30];
 (
@@ -127,6 +207,25 @@ export async function fetchNearbyPOIs(lat, lon, radiusM = 500, osmId = null) {
     if (cacheKey) {
         const cached = loadCache(cacheKey, NEARBY_CACHE_TTL_MS, false);
         if (cached) return cached;
+    }
+
+    // Statische Datei bevorzugen — per Distanz filtern, kein Overpass nötig
+    try {
+        if (!staticPoiPromise) staticPoiPromise = loadStaticFile('./data/poi.geojson');
+        const raw = await staticPoiPromise;
+        const pois = raw.features
+            .filter(f => f.geometry.type === 'Point')
+            .map(f => {
+                const [fLon, fLat] = f.geometry.coordinates;
+                const { '@id': atId, ...tags } = f.properties;
+                const [, id] = (atId ?? '').split('/');
+                return { lat: fLat, lon: fLon, tags, osm_id: parseInt(id) || null };
+            })
+            .filter(poi => haversineM(lat, lon, poi.lat, poi.lon) <= radiusM);
+        if (cacheKey) saveCache(cacheKey, pois);
+        return pois;
+    } catch (e) {
+        console.warn('Statische POI-Daten nicht verfügbar – lade von Overpass.');
     }
 
     const around = `(around:${radiusM},${lat},${lon})`;
