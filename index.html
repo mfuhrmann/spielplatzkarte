@@ -324,9 +324,10 @@
             <button id="btn-location" type="button" class="map-fab" title="Standort verfolgen">
                 <span class="bi bi-crosshair"></span>
             </button>
-            <button type="button" class="map-fab" data-bs-toggle="modal" data-bs-target="#map-issues" title="Datenprobleme">
+            <!-- TODO (GeoServer): Datenprobleme-Button — requires GeoServer backend -->
+            <!-- <button type="button" class="map-fab" data-bs-toggle="modal" data-bs-target="#map-issues" title="Datenprobleme">
                 <span class="bi bi-exclamation-diamond-fill"></span>
-            </button>
+            </button> -->
         </div>
 
         <!------------------------------>
@@ -349,8 +350,8 @@
         <!-- Modals -->
         <!------------>
 
-        <!-- Datenprobleme -->
-        <div class="modal fade" id="map-issues" data-bs-keyboard="false" tabindex="-1" aria-label="Datenprobleme" aria-hidden="true">
+        <!-- TODO (GeoServer): Datenprobleme-Modal — requires GeoServer backend -->
+        <div class="modal fade" id="map-issues" style="display:none" data-bs-keyboard="false" tabindex="-1" aria-label="Datenprobleme" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
