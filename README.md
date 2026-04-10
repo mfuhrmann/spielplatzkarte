@@ -13,12 +13,14 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 **Map**
 - Display all playgrounds in a configured OSM region on an interactive map
 - Playground polygons coloured by data completeness: green (photos + name + details), yellow (partial), red (nothing tagged)
-- Hover tooltip with playground name and equipment details
+- Hover tooltip with playground name, key attributes, and completeness indicator
 
 **Playground detail panel**
 - Name, size (m²), surface (Bodenbelag), access restrictions, opening hours (parsed live), age restrictions, operator, contact info
 - Equipment list (Ausstattung): individual collapsible items with attributes; sport-specific labels for pitches (Fußball, Basketball, Volleyball, …)
+- Tree count: number of mapped `natural=tree` nodes in and around the playground, shown as a map layer when a playground is selected
 - Street photos via [Panoramax](https://panoramax.xyz) — inline viewer with fullscreen modal and keyboard navigation
+- Community reviews via [Mangrove.reviews](https://mangrove.reviews) — read ratings and submit your own (pseudonymous, no account required)
 - Nearby POIs within a configurable radius: toilets, bus stops, ice cream, supermarkets, drugstores, emergency rooms — with distance and OSM foot routing
 - Permalink: every playground gets a shareable `#W<id>` URL; share button uses the Web Share API (mobile) or copies to clipboard
 - Add photos and equipment directly via [MapComplete](https://mapcomplete.org/playgrounds)
@@ -46,8 +48,6 @@ browser → nginx (app) → PostgREST → PostgreSQL/PostGIS
 | **osm2pgsql importer** | Downloads a Geofabrik PBF extract and imports it into PostGIS |
 | **PostgREST** | Auto-generates a REST API from SQL functions in the `api` schema |
 | **nginx** | Serves the Vite-built frontend; proxies `/api/` to PostgREST |
-
-When `API_BASE_URL` is not set (local development without Docker), the app falls back to live [Overpass API](https://overpass-api.de) queries.
 
 ---
 
@@ -77,9 +77,9 @@ When `API_BASE_URL` is not set (local development without Docker), the app falls
 | [Nominatim](https://nominatim.openstreetmap.org) | Location search and region bounding box |
 | [CartoDB Voyager](https://carto.com/basemaps) | Background map tiles |
 | [Panoramax](https://panoramax.xyz) | Street-level photos |
+| [Mangrove.reviews](https://mangrove.reviews) | Pseudonymous community reviews |
 | [MapComplete](https://mapcomplete.org) | Contribute photos and equipment |
 | [Wikidata](https://wikidata.org) | Operator entity linking |
-| [Overpass API](https://overpass-api.de) | Fallback data source for local development only |
 
 All data comes from OpenStreetMap or the free services listed above. No proprietary data, no user accounts, no tracking.
 
@@ -165,7 +165,7 @@ npm run build     # production build into dist/
 npm run serve     # preview the production build locally
 ```
 
-Without a running PostgREST backend, `API_BASE_URL` is not set and the app automatically falls back to live Overpass API queries. This is slower and rate-limited but requires no local database — sufficient for UI work.
+A running PostgREST backend is required — the app no longer falls back to Overpass. Start the full stack via `docker compose up -d` before running the dev server, or point `API_BASE_URL` at a remote PostgREST instance.
 
 ### Building the Docker image
 

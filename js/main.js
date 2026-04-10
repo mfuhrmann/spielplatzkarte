@@ -2,6 +2,17 @@ import $ from 'jquery';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../css/bootstrap_custom.css';
+import { Modal } from 'bootstrap';
+
+// Bootstrap's data-api may be tree-shaken away — wire up modal triggers explicitly
+document.querySelectorAll('[data-bs-toggle="modal"]').forEach(trigger => {
+    trigger.addEventListener('click', e => {
+        e.preventDefault();
+        const target = document.querySelector(trigger.dataset.bsTarget);
+        if (target) Modal.getOrCreateInstance(target).show();
+    });
+});
+
 
 import map from './map.js';
 import { applyRegionInfo } from './map.js';

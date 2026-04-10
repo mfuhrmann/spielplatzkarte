@@ -39,10 +39,22 @@ AS $$
       p.surface,
       p.way_area::int AS area,
       p.tags,
+      p.way,
       ST_Transform(p.way, 4326) AS geom
     FROM planet_osm_polygon p
     JOIN region r ON ST_Within(p.way, r.way)
     WHERE p.leisure = 'playground'
+  ),
+  -- Count natural=tree nodes within playground + 15 m buffer
+  tree_counts AS (
+    SELECT
+      pl.osm_id,
+      COUNT(t.osm_id) AS tree_count
+    FROM playgrounds pl
+    LEFT JOIN planet_osm_point t
+      ON ST_DWithin(t.way, pl.way, 15)
+      AND t.natural = 'tree'
+    GROUP BY pl.osm_id
   )
   SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -50,25 +62,27 @@ AS $$
       json_agg(
         json_build_object(
           'type', 'Feature',
-          'geometry', ST_AsGeoJSON(geom)::json,
+          'geometry', ST_AsGeoJSON(pl.geom)::json,
           'properties', (
             jsonb_build_object(
-              'osm_id',    abs(osm_id),
-              'osm_type',  CASE WHEN osm_id < 0 THEN 'R' ELSE 'W' END,
-              'name',      name,
-              'leisure',   leisure,
-              'operator',  operator,
-              'access',    access,
-              'surface',   surface,
-              'area',      area
-            ) || COALESCE(hstore_to_jsonb(tags), '{}'::jsonb)
+              'osm_id',     abs(pl.osm_id),
+              'osm_type',   CASE WHEN pl.osm_id < 0 THEN 'R' ELSE 'W' END,
+              'name',       pl.name,
+              'leisure',    pl.leisure,
+              'operator',   pl.operator,
+              'access',     pl.access,
+              'surface',    pl.surface,
+              'area',       pl.area,
+              'tree_count', tc.tree_count
+            ) || COALESCE(hstore_to_jsonb(pl.tags), '{}'::jsonb)
           )
         )
       ),
       '[]'::json
     )
   )
-  FROM playgrounds;
+  FROM playgrounds pl
+  JOIN tree_counts tc ON tc.osm_id = pl.osm_id;
 $$;
 
 GRANT EXECUTE ON FUNCTION api.get_playgrounds(bigint) TO web_anon;
@@ -211,7 +225,7 @@ AS $$
       3857
     ) AS geom
   ),
-  pois AS (
+  pois_point AS (
     SELECT
       p.osm_id,
       p.name,
@@ -231,6 +245,34 @@ AS $$
         OR p.highway = 'bus_stop'
         OR p.shop IN ('chemist', 'supermarket', 'convenience')
       )
+  ),
+  -- Shops/amenities mapped as polygons (e.g. supermarket buildings) — use centroid
+  pois_polygon AS (
+    SELECT
+      p.osm_id,
+      p.name,
+      p.amenity,
+      p.shop,
+      NULL::text AS highway,
+      p.tags,
+      ST_Y(ST_Transform(ST_Centroid(p.way), 4326)) AS poi_lat,
+      ST_X(ST_Transform(ST_Centroid(p.way), 4326)) AS poi_lon
+    FROM planet_osm_polygon p, center c
+    WHERE ST_DWithin(p.way, c.geom, radius_m)
+      AND (
+        p.amenity IN ('toilets', 'hospital', 'ice_cream', 'doctors')
+        OR (p.amenity IN ('cafe', 'restaurant') AND p.tags->'cuisine' ~* 'ice_cream')
+        OR p.shop IN ('chemist', 'supermarket', 'convenience')
+      )
+  ),
+  pois AS (
+    SELECT * FROM pois_point
+    UNION ALL
+    -- exclude polygons already represented by a node (same osm_id with opposite sign)
+    SELECT pp.* FROM pois_polygon pp
+    WHERE NOT EXISTS (
+      SELECT 1 FROM pois_point pt WHERE pt.osm_id = -pp.osm_id
+    )
   )
   SELECT COALESCE(
     json_agg(
@@ -254,6 +296,53 @@ AS $$
 $$;
 
 GRANT EXECUTE ON FUNCTION api.get_pois(float8, float8, integer) TO web_anon;
+
+-- =========================================================================
+-- 4. get_trees(min_lon, min_lat, max_lon, max_lat)
+--    Returns natural=tree nodes within a WGS84 bounding box as GeoJSON.
+-- =========================================================================
+DROP FUNCTION IF EXISTS api.get_trees(float8, float8, float8, float8);
+
+CREATE OR REPLACE FUNCTION api.get_trees(
+  min_lon float8,
+  min_lat float8,
+  max_lon float8,
+  max_lat float8
+)
+RETURNS json
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public, api
+AS $$
+  WITH bbox AS (
+    SELECT ST_Transform(
+      ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326),
+      3857
+    ) AS geom
+  )
+  SELECT json_build_object(
+    'type', 'FeatureCollection',
+    'features', COALESCE(
+      json_agg(
+        json_build_object(
+          'type', 'Feature',
+          'geometry', ST_AsGeoJSON(ST_Transform(p.way, 4326))::json,
+          'properties', jsonb_build_object(
+            'osm_id', p.osm_id,
+            'name',   p.name
+          ) || COALESCE(hstore_to_jsonb(p.tags), '{}'::jsonb)
+        )
+      ),
+      '[]'::json
+    )
+  )
+  FROM planet_osm_point p, bbox b
+  WHERE p.way && b.geom
+    AND p.natural = 'tree';
+$$;
+
+GRANT EXECUTE ON FUNCTION api.get_trees(float8, float8, float8, float8) TO web_anon;
+
+CREATE INDEX IF NOT EXISTS idx_osm_point_natural ON planet_osm_point ("natural") WHERE "natural" IS NOT NULL;
 
 -- Spatial indexes to speed up bbox and radius queries (idempotent)
 CREATE INDEX IF NOT EXISTS idx_osm_polygon_way  ON planet_osm_polygon USING GIST (way);

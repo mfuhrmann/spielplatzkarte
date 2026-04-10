@@ -45,7 +45,7 @@ export function applyRegionInfo({ center, extent }) {
     });
 }
 
-import { fetchPlaygrounds } from './overpass.js';
+import { fetchPlaygrounds } from './api.js';
 
 // Basemaps
 //----------

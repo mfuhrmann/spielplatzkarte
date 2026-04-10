@@ -50,6 +50,20 @@
             <div id="info-more" class="info-more-hint">
                 <span class="bi bi-hand-index"></span>
                 <p>Spielplatz antippen für Details</p>
+                <div class="completeness-legend">
+                    <div class="completeness-legend-item">
+                        <span class="completeness-swatch completeness-swatch--complete"></span>
+                        Fotos, Name &amp; Details vorhanden
+                    </div>
+                    <div class="completeness-legend-item">
+                        <span class="completeness-swatch completeness-swatch--partial"></span>
+                        Teilweise erfasst
+                    </div>
+                    <div class="completeness-legend-item">
+                        <span class="completeness-swatch completeness-swatch--missing"></span>
+                        Noch keine Daten
+                    </div>
+                </div>
             </div>
 
             <div id="info-base" class="bg-primary text-light p-2 m-0" style="display: none; position: relative;">
@@ -60,9 +74,11 @@
                 <p id="info-age" class="m-0 p-0"></p>
                 <p id="info-area" class="m-0 p-0"></p>
                 <p id="info-surface" class="m-0 p-0"></p>
+                <p id="info-trees" class="m-0 p-0"></p>
                 <p id="info-operator" class="m-0 p-0"></p>
                 <p id="info-contact" class="m-0 p-0"></p>
                 <p id="info-description" class="mt-1 mb-1" style="font-size: smaller;"></p>
+                <span id="info-completeness-badge" class="completeness-badge"></span>
                 <div class="position-absolute top-0 end-0 m-1 d-flex gap-1">
                     <button id="info-share-btn" type="button"
                         class="btn btn-sm btn-outline-light py-0 px-1"
@@ -303,6 +319,22 @@
                     <div id="accordion-umfeld" class="accordion-collapse collapse show">
                         <div class="accordion-body p-2">
                             <div id="info-umfeld"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!------------------------------>
+                <!-- Infobereich "Bewertungen" -->
+                <!------------------------------>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button id="accordion-btn-reviews" class="accordion-button p-2" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-reviews" aria-expanded="true" aria-controls="accordion-reviews">
+                            Bewertungen
+                        </button>
+                    </h2>
+                    <div id="accordion-reviews" class="accordion-collapse collapse show">
+                        <div class="accordion-body p-2">
+                            <div id="info-reviews-content"></div>
                         </div>
                     </div>
                 </div>

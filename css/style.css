@@ -48,7 +48,7 @@ ul {
     top: 14px;
     left: 14px;
     right: 14px;
-    max-width: 420px;
+    max-width: 560px;
     height: 52px;
     background: white;
     border-radius: 26px;
@@ -101,9 +101,8 @@ ul {
     transition: opacity 0.15s;
 }
 
-#search-bar:focus-within .search-nav-links {
+#inputSearch:focus ~ .search-nav-links {
     opacity: 0;
-    pointer-events: none;
 }
 
 .search-nav-link {
@@ -146,7 +145,7 @@ ul {
     position: fixed;
     top: 80px;
     left: 14px;
-    width: 370px;
+    width: 390px;
     max-height: calc(100vh - 94px);
     background: white;
     border-radius: 18px;
@@ -463,6 +462,7 @@ ul {
     bottom: 5px;
 }
 
+
 #mini-popup {
     position: absolute;
     display: none;
@@ -584,3 +584,60 @@ ul {
         display: none;
     }
 }
+
+/* ===========================
+   Data-completeness legend & badge
+   =========================== */
+
+/* Swatch used both in the legend and as a visual reference */
+.completeness-swatch {
+    display: inline-block;
+    width: 20px;
+    height: 13px;
+    border-radius: 3px;
+    border-width: 1.5px;
+    border-style: solid;
+    flex-shrink: 0;
+}
+
+.completeness-swatch--complete { background: rgba(34, 139, 34, 0.22); border-color: #155215; }
+.completeness-swatch--partial  { background: rgba(234, 179, 8, 0.22);  border-color: #92400e; }
+.completeness-swatch--missing  { background: rgba(239, 68, 68, 0.18);  border-color: #991b1b; }
+
+.dot-complete { color: #228b22; }
+.dot-partial  { color: #d97706; }
+.dot-missing  { color: #ef4444; }
+
+/* Legend shown in the empty-state panel */
+.completeness-legend {
+    border-top: 1px solid #f3f4f6;
+    margin-top: 12px;
+    padding-top: 10px;
+    width: 100%;
+    text-align: left;
+}
+
+.completeness-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #6b7280;
+    padding: 3px 0;
+}
+
+/* Badge shown in the playground detail panel header */
+.completeness-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-top: 8px;
+}
+
+.completeness-badge--complete { background: rgba(34, 139, 34, 0.15); color: #155215; }
+.completeness-badge--partial  { background: rgba(234, 179, 8, 0.2);  color: #7c3200; }
+.completeness-badge--missing  { background: rgba(239, 68, 68, 0.15); color: #991b1b; }

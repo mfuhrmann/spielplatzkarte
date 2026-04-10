@@ -8,7 +8,7 @@ import OpeningHours from 'opening_hours';
 import { getArea } from 'ol/sphere.js';
 import { transform } from 'ol/proj';
 import { Vector as VectorLayer } from 'ol/layer.js';
-import { Style, Stroke, Fill } from 'ol/style';
+import { Style, Stroke, Fill, Circle as CircleStyle } from 'ol/style';
 import Vector from 'ol/source/Vector.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
 
@@ -27,10 +27,11 @@ import { objColors } from '../style/VectorStyles.js';
 // TODO (GeoServer): hardcoded until GeoServer integration is restored
 const geoServer = 'https://osmbln.uber.space/';
 const geoServerWorkspace = 'spielplatzkarte';
-import { fetchPlaygroundEquipment, fetchNearbyPOIs } from './overpass.js';
+import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees } from './api.js';
 import { poiRadiusM } from './config.js';
 import { panoramaxViewerUrl, panoramaxThumbUrl } from './panoramax.js';
 import { getEquipmentAttributesFromProps } from './popup.js';
+import { renderReviews } from './reviews.js';
 
 export var sourceSelected; // globale Variable, in der der jeweils ausgewählte Spielplatz enthalten ist
 var lastSelectedFeature = null; // zuletzt angeklicktes OpenLayers-Feature (für Overpass-Nachfrage)
@@ -172,6 +173,8 @@ function showSelection(coord, backupGeojson) {
         showPlaygroundGeometry();
         // Spielgerätelayer anzeigen
         loadEquipmentFromOverpass(expandExtent(sourceSelected.getExtent(), 20));
+        // Bäume anzeigen
+        loadTreeLayer(expandExtent(sourceSelected.getExtent(), 15));
         // Umfeld-POIs laden
         const ext3857 = sourceSelected.getExtent();
         const [playLon, playLat] = transform(
@@ -332,6 +335,40 @@ async function loadEquipmentFromOverpass(extent) {
     updateEquipmentPanel(geojson.features, attr);
 }
 
+async function loadTreeLayer(extent) {
+    let geojson;
+    try {
+        geojson = await fetchTrees(extent);
+    } catch (e) {
+        console.warn('Bäume konnten nicht geladen werden:', e);
+        return;
+    }
+    if (!geojson.features.length) return;
+
+    const treeStyle = new Style({
+        image: new CircleStyle({
+            radius: 6,
+            fill: new Fill({ color: 'rgba(34, 139, 34, 0.5)' }),
+            stroke: new Stroke({ color: '#155215', width: 1 })
+        })
+    });
+
+    const treeLayer = new VectorLayer({
+        title: 'Bäume',
+        type: 'trees',
+        visible: true,
+        source: new Vector({
+            features: new GeoJSON().readFeatures(geojson, {
+                dataProjection: 'EPSG:4326',
+                featureProjection: 'EPSG:3857'
+            })
+        }),
+        zIndex: 45,
+        style: treeStyle
+    });
+    map.addLayer(treeLayer);
+}
+
 // Ausstattungsinfo im Infofenster aus Overpass-Daten befüllen
 function updateEquipmentPanel(features, playgroundAttr = {}) {
     // playground=yes ist ein generisches Tag ohne konkreten Gerätetyp — ignorieren
@@ -365,15 +402,11 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
     }
 
     let equipment_str = '<ul>';
-    equipment_str += deviceCount
-        ? `<li>${deviceCount} Spielgerät${deviceCount !== 1 ? 'e' : ''}</li>`
-        : '<li class="text-muted">noch keine Spielgeräte eingetragen – hilf mit! 👇</li>';
+    if (deviceCount) {
+        equipment_str += `<li>${deviceCount} Spielgerät${deviceCount !== 1 ? 'e' : ''}</li>`;
+    }
     if (fitnessCount) {
         equipment_str += fitnessCount === 1 ? '<li>1 Fitnessgerät</li>' : `<li>${fitnessCount} Fitnessgeräte</li>`;
-    }
-    for (const [sport, count] of Object.entries(pitchBySport)) {
-        const [singular, plural] = pitchLabels[sport] ?? ['Sportfeld', 'Sportfelder'];
-        equipment_str += `<li>${count} ${count === 1 ? singular : plural}</li>`;
     }
     if (benchCount) {
         equipment_str += benchCount === 1 ? '<li>1 Sitzbank</li>' : `<li>${benchCount} Sitzbänke</li>`;
@@ -387,7 +420,7 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
     equipment_str += '</ul>';
     $('#info-equipment').html(equipment_str);
 
-    $('#info-device-note').html('');
+    $('#info-device-note').html(''); // no longer used; cleared for safety
 
     // Einzelne Spielgeräte auflisten — jedes als aufklappbares Element mit Details
     let device_string = '<ul class="mb-0 device-list">';
@@ -407,6 +440,13 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
         } else {
             device_string += `<li><span style="color:${color}">●</span> ${name}</li>`;
         }
+    }
+    // Sportfelder (pitches) mit farbigem Punkt in die Geräteliste einreihen
+    const pitchColor = objColors['fallback'];
+    for (const [sport, count] of Object.entries(pitchBySport)) {
+        const [singular, plural] = pitchLabels[sport] ?? ['Sportfeld', 'Sportfelder'];
+        const label = count === 1 ? singular : `${count}× ${plural}`;
+        device_string += `<li><span style="color:${pitchColor}">●</span> ${label}</li>`;
     }
     device_string += '</ul>';
 
@@ -431,12 +471,19 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
             }
             fallback_string += '</ul>';
             $('#info-device-list').html(fallback_string);
-            $('#info-device-note').html('<i>Geräte aus Spielplatz-Tags — die Geräte sind noch nicht einzeln eingemessen.</i>');
-            return;
+        } else {
+            $('#info-device-list').html('');
         }
+    } else {
+        $('#info-device-list').html(device_string);
     }
 
-    $('#info-device-list').html(deviceFeatures.length ? device_string : '');
+    // "Hilf mit"-Hinweis — nur wenn keine separat gemappten Geräte vorhanden
+    if (!deviceFeatures.length) {
+        $('#info-device-list').append(
+            '<p class="text-muted mt-2 mb-0" style="font-size:smaller">Spielgeräte noch nicht einzeln kartiert – hilf mit! 👇</p>'
+        );
+    }
 
     // MapComplete-Link zum Hinzufügen von Spielgeräten
     const extent = lastSelectedFeature ? lastSelectedFeature.getGeometry().getExtent() : null;
@@ -503,7 +550,7 @@ function showPanoramaxFromTags(attr) {
         html += '</div>';
     }
 
-    html += `<p class="mt-1 mb-0"><small class="text-muted">Fotos: <a href="https://panoramax.xyz" target="_blank" rel="noopener">Panoramax</a></small> ${addPhotoLink}</p>`;
+    html += `<p class="mt-1 mb-0">${addPhotoLink}</p>`;
     $('#info-panoramax').html(html);
 
     // Klick auf Vorschau öffnet Modal
@@ -604,7 +651,7 @@ function formatOpeningHours(ohStr) {
             statusHtml = `<span style="color:#16a34a;">● Geöffnet${until}</span>`;
         } else {
             if (nextChange) {
-                statusHtml = `<span style="color:#dc2626;">● Geschlossen</span> · Öffnet ${dayLabel(nextChange, now)} um ${fmt(nextChange)}`;
+                statusHtml = `<span style="color:#dc2626;">● Geschlossen</span> · Öffnet ${dayLabel(nextChange, now)} um\u00A0${fmt(nextChange)}`;
             } else {
                 statusHtml = `<span style="color:#dc2626;">● Geschlossen</span>`;
             }
@@ -721,6 +768,7 @@ export function checkZoomDeselection() {
 // Spielplatzauswahl aufheben und seine Attribute im Infofenster ausblenden
 function removeSelection(clearSource) {
     removeLayer('equipment');
+    removeLayer('trees');
     removeLayer('shadow');
     removeLayer('selection');
     removeFilter("playgrounds", 'selection');
@@ -817,6 +865,26 @@ function showPlaygroundInfo(json) {
 
     Collapse.getOrCreateInstance(document.getElementById('accordion-panoramax')).show();
     Collapse.getOrCreateInstance(document.getElementById('accordion-ausstattung')).show();
+    Collapse.getOrCreateInstance(document.getElementById('accordion-umfeld')).show();
+    Collapse.getOrCreateInstance(document.getElementById('accordion-reviews')).show();
+
+    // Datenvollständigkeit — Badge
+    {
+        const hasPhoto = Object.keys(attr).some(k => k === 'panoramax' || k.startsWith('panoramax:'));
+        const hasName  = !!attr.name;
+        const hasInfo  = !!(attr.operator || attr.opening_hours || attr.surface || attr.access);
+        let cls, label;
+        if (hasPhoto && hasName && hasInfo) {
+            cls = 'completeness-badge--complete'; label = 'Daten vollständig';
+        } else if (hasPhoto || hasName || hasInfo) {
+            cls = 'completeness-badge--partial';  label = 'Daten teilweise erfasst';
+        } else {
+            cls = 'completeness-badge--missing';  label = 'Daten fehlen';
+        }
+        $('#info-completeness-badge')
+            .removeClass('completeness-badge--complete completeness-badge--partial completeness-badge--missing')
+            .addClass(cls).text(label);
+    }
 
     // Spielplatzname (aus verschiedenen Attributen zusammengesetzt)
     var playgroundName = getPlaygroundTitle(attr);
@@ -880,6 +948,14 @@ function showPlaygroundInfo(json) {
         $("#info-surface").hide();
     }
 
+    // Bäume (innerhalb + 15 m Puffer, aus PostGIS)
+    const treeCount = attr["tree_count"];
+    if (treeCount > 0) {
+        $("#info-trees").html(`<span class="info-label">Bäume</span> mind. ${treeCount}`).show();
+    } else {
+        $("#info-trees").hide();
+    }
+
     // Zugänglichkeit
     var access = attr["access"];
     var priv = attr["private"];
@@ -919,14 +995,16 @@ function showPlaygroundInfo(json) {
         $("#info-age").hide();
     }
 
-    // Betreiber
+    // Betreiber — operator:wikidata hat Vorrang als Link-Ziel; operator als Anzeigetext
     var operator = attr["operator"];
     var operatorWikidata = attr["operator:wikidata"];
-    if (operator) {
-        var operatorHtml = operatorWikidata
-            ? `<span class="info-label">Betreiber</span> <a href="https://www.wikidata.org/wiki/${operatorWikidata}" target="_blank" rel="noopener" class="link-secondary">${operator}</a>`
-            : `<span class="info-label">Betreiber</span> ${operator}`;
-        $("#info-operator").html(operatorHtml).show();
+    if (operatorWikidata) {
+        const label = operator || operatorWikidata;
+        $("#info-operator").html(
+            `<span class="info-label">Betreiber</span> <a href="https://www.wikidata.org/wiki/${operatorWikidata}" target="_blank" rel="noopener" class="link-secondary">${label}</a>`
+        ).show();
+    } else if (operator) {
+        $("#info-operator").html(`<span class="info-label">Betreiber</span> ${operator}`).show();
     } else {
         $("#info-operator").hide();
     }
@@ -948,8 +1026,8 @@ function showPlaygroundInfo(json) {
     var contactParts = [];
     if (phone) contactParts.push(`<a href="tel:${phone}" class="link-secondary">${phone}</a>`);
     if (email) contactParts.push(`<a href="mailto:${email}" class="link-secondary">${email}</a>`);
-    contactParts.push(`<a href="${mcUrl}" target="_blank" rel="noopener" class="mc-add-link"><span class="bi bi-pencil"></span> MapComplete</a>`);
-    $("#info-contact").html(contactParts.join(' · ')).show();
+    const mcLink = `<div class="mt-1"><a href="${mcUrl}" target="_blank" rel="noopener" class="mc-add-link"><span class="bi bi-pencil"></span> Bei MapComplete bearbeiten</a></div>`;
+    $("#info-contact").html((contactParts.length ? contactParts.join(' · ') : '') + mcLink).show();
 
     // Spielgeräte: werden async per Overpass geladen (updateEquipmentPanel befüllt das nach dem Laden)
     $("#info-equipment").html('<ul><li><i>Wird geladen …</i></li></ul>');
@@ -960,6 +1038,18 @@ function showPlaygroundInfo(json) {
 
     // Straßenfotos aus Panoramax-Tags des OSM-Objekts
     showPanoramaxFromTags(attr);
+
+    // Bewertungen (Mangrove.reviews)
+    {
+        const extent = lastSelectedFeature ? lastSelectedFeature.getGeometry().getExtent() : null;
+        if (extent) {
+            const [revLon, revLat] = transform(
+                [(extent[0] + extent[2]) / 2, (extent[1] + extent[3]) / 2],
+                'EPSG:3857', 'EPSG:4326'
+            );
+            renderReviews(revLat, revLon);
+        }
+    }
 
     // Schattigkeit
     fillShadowMatrix(attr);

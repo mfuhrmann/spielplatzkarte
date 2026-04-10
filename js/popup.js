@@ -41,6 +41,22 @@ export function showPopup(type, popup, coordinate, feature) {
 
         if (attr.operator) lines.push(`Betreiber: ${attr.operator}`);
 
+        // Datenvollständigkeit
+        {
+            const hasPhoto = Object.keys(attr).some(k => k === 'panoramax' || k.startsWith('panoramax:'));
+            const hasName  = !!attr.name;
+            const hasInfo  = !!(attr.operator || attr.opening_hours || attr.surface || attr.access);
+            let dot, label;
+            if (hasPhoto && hasName && hasInfo) {
+                dot = '<span class="dot-complete">●</span>'; label = 'Daten vollständig';
+            } else if (hasPhoto || hasName || hasInfo) {
+                dot = '<span class="dot-partial">●</span>'; label = 'Teilweise erfasst';
+            } else {
+                dot = '<span class="dot-missing">●</span>'; label = 'Daten fehlen';
+            }
+            lines.push(`<small>${dot} ${label}</small>`);
+        }
+
         lines.push(`<small class="text-muted">Klicken für Details</small>`);
         content = lines.join('<br>');
     }
@@ -132,7 +148,7 @@ export function showPopup(type, popup, coordinate, feature) {
         content: content,
         html: true,
         placement: 'top',
-        title: title
+        title: title,
     });
     popover.show();
 }
