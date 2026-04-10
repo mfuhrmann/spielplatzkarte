@@ -951,7 +951,7 @@ function showPlaygroundInfo(json) {
     // Bäume (innerhalb + 15 m Puffer, aus PostGIS)
     const treeCount = attr["tree_count"];
     if (treeCount > 0) {
-        $("#info-trees").html(`<span class="info-label">Bäume</span> mind. ${treeCount}`).show();
+        $("#info-trees").html(`<span class="info-label">Bäume mind.</span> ${treeCount}`).show();
     } else {
         $("#info-trees").hide();
     }
