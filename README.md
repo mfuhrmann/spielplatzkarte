@@ -12,7 +12,10 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 
 **Map**
 - Display all playgrounds in a configured OSM region on an interactive map
-- Playground polygons coloured by data completeness: green (photos + name + details), yellow (partial), red (nothing tagged)
+- Playground polygons coloured by data completeness (same logic used for polygon outline, hover tooltip dot, and detail panel badge):
+  - 🟢 **Vollständig** — has at least one Panoramax photo (`panoramax` / `panoramax:*` tag) **and** a `name` **and** at least one of `operator`, `opening_hours`, `surface`, or `access`
+  - 🟡 **Teilweise erfasst** — has at least one of the above criteria but not all three
+  - 🔴 **Daten fehlen** — none of the above are present
 - Hover tooltip with playground name, key attributes, and completeness indicator
 
 **Playground detail panel**
