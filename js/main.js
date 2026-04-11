@@ -115,7 +115,13 @@ restoreFromHash();
 window.addEventListener('hashchange', restoreFromHash);
 
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') clearSelection();
+    if (e.key === 'Escape') {
+        clearSelection();
+        // Forward ESC to parent frame (e.g. Spielplatzkarte Hub) so it can close the modal.
+        if (window.parent !== window) {
+            window.parent.postMessage({ type: 'spielplatzkarte:escape' }, '*');
+        }
+    }
 });
 
 // Double-Shift → focus search box
