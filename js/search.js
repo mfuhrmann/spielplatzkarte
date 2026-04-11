@@ -2,7 +2,6 @@
 // Suche (Nominatim) //
 //-------------------//
 
-import $ from 'jquery';
 import { fromLonLat, transform } from 'ol/proj';
 import map from './map.js';
 import { getRegionExtent, showNotification } from './map.js';
@@ -10,17 +9,17 @@ import { pulse } from './pulse.js';
 import { showNearbyPlaygrounds } from './selectPlayground.js';
 
 // Suchanfragen starten
-$('#inputSearch').on('keypress', (e) => {
+document.getElementById('inputSearch').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
-        const query = $('#inputSearch')[0].value;
+        const query = e.currentTarget.value;
         if (query) {
             searchLocation(query);
         }
     }
 });
 
-$('#inputSearchIcon').on('click', function() {
-    const query = $('#inputSearch')[0].value;
+document.getElementById('inputSearchIcon').addEventListener('click', function() {
+    const query = document.getElementById('inputSearch').value;
     if (query) {
         searchLocation(query);
     }

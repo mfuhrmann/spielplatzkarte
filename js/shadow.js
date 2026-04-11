@@ -2,8 +2,6 @@
 // Einstellungen für die Schattenberechnung //
 //------------------------------------------//
 
-import $ from 'jquery';
-
 import ImageWMS from 'ol/source/ImageWMS.js';
 import { Image as ImageLayer } from 'ol/layer.js';
 
@@ -16,11 +14,15 @@ const geoServer = 'https://osmbln.uber.space/';
 const geoServerWorkspace = 'spielplatzkarte';
 import { transform } from 'ol/proj';
 
+const el = id => document.getElementById(id);
+
 // Slider auf aktuellen Monat und Uhrzeit einstellen
 var shadowSliderInit = true;
 export function setCurrentDate() {
-    $('#shadow-slider-month').val(getCurrentMonth()).trigger('input');
-    $('#shadow-slider-hour').val(getCurrentHour()).trigger('input');
+    el('shadow-slider-month').value = getCurrentMonth();
+    el('shadow-slider-month').dispatchEvent(new Event('input'));
+    el('shadow-slider-hour').value = getCurrentHour();
+    el('shadow-slider-hour').dispatchEvent(new Event('input'));
     shadowSliderInit = false;
 }
 
@@ -34,11 +36,11 @@ function getCurrentHour() {
 }
 
 export function getSliderMonth() {
-    return $('#shadow-slider-month')[0].value;
+    return el('shadow-slider-month').value;
 }
 
 export function getSliderHour() {
-    return $('#shadow-slider-hour')[0].value;
+    return el('shadow-slider-hour').value;
 }
 
 function getRoundedHour(hour) {
@@ -114,20 +116,21 @@ var matrixMonth = null;
 var matrixHour = null;
 
 // Change-Events für Schieberegler zu Jahres- und Tageszeit
-$('#shadow-slider-month').on('input', function() {
+el('shadow-slider-month').addEventListener('input', function() {
     const value = Number(this.value);
     const month_str = objMonth[value];
-    $('#shadow-slider-month-label').text(month_str);
-    $('#shadow-slider-hour').val(getValidHour(getSliderHour(), this.value, true)).trigger('input');
+    el('shadow-slider-month-label').textContent = month_str;
+    el('shadow-slider-hour').value = getValidHour(getSliderHour(), this.value, true);
+    el('shadow-slider-hour').dispatchEvent(new Event('input'));
     removeMatrixBorder(matrixMonth, matrixHour);
     shadowSliderUpdate();
     matrixMonth = getSliderMonth();
 });
 
-$('#shadow-slider-hour').on('input', function() {
+el('shadow-slider-hour').addEventListener('input', function() {
     var hour = getValidHour(this.value, getSliderMonth(), true);
-    $('#shadow-slider-hour').val(hour);
-    $('#shadow-slider-hour-label').text(`${hour} Uhr`);
+    el('shadow-slider-hour').value = hour;
+    el('shadow-slider-hour-label').textContent = `${hour} Uhr`;
     shadowSliderUpdate();
     matrixHour = getSliderHour();
 });
@@ -138,67 +141,62 @@ function shadowSliderUpdate() {
     updateShadow();
 
     // falls ein Schattigkeitsfilter aktiviert ist, diesen ans neue Datum anpassen
-    if ($('#filterShadow').is(':checked')) {
-        $('#filterShadow').trigger('change');
+    const filterShadow = el('filterShadow');
+    if (filterShadow && filterShadow.checked) {
+        filterShadow.dispatchEvent(new Event('change'));
     }
 }
 
 // Rahmen in der Schattenmatrix an Stelle der Schieber-Auswahl anzeigen
 function setMatrixBorder(month, hour) {
-    var matrixElement = `#shadow-matrix-${hour}-${month}`;
-    $(matrixElement).css("border", '2px solid red');
+    const matrixEl = el(`shadow-matrix-${hour}-${month}`);
+    if (matrixEl) matrixEl.style.border = '2px solid red';
 }
 
 // Bestehenden Rahmen entfernen
 function removeMatrixBorder(month, hour) {
-    var matrixElement = `#shadow-matrix-${hour}-${month}`;
-    $(matrixElement).css("border", '0px');
+    const matrixEl = el(`shadow-matrix-${hour}-${month}`);
+    if (matrixEl) matrixEl.style.border = '0px';
 }
 
 // Popup mit Schattenangabe bei Hover über Schattenmatrix und Zeitachse hervorheben
-var popup = $('#mini-popup');
-$('.matrix').on('mouseover', function(event) {
+const popup = el('mini-popup');
+document.querySelectorAll('.matrix').forEach(cell => {
+    cell.addEventListener('mouseover', function() {
+        // Schattenanteil aus der Schattenmatrix über die ID des gehoverten Elements abfragen
+        var id = this.id.replace('shadow-matrix-', '').split('-');
+        var shadowShare = shadowMatrix[id[0]][id[1] - 1];
+        popup.textContent = `${Math.round(shadowShare)}%`;
+        popup.style.display = 'block';
 
-    // Schattenanteil aus der Schattenmatrix über die ID des gehoverten Elements abfragen
-    var id = $(this).attr('id');
-    id = id.replace("shadow-matrix-", "").split('-');
-    var shadowShare = shadowMatrix[id[0]][id[1] - 1];
-    popup.text(`${Math.round(shadowShare)}%`).show();
-
-    // Zeitachse an der Stelle fett hervorheben
-    var axisElementHour = `#matrix-hour-${id[0]}`;
-    var axisElementMonth = `#matrix-month-${id[1]}`;
-    $(axisElementHour).html(`<b>${$(axisElementHour).text()}</b>`);
-    $(axisElementMonth).html(`<b>${$(axisElementMonth).text()}</b>`);
-});
-
-// Popup-Position anpassen
-$('.matrix').on('mousemove', function(event) {
-    popup.css({
-        left: event.pageX + 10,
-        top: event.pageY + 10
+        // Zeitachse an der Stelle fett hervorheben
+        const axisHour = el(`matrix-hour-${id[0]}`);
+        const axisMonth = el(`matrix-month-${id[1]}`);
+        if (axisHour) axisHour.innerHTML = `<b>${axisHour.textContent}</b>`;
+        if (axisMonth) axisMonth.innerHTML = `<b>${axisMonth.textContent}</b>`;
     });
-});
 
-// Popup entfernen und Zeitachsenhervorhebung entfernen
-$('.matrix').on('mouseout', function() {
-    popup.hide();
-    var id = $(this).attr('id');
-    id = id.replace("shadow-matrix-", "").split('-');
-    var axisElementHour = `#matrix-hour-${id[0]}`;
-    var axisElementMonth = `#matrix-month-${id[1]}`;
-    var hourStr = $(axisElementHour).text().replace("<b>", "").replace("</b>", "");
-    var monthStr = $(axisElementMonth).text().replace("<b>", "").replace("</b>", "");
-    $(axisElementHour).html(hourStr);
-    $(axisElementMonth).html(monthStr);
-});
+    cell.addEventListener('mousemove', function(event) {
+        popup.style.left = (event.pageX + 10) + 'px';
+        popup.style.top  = (event.pageY + 10) + 'px';
+    });
 
-// Über die Schattenmatrix zu einem bestimmten Zeitpunkt springen
-$('.matrix').on('click', function() {
-    var id = $(this).attr('id');
-    id = id.replace("shadow-matrix-", "").split('-');
-    $('#shadow-slider-hour').val(id[0]).trigger('input');
-    $('#shadow-slider-month').val(id[1]).trigger('input');
+    cell.addEventListener('mouseout', function() {
+        popup.style.display = 'none';
+        var id = this.id.replace('shadow-matrix-', '').split('-');
+        const axisHour = el(`matrix-hour-${id[0]}`);
+        const axisMonth = el(`matrix-month-${id[1]}`);
+        if (axisHour) { const t = axisHour.textContent; axisHour.innerHTML = t; }
+        if (axisMonth) { const t = axisMonth.textContent; axisMonth.innerHTML = t; }
+    });
+
+    cell.addEventListener('click', function() {
+        var id = this.id.replace('shadow-matrix-', '').split('-');
+        el('shadow-slider-hour').value = id[0];
+        el('shadow-slider-hour').dispatchEvent(new Event('input'));
+        el('shadow-slider-month').value = id[1];
+        el('shadow-slider-month').dispatchEvent(new Event('input'));
+    });
 });
 
 // Sonnenstand berechnen - Sonnenhöhe und Azimuth 
@@ -292,15 +290,15 @@ function updateShadow() {
     var validHour = getValidHour(getSliderHour(), getSliderMonth());
     var validMonth = getValidMonth(getSliderMonth());
     var shadowShare = shadowMatrix[validHour][validMonth - 1];
-    $('#shadow-bar').css("width", shadowShare + "%");
-    $('#shadow-percent-value').text(Math.round(shadowShare));
+    el('shadow-bar').style.width = shadowShare + '%';
+    el('shadow-percent-value').textContent = Math.round(shadowShare);
 
     var shadowRoundShare = Math.floor(Math.round(shadowShare) / 10) * 10;
     var shadowDescription = objShadowDescription[shadowRoundShare];
     if (shadowShare == 0) {
         shadowDescription = 'gar kein Schatten';
     }
-    $('#shadow-percent-description').text(shadowDescription);
+    el('shadow-percent-description').textContent = shadowDescription;
 
     // Schattenlayer aktualisieren
     if (!shadowSource) {
@@ -353,8 +351,8 @@ export function fillShadowMatrix(attr) {
                     break;
                 }
             }
-            var htmlStr = `#shadow-matrix-${hour}-${month}`;
-            $(htmlStr).css("background-color", color);
+            const matrixCell = el(`shadow-matrix-${hour}-${month}`);
+            if (matrixCell) matrixCell.style.backgroundColor = color;
         }
     }
 
@@ -382,8 +380,8 @@ export function fillShadowMatrix(attr) {
     if (shareAfternoon == 0) {
         descAfternoon = 'gar kein Schatten';
     }
-    $('#shadow-description-morning').text(descMorning);
-    $('#shadow-description-afternoon').text(descAfternoon);
+    el('shadow-description-morning').textContent = descMorning;
+    el('shadow-description-afternoon').textContent = descAfternoon;
 
     updateShadow();
 }

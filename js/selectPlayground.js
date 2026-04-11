@@ -2,7 +2,6 @@
 // Spielplatzinformationen für ein ausgewähltes Feature anzeigen //
 //---------------------------------------------------------------//
 
-import $ from 'jquery';
 import { Modal, Collapse } from 'bootstrap';
 import OpeningHours from 'opening_hours';
 import { getArea } from 'ol/sphere.js';
@@ -34,6 +33,10 @@ import { panoramaxViewerUrl, panoramaxThumbUrl } from './panoramax.js';
 import { getEquipmentAttributesFromProps } from './popup.js';
 import { renderReviews } from './reviews.js';
 
+const el = id => document.getElementById(id);
+const show = id => { el(id).style.display = ''; };
+const hide = id => { el(id).style.display = 'none'; };
+
 export var sourceSelected; // globale Variable, in der der jeweils ausgewählte Spielplatz enthalten ist
 var lastSelectedFeature = null; // zuletzt angeklicktes OpenLayers-Feature (für Overpass-Nachfrage)
 var currentArea = null; // Fläche des zuletzt ausgewählten Spielplatzes (für Ausstattungsanzeige)
@@ -44,6 +47,9 @@ var panoramaxModalIndex = 0;     // aktuell angezeigtes Foto im Modal
 
 var targetZoom;
 var nearbyListFeatures = []; // für Klick-Handler der Nähe-Liste
+let nearbyClickController = null; // AbortController for nearby-item click delegation
+let panoramaxEnlargeController = null; // AbortController for panoramax-preview click
+let panoramaxThumbController = null;  // AbortController for panoramax-thumb click
 
 export function showNearbyPlaygrounds(lon, lat, label = 'diesem Ort') {
     const source = dataPlaygrounds.getSource ? dataPlaygrounds.getSource() : null;
@@ -88,18 +94,22 @@ export function showNearbyPlaygrounds(lon, lat, label = 'diesem Ort') {
     }
 
     html += '</div>';
-    $('#info-more').html(html);
-    $('#info').addClass('panel-open');
+    el('info-more').innerHTML = html;
+    el('info').classList.add('panel-open');
 
-    $('#info-more').off('click.nearby').on('click.nearby', '.nearby-item', function() {
-        const feature = nearbyListFeatures[$(this).data('idx')];
+    if (nearbyClickController) nearbyClickController.abort();
+    nearbyClickController = new AbortController();
+    el('info-more').addEventListener('click', function(e) {
+        const item = e.target.closest('.nearby-item');
+        if (!item) return;
+        const feature = nearbyListFeatures[parseInt(item.dataset.idx)];
         const ext = feature.getGeometry().getExtent();
         const center = [(ext[0] + ext[2]) / 2, (ext[1] + ext[3]) / 2];
         const mapCenter = map.getView().getCenter();
         const res = map.getView().getResolution();
         const distPx = Math.hypot(center[0] - mapCenter[0], center[1] - mapCenter[1]) / res;
         selectPlayground(center, distPx, false, feature);
-    });
+    }, { signal: nearbyClickController.signal });
 }
 
 export function selectPlayground(coord, distance, multiSelect, feature = null) {
@@ -184,7 +194,7 @@ function showSelection(coord, backupGeojson) {
         );
         loadNearbyPOIs(playLat, playLon, poiRadiusM, geojson.features[0].properties['osm_id']);
         // Schattenlayer anzeigen, falls aktiviert
-        if ($('#layer-switch-schattigkeit').prop('checked')) {
+        if (el('layer-switch-schattigkeit').checked) {
             addShadowLayer();
         }
         // den selektierten Spielplatz aus dem WMS-Layer herausfiltern
@@ -419,9 +429,9 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
         equipment_str += picnicCount === 1 ? '<li>1 Picknicktisch</li>' : `<li>${picnicCount} Picknicktische</li>`;
     }
     equipment_str += '</ul>';
-    $('#info-equipment').html(equipment_str);
+    el('info-equipment').innerHTML = equipment_str;
 
-    $('#info-device-note').html(''); // no longer used; cleared for safety
+    el('info-device-note').innerHTML = ''; // no longer used; cleared for safety
 
     // Einzelne Spielgeräte auflisten — jedes als aufklappbares Element mit Details
     let device_string = '<ul class="mb-0 device-list">';
@@ -471,17 +481,17 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
                 fallback_string += `<li><span style="color:${color}">●</span> ${countStr}${name}</li>`;
             }
             fallback_string += '</ul>';
-            $('#info-device-list').html(fallback_string);
+            el('info-device-list').innerHTML = fallback_string;
         } else {
-            $('#info-device-list').html('');
+            el('info-device-list').innerHTML = '';
         }
     } else {
-        $('#info-device-list').html(device_string);
+        el('info-device-list').innerHTML = device_string;
     }
 
     // "Hilf mit"-Hinweis — nur wenn keine separat gemappten Geräte vorhanden
     if (!deviceFeatures.length) {
-        $('#info-device-list').append(
+        el('info-device-list').insertAdjacentHTML('beforeend',
             '<p class="text-muted mt-2 mb-0" style="font-size:smaller">Spielgeräte noch nicht einzeln kartiert – hilf mit! 👇</p>'
         );
     }
@@ -494,7 +504,7 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
             'EPSG:3857', 'EPSG:4326'
         );
         const mapcompleteUrl = `https://mapcomplete.org/playgrounds.html?z=19&lat=${lat.toFixed(7)}&lon=${lon.toFixed(7)}#new_point_dialog_0`;
-        $('#info-device-list').append(
+        el('info-device-list').insertAdjacentHTML('beforeend',
             `<div class="mt-1"><a href="${mapcompleteUrl}" target="_blank" rel="noopener" class="mc-add-link"><span class="bi bi-plus-circle"></span> Spielgerät hinzufügen</a></div>`
         );
     }
@@ -517,13 +527,12 @@ function showPanoramaxFromTags(attr) {
     const addPhotoLink = `<a href="${mapcompletePhotoUrl}" target="_blank" rel="noopener" class="mc-add-link"><span class="bi bi-camera"></span> Foto hinzufügen</a>`;
 
     if (!uuids.length) {
-        $('#info-panoramax').html(
+        el('info-panoramax').innerHTML =
             `<div class="text-center py-2">` +
             `<span class="bi bi-camera" style="font-size:1.8rem; color:#d1d5db;"></span>` +
             `<p class="text-muted mt-1 mb-2" style="font-size:smaller;">Noch keine Fotos für diesen Spielplatz.<br>Warst du schon dort?</p>` +
             addPhotoLink +
-            `</div>`
-        );
+            `</div>`;
         return;
     }
 
@@ -552,24 +561,32 @@ function showPanoramaxFromTags(attr) {
     }
 
     html += `<p class="mt-1 mb-0">${addPhotoLink}</p>`;
-    $('#info-panoramax').html(html);
+    el('info-panoramax').innerHTML = html;
 
     // Klick auf Vorschau öffnet Modal
-    $('#info-panoramax').off('click.panoramax-enlarge').on('click.panoramax-enlarge', '#panoramax-preview', function() {
-        const uuid = $(this).data('uuid');
+    if (panoramaxEnlargeController) panoramaxEnlargeController.abort();
+    panoramaxEnlargeController = new AbortController();
+    el('info-panoramax').addEventListener('click', function(e) {
+        const preview = e.target.closest('#panoramax-preview');
+        if (!preview) return;
+        const uuid = preview.dataset.uuid;
         panoramaxUuids = uuids;
         panoramaxModalIndex = uuids.indexOf(uuid);
         openPanoramaxModal(panoramaxModalIndex);
-    });
+    }, { signal: panoramaxEnlargeController.signal });
 
     // Thumbnail-Klick wechselt Vorschau-UUID und iframe
-    $('#info-panoramax').off('click.panoramax').on('click.panoramax', '.panoramax-thumb', function() {
-        const uuid = $(this).data('uuid');
-        $('#panoramax-iframe').attr('src', panoramaxViewerUrl(uuid));
-        $('#panoramax-preview').data('uuid', uuid);
-        $('.panoramax-thumb').css('opacity', '0.55');
-        $(this).css('opacity', '1');
-    });
+    if (panoramaxThumbController) panoramaxThumbController.abort();
+    panoramaxThumbController = new AbortController();
+    el('info-panoramax').addEventListener('click', function(e) {
+        const thumb = e.target.closest('.panoramax-thumb');
+        if (!thumb) return;
+        const uuid = thumb.dataset.uuid;
+        el('panoramax-iframe').src = panoramaxViewerUrl(uuid);
+        el('panoramax-preview').dataset.uuid = uuid;
+        document.querySelectorAll('.panoramax-thumb').forEach(t => { t.style.opacity = '0.55'; });
+        thumb.style.opacity = '1';
+    }, { signal: panoramaxThumbController.signal });
 }
 
 // Nahegelegene POIs laden und im Umfeld-Panel anzeigen
@@ -581,7 +598,7 @@ async function loadNearbyPOIs(lat, lon, radiusM, osmId) {
     } catch (e) {
         console.warn('Umfeld-Daten konnten nicht geladen werden:', e);
         if (generation !== nearbyLoadGeneration) return;
-        $('#info-umfeld').html('<small class="text-muted"><i>Umfeld-Daten konnten nicht geladen werden.</i></small>');
+        el('info-umfeld').innerHTML = '<small class="text-muted"><i>Umfeld-Daten konnten nicht geladen werden.</i></small>';
         return;
     }
     if (generation !== nearbyLoadGeneration) return;
@@ -724,28 +741,27 @@ function updateUmfeldPanel(pois, playLat, playLon) {
         html += '</div>';
     }
 
-    $('#info-umfeld').html(html ||
-        `<small class="text-muted">Keine nahegelegenen Einrichtungen im Umkreis von ${(poiRadiusM / 1000).toFixed(0)} km gefunden.</small>`);
+    el('info-umfeld').innerHTML = html ||
+        `<small class="text-muted">Keine nahegelegenen Einrichtungen im Umkreis von ${(poiRadiusM / 1000).toFixed(0)} km gefunden.</small>`;
 }
 
 // Panoramax-Modal mit einem bestimmten Foto-Index öffnen / aktualisieren
 function openPanoramaxModal(index) {
     panoramaxModalIndex = ((index % panoramaxUuids.length) + panoramaxUuids.length) % panoramaxUuids.length;
     const uuid = panoramaxUuids[panoramaxModalIndex];
-    $('#panoramax-modal-iframe').attr('src', panoramaxViewerUrl(uuid));
-    $('#panoramax-modal-counter').text(
-        panoramaxUuids.length > 1 ? `${panoramaxModalIndex + 1} / ${panoramaxUuids.length}` : ''
-    );
-    $('#panoramax-modal-prev').prop('disabled', false);
-    $('#panoramax-modal-next').prop('disabled', false);
+    el('panoramax-modal-iframe').src = panoramaxViewerUrl(uuid);
+    el('panoramax-modal-counter').textContent =
+        panoramaxUuids.length > 1 ? `${panoramaxModalIndex + 1} / ${panoramaxUuids.length}` : '';
+    el('panoramax-modal-prev').disabled = false;
+    el('panoramax-modal-next').disabled = false;
     Modal.getOrCreateInstance('#modalPanoramax').show();
 }
 
-$('#panoramax-modal-prev').on('click', () => openPanoramaxModal(panoramaxModalIndex - 1));
-$('#panoramax-modal-next').on('click', () => openPanoramaxModal(panoramaxModalIndex + 1));
+el('panoramax-modal-prev').addEventListener('click', () => openPanoramaxModal(panoramaxModalIndex - 1));
+el('panoramax-modal-next').addEventListener('click', () => openPanoramaxModal(panoramaxModalIndex + 1));
 
-$(document).on('keydown', function(e) {
-    if (!$('#modalPanoramax').hasClass('show')) return;
+document.addEventListener('keydown', function(e) {
+    if (!el('modalPanoramax').classList.contains('show')) return;
     if (e.key === 'ArrowLeft')  openPanoramaxModal(panoramaxModalIndex - 1);
     if (e.key === 'ArrowRight') openPanoramaxModal(panoramaxModalIndex + 1);
 });
@@ -807,7 +823,7 @@ export function getSelectionExtent(padding) {
         // also Extent rechts um den relativen Anteil des Infofensters an der Kartengröße erweitern
         // TODO Responsiv gestalten/an schmale Bildschirme anpassen
         var mapWidth = map.getSize()[0];
-        var infoWidth = $('#info')[0].offsetWidth;
+        var infoWidth = el('info').offsetWidth;
         var overhangPercent = infoWidth / mapWidth;
         var overhangExtent = (extent[2] - extent[0]) * overhangPercent;
         extent = [extent[0] + overhangExtent / 2, extent[1], extent[2] + overhangExtent, extent[3]];
@@ -880,18 +896,19 @@ function showPlaygroundInfo(json) {
         } else {
             cls = 'completeness-badge--missing';  label = 'Daten fehlen';
         }
-        $('#info-completeness-badge')
-            .removeClass('completeness-badge--complete completeness-badge--partial completeness-badge--missing')
-            .addClass(cls).text(label);
+        const badge = el('info-completeness-badge');
+        badge.classList.remove('completeness-badge--complete', 'completeness-badge--partial', 'completeness-badge--missing');
+        badge.classList.add(cls);
+        badge.textContent = label;
     }
 
     // Spielplatzname (aus verschiedenen Attributen zusammengesetzt)
     var playgroundName = getPlaygroundTitle(attr);
-    $("#info-name").text(playgroundName);
+    el('info-name').textContent = playgroundName;
 
     // Lagebeschreibung
     var location_str = getPlaygroundLocation(attr);
-    $("#info-location").html(`<i>${location_str}</i>`);
+    el('info-location').innerHTML = `<i>${location_str}</i>`;
 
     // Beschreibung / Bemerkungen
     var description = attr["description"];
@@ -919,7 +936,7 @@ function showPlaygroundInfo(json) {
     if (playgroundDescription) {
         playgroundDescription = `<i>${playgroundDescription}</i>`
     }
-    $("#info-description").html(playgroundDescription);
+    el('info-description').innerHTML = playgroundDescription;
 
     // Größe (m², gerundet auf 10m²)
     var area = attr["area"];
@@ -929,7 +946,7 @@ function showPlaygroundInfo(json) {
     } else {
         playgroundArea = '<span class="info-label">Größe</span> unbekannt';
     }
-    $("#info-area").html(playgroundArea);
+    el('info-area').innerHTML = playgroundArea;
 
     // Bodenbelag
     const surfaceLabels = {
@@ -942,17 +959,19 @@ function showPlaygroundInfo(json) {
     var surface = attr["surface"];
     if (surface) {
         const surfaceLabel = surfaceLabels[surface] ?? surface;
-        $("#info-surface").html(`<span class="info-label">Bodenbelag</span> ${surfaceLabel}`).show();
+        el('info-surface').innerHTML = `<span class="info-label">Bodenbelag</span> ${surfaceLabel}`;
+        show('info-surface');
     } else {
-        $("#info-surface").hide();
+        hide('info-surface');
     }
 
     // Bäume (innerhalb + 15 m Puffer, aus PostGIS)
     const treeCount = attr["tree_count"];
     if (treeCount > 0) {
-        $("#info-trees").html(`<span class="info-label">Bäume mind.</span> ${treeCount}`).show();
+        el('info-trees').innerHTML = `<span class="info-label">Bäume mind.</span> ${treeCount}`;
+        show('info-trees');
     } else {
-        $("#info-trees").hide();
+        hide('info-trees');
     }
 
     // Zugänglichkeit
@@ -980,7 +999,7 @@ function showPlaygroundInfo(json) {
     if (priv in privateDict) {
         playgroundAccess = `<span class="info-label">Zugänglichkeit</span> ${privateDict[priv]}`;
     }
-    $("#info-access").html(playgroundAccess);
+    el('info-access').innerHTML = playgroundAccess;
 
     // Altersbeschränkung
     var minAge = attr["min_age"];
@@ -989,9 +1008,10 @@ function showPlaygroundInfo(json) {
         var ageStr = minAge && maxAge ? `${minAge}–${maxAge} Jahre`
                    : minAge ? `ab ${minAge} Jahren`
                    : `bis ${maxAge} Jahre`;
-        $("#info-age").html(`<span class="info-label">Alter</span> ${ageStr}`).show();
+        el('info-age').innerHTML = `<span class="info-label">Alter</span> ${ageStr}`;
+        show('info-age');
     } else {
-        $("#info-age").hide();
+        hide('info-age');
     }
 
     // Betreiber — operator:wikidata hat Vorrang als Link-Ziel; operator als Anzeigetext
@@ -999,21 +1019,23 @@ function showPlaygroundInfo(json) {
     var operatorWikidata = attr["operator:wikidata"];
     if (operatorWikidata) {
         const label = operator || operatorWikidata;
-        $("#info-operator").html(
-            `<span class="info-label">Betreiber</span> <a href="https://www.wikidata.org/wiki/${operatorWikidata}" target="_blank" rel="noopener" class="link-secondary">${label}</a>`
-        ).show();
+        el('info-operator').innerHTML =
+            `<span class="info-label">Betreiber</span> <a href="https://www.wikidata.org/wiki/${operatorWikidata}" target="_blank" rel="noopener" class="link-secondary">${label}</a>`;
+        show('info-operator');
     } else if (operator) {
-        $("#info-operator").html(`<span class="info-label">Betreiber</span> ${operator}`).show();
+        el('info-operator').innerHTML = `<span class="info-label">Betreiber</span> ${operator}`;
+        show('info-operator');
     } else {
-        $("#info-operator").hide();
+        hide('info-operator');
     }
 
     // Öffnungszeiten
     var openingHours = attr["opening_hours"];
     if (openingHours) {
-        $("#info-opening-hours").html(formatOpeningHours(openingHours)).show();
+        el('info-opening-hours').innerHTML = formatOpeningHours(openingHours);
+        show('info-opening-hours');
     } else {
-        $("#info-opening-hours").hide();
+        hide('info-opening-hours');
     }
 
     // Kontakt (E-Mail und Telefon) + MapComplete-Link
@@ -1026,14 +1048,15 @@ function showPlaygroundInfo(json) {
     if (phone) contactParts.push(`<a href="tel:${phone}" class="link-secondary">${phone}</a>`);
     if (email) contactParts.push(`<a href="mailto:${email}" class="link-secondary">${email}</a>`);
     const mcLink = `<div class="mt-1"><a href="${mcUrl}" target="_blank" rel="noopener" class="mc-add-link"><span class="bi bi-pencil"></span> Bei MapComplete bearbeiten</a></div>`;
-    $("#info-contact").html((contactParts.length ? contactParts.join(' · ') : '') + mcLink).show();
+    el('info-contact').innerHTML = (contactParts.length ? contactParts.join(' · ') : '') + mcLink;
+    show('info-contact');
 
     // Spielgeräte: werden async per Overpass geladen (updateEquipmentPanel befüllt das nach dem Laden)
-    $("#info-equipment").html('<ul><li><i>Wird geladen …</i></li></ul>');
-    $("#info-device-note").html('');
-    $("#info-device-list").html('');
+    el('info-equipment').innerHTML = '<ul><li><i>Wird geladen …</i></li></ul>';
+    el('info-device-note').innerHTML = '';
+    el('info-device-list').innerHTML = '';
     // Umfeld: wird async per Overpass geladen
-    $("#info-umfeld").html('<small class="text-muted"><i>Wird geladen …</i></small>');
+    el('info-umfeld').innerHTML = '<small class="text-muted"><i>Wird geladen …</i></small>';
 
     // Straßenfotos aus Panoramax-Tags des OSM-Objekts
     showPanoramaxFromTags(attr);
@@ -1065,9 +1088,9 @@ function showPlaygroundInfo(json) {
     if (osm_type in typeDict) {
         osm_type = typeDict[osm_type];
         url = `https://www.openstreetmap.org/${osm_type}/${osm_id}`;
-        $("#info-osm-url").attr("href", url);
+        el('info-osm-url').href = url;
     } else {
-        $("#info-osm-url").hide();
+        hide('info-osm-url');
     }
 }
 
@@ -1147,78 +1170,81 @@ function parseDevices(equipment) {
 function showGalery(imageURL) {
     if (!imageURL.length) {
         imageURL = ['./img/image_missing.png'];
-        $("#info-image-missing").show();
+        show('info-image-missing');
     } else {
-        $("#info-image-missing").hide();
+        hide('info-image-missing');
     }
     // Bildergalerie leeren, falls er bereits ausgewählt war
-    $('#info-galery-items').empty();
-    $('#info-galery-indicators').empty();
+    el('info-galery-items').innerHTML = '';
+    el('info-galery-indicators').innerHTML = '';
 
     // Duplikate aus dem Array entfernen (durch Umwandlung in ein Set/Rückumwandlung in Array)
     imageURL = [...new Set(imageURL)];
-                
+
     // Bilder zur Galerie hinzufügen
+    const items = el('info-galery-items');
+    const indicators = el('info-galery-indicators');
     for (var i = 0; i < imageURL.length; i++) {
-        $(`<div class="carousel-item"><img src="${imageURL[i]}" class="d-block w-100" alt="Spielplatzfoto"></div>`).appendTo('#info-galery-items');
-        $(`<button type="button" data-bs-target="#info-galery" data-bs-slide-to="${i}"></button>`).appendTo('#info-galery-indicators');
+        items.insertAdjacentHTML('beforeend', `<div class="carousel-item"><img src="${imageURL[i]}" class="d-block w-100" alt="Spielplatzfoto"></div>`);
+        indicators.insertAdjacentHTML('beforeend', `<button type="button" data-bs-target="#info-galery" data-bs-slide-to="${i}"></button>`);
     }
 
     // Galerie initialisieren / sichtbare Elemente aktiv setzen
-    $('.carousel-item').first().addClass('active');
-    $('.carousel-indicators > button').first().addClass('active');
+    items.querySelector('.carousel-item')?.classList.add('active');
+    indicators.querySelector('button')?.classList.add('active');
 
     // Galerie-Controls ausblenden, wenn sich nur ein (oder kein) Bild in der Galerie befindet
-    // TODO: Falls sich nur ein Bild in der Galerie befindet und das im Breitformat ist, sollte sich der Bilderrahmen an dessen Größe anpassen
     if (imageURL.length < 2) {
-        $('#info-galery-prev').hide();
-        $('#info-galery-next').hide();
-        $('#info-galery-indicators').hide();
+        hide('info-galery-prev');
+        hide('info-galery-next');
+        hide('info-galery-indicators');
     } else {
-        $('#info-galery-prev').show();
-        $('#info-galery-next').show();
-        $('#info-galery-indicators').show();
+        show('info-galery-prev');
+        show('info-galery-next');
+        show('info-galery-indicators');
     }
 
     // Galerie sichtbar machen
-    $("#info-galery").show();
+    show('info-galery');
 }
 
 // Attributfenster leeren, z.B. wenn ins "nichts" geklickt wird
 function showAttributes(visibility) {
     if (visibility) {
         // "Klicke, um mehr zu erfahren" ausblenden
-        $("#info-more").hide();
+        hide('info-more');
 
         // Attribut-Elemente einblenden
-        $("#info-base").show();
-        $("#info-accordion").show();
+        show('info-base');
+        show('info-accordion');
 
         // Bottom sheet auf mobil hochfahren
-        $("#info").addClass("panel-open");
+        el('info').classList.add('panel-open');
     } else {
-        $("#info-more").show();
+        show('info-more');
 
-        $("#info-base").hide();
-        $("#info-accordion").hide();
+        hide('info-base');
+        hide('info-accordion');
 
         // Bottom sheet auf mobil wieder einfahren — aber offen lassen wenn die Nähe-Liste noch Inhalt hat
-        if ($('#info-more').is(':empty')) {
-            $("#info").removeClass("panel-open");
+        if (!el('info-more').firstChild) {
+            el('info').classList.remove('panel-open');
         }
-    
-        // Bildergalerie leeren und ausblenden
-        $('#info-galery-items').empty();
-        $('#info-galery-indicators').empty();
-        $("#info-galery").hide();
-        $("#info-image-missing").hide();
+
+        // Bildergalerie leeren und ausblenden (falls vorhanden)
+        const galeryItems = el('info-galery-items');
+        const galeryIndicators = el('info-galery-indicators');
+        if (galeryItems) galeryItems.innerHTML = '';
+        if (galeryIndicators) galeryIndicators.innerHTML = '';
+        if (el('info-galery')) hide('info-galery');
+        if (el('info-image-missing')) hide('info-image-missing');
     }
 }
 
 // Layer über Switch an-/abwählen
 
-$('#layer-switch-schattigkeit').on('change', function() {
-    if ($(this).is(':checked')) {
+el('layer-switch-schattigkeit').addEventListener('change', function() {
+    if (this.checked) {
         addShadowLayer();
     } else {
         removeLayer('shadow');
@@ -1226,26 +1252,27 @@ $('#layer-switch-schattigkeit').on('change', function() {
 });
 
 // Beim ersten Klick auf die Schattigkeitsansicht den Schattenlayer in jedem Fall togglen/anzeigen
-var shadowFirstActivated = false
-$('#accordion-btn-schattigkeit').on('click', function() {
+var shadowFirstActivated = false;
+el('accordion-btn-schattigkeit').addEventListener('click', function() {
     if (!shadowFirstActivated) {
-        $('#layer-switch-schattigkeit').prop('checked', true).trigger('change');
+        const sw = el('layer-switch-schattigkeit');
+        sw.checked = true;
+        sw.dispatchEvent(new Event('change'));
         shadowFirstActivated = true;
     }
 });
 
 // Mobile: nach unten wischen schließt das Bottom Sheet
 let swipeTouchStartY = 0;
-$('#info-drag-handle')
-    .on('touchstart', e => { swipeTouchStartY = e.originalEvent.touches[0].clientY; })
-    .on('touchend', e => {
-        if (e.originalEvent.changedTouches[0].clientY - swipeTouchStartY > 60) {
-            $('#info').removeClass('panel-open');
-        }
-    });
+el('info-drag-handle').addEventListener('touchstart', e => { swipeTouchStartY = e.touches[0].clientY; });
+el('info-drag-handle').addEventListener('touchend', e => {
+    if (e.changedTouches[0].clientY - swipeTouchStartY > 60) {
+        el('info').classList.remove('panel-open');
+    }
+});
 
 // Spielplatz teilen: Web Share API (mobil) oder URL in Zwischenablage kopieren
-$('#info-share-btn').on('click', () => {
+el('info-share-btn').addEventListener('click', () => {
     const url = window.location.href;
     if (navigator.share) {
         navigator.share({ url });

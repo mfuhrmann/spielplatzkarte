@@ -2,8 +2,6 @@
 // Standortverfolgung de-/aktivieren //
 //-----------------------------------//
 
-import $ from 'jquery';
-
 import Feature from 'ol/Feature.js';
 import Geolocation from 'ol/Geolocation.js';
 import Point from 'ol/geom/Point.js';
@@ -19,7 +17,7 @@ import { transform } from 'ol/proj';
 // Einmalige Standortbestimmung: Karte zentrieren, Spielplätze in der Nähe anzeigen
 let locationListenerKey = null;
 
-$('#btn-location').on('click', function() {
+document.getElementById('btn-location').addEventListener('click', function() {
     // Vorherigen Listener entfernen, falls Button erneut geklickt wird bevor GPS antwortet
     if (locationListenerKey) {
         unByKey(locationListenerKey);

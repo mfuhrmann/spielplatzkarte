@@ -5,7 +5,6 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Popover, Toast } from 'bootstrap';
 
-import $ from 'jquery';
 import '../css/style.css';
 import { Map, View } from 'ol';
 import { Image as ImageLayer, Tile as TileLayer, Vector as VectorLayer } from 'ol/layer.js';
@@ -162,7 +161,7 @@ const mousePositionControl = new MousePosition({
     coordinateFormat: customCoordinateFormat,
     projection: 'EPSG:4326',
     className: 'custom-mouse-position',
-    target: $('#mouse-position')[0],
+    target: document.getElementById('mouse-position'),
 });
 
 function customCoordinateFormat(coordinate) {
@@ -191,7 +190,7 @@ const view = new View({
 });
 
 var popup = new Overlay({
-    element: $('#popup')[0]
+    element: document.getElementById('popup')
 });
 
 map = new Map({
@@ -209,13 +208,15 @@ map = new Map({
 
 export default map;
 
+const mapEl = document.getElementById('map');
+
 // Push notifications
 //--------------------
 const toast = document.getElementById('toast');
 const toastBootstrap = Toast.getOrCreateInstance(toast);
 
 export function showNotification(message) {
-    $("#toast-text").html(message);
+    document.getElementById('toast-text').innerHTML = message;
     toastBootstrap.show();
 }
 
@@ -274,16 +275,16 @@ map.on('pointermove', function(evt) {
     }
 
     // Prüfen, ob sich Mauszeiger innerhalb eines selektierten Spielplatzes befindet, um Cursor zu ändern
-    if (cursorInSelection(coordinate) && !evt.dragging && !$('#map')[0].classList.contains('grabbing')) {
-        $('#map')[0].classList.remove('grab');
-        $('#map')[0].classList.remove('grabbing');
-        $('#map')[0].classList.add('info');
+    if (cursorInSelection(coordinate) && !evt.dragging && !mapEl.classList.contains('grabbing')) {
+        mapEl.classList.remove('grab');
+        mapEl.classList.remove('grabbing');
+        mapEl.classList.add('info');
     } else {
-        $('#map')[0].classList.remove('info');
+        mapEl.classList.remove('info');
         if (evt.dragging) {
-            $('#map')[0].classList.add('grabbing');
+            mapEl.classList.add('grabbing');
         } else {
-            $('#map')[0].classList.add('grab');
+            mapEl.classList.add('grab');
         }
     }
 
@@ -389,23 +390,23 @@ map.on('moveend', function() {
 
 // Steuerung der Maus-Cursor auf der Hauptkarte
 map.on('pointerdown', function() {
-    $('#map')[0].classList.remove('grab');
-    $('#map')[0].classList.remove('info');
-    $('#map')[0].classList.add('grabbing');
+    mapEl.classList.remove('grab');
+    mapEl.classList.remove('info');
+    mapEl.classList.add('grabbing');
 });
   
 map.on('pointerup', function(evt) {
-    $('#map')[0].classList.remove('grabbing');
+    mapEl.classList.remove('grabbing');
     if (cursorInSelection(evt.coordinate)) {
-        $('#map')[0].classList.add('info');
+        mapEl.classList.add('info');
     } else {
-        $('#map')[0].classList.add('grab');
+        mapEl.classList.add('grab');
     }
 });
 
 map.on('pointerout', function() {
-    $('#map')[0].classList.remove('grabbing');
-    $('#map')[0].classList.add('grab');
+    mapEl.classList.remove('grabbing');
+    mapEl.classList.add('grab');
 });
 
 // Prüfen, ob sich Mauszeiger innerhalb eines selektierten Spielplatzes befindet
@@ -433,6 +434,6 @@ export function getMapScale() {
 // Layerauswahl - Dropdown mit verfügbaren Basemaps füllen
 
 // Klick auf Koordinaten dient als Debugging-Testbutton
-$('#mouse-position').on('click', function() {
+document.getElementById('mouse-position').addEventListener('click', function() {
     console.log(`Zoomstufe: ${map.getView().getZoom()}\nKartenmaßstab: ${getMapScale()}\nKartengröße: ${map.getSize()} Pixel\nAusdehnung der Auswahl: ${getSelectionExtent()} (${transformExtent(getSelectionExtent(), 'EPSG:3857', 'EPSG:4326')})`);
 });

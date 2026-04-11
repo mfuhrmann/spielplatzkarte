@@ -1,5 +1,3 @@
-import $ from 'jquery';
-
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../css/bootstrap_custom.css';
 import { Modal } from 'bootstrap';
@@ -43,8 +41,7 @@ const DEFAULT_PLAYGROUND_WIKI_URL = 'https://wiki.openstreetmap.org/wiki/DE:Tag:
     // Seitenname aus Konfiguration setzen
     const appTitle = `${region.name}er Spielplatzkarte`;
     document.title = appTitle;
-    $('.navbar-brand b').text(appTitle);
-    $('#app-version').text(`v${version}`);
+    document.getElementById('app-version').textContent = `v${version}`;
 
     buildDatenErgaenzenModal(region.name);
     buildUeberModal();
@@ -77,7 +74,7 @@ function buildDatenErgaenzenModal(regionName) {
         <a href="${regionChatUrl}" class="link-secondary" target="_blank" rel="noopener">lokalen OSM-Community-Chat</a>.</p>`;
     }
 
-    $('#modalDatenErgaenzen .modal-body').html(html);
+    document.querySelector('#modalDatenErgaenzen .modal-body').innerHTML = html;
 }
 
 // "Über das Projekt"-Modal dynamisch befüllen
@@ -106,7 +103,7 @@ function buildUeberModal() {
 
     html += `<p class="mt-3 mb-0" style="font-size:11px; color:#9ca3af;">Version ${version}</p>`;
 
-    $('#modalUeberDasProjekt .modal-body').html(html);
+    document.querySelector('#modalUeberDasProjekt .modal-body').innerHTML = html;
 }
 
 // Schieberegler der Schattenberechnung auf aktuelles Datum setzen
