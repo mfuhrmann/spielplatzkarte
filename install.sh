@@ -198,8 +198,8 @@ fi
 
 printf "\n${GREEN}${BOLD}Done!${RESET}\n\n"
 printf "  App:    ${CYAN}http://localhost:${APP_PORT}${RESET}\n"
-printf "  Dir:    ${CYAN}%s${RESET}\n\n" "$(realpath "$DEPLOY_DIR")"
-printf "Useful commands (run from ${CYAN}%s${RESET}):\n" "$DEPLOY_DIR"
+printf "  Dir:    ${CYAN}%s${RESET}\n\n" "$(cd "$DEPLOY_DIR" && pwd)"
+printf "Useful commands (run from ${CYAN}%s${RESET}):\n" "$(cd "$DEPLOY_DIR" && pwd)"
 printf "  docker compose up -d                   # start the stack\n"
 printf "  docker compose down                    # stop the stack\n"
 printf "  docker compose run --rm importer       # re-import OSM data\n"
