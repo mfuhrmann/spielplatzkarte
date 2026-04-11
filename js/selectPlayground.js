@@ -805,6 +805,12 @@ export function checkZoomDeselection() {
     }
 }
 
+// Spielplatz abwählen (z. B. per ESC) und URL-Hash leeren
+export function clearSelection() {
+    removeSelection(true);
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+}
+
 // Spielplatzauswahl aufheben und seine Attribute im Infofenster ausblenden
 function removeSelection(clearSource) {
     removeLayer('equipment');
@@ -842,20 +848,11 @@ export function getSelectionExtent(padding) {
     if (sourceSelected) {
         var extent = sourceSelected.getExtent();
 
-        // Hinter dem Infobereich ist ebenfalls noch Karte – Selektion soll jedoch im Bereich neben dem Infofenster zentriert werden
-        // also Extent rechts um den relativen Anteil des Infofensters an der Kartengröße erweitern
-        // TODO Responsiv gestalten/an schmale Bildschirme anpassen
-        var mapWidth = map.getSize()[0];
-        var infoWidth = el('info').offsetWidth;
-        var overhangPercent = infoWidth / mapWidth;
-        var overhangExtent = (extent[2] - extent[0]) * overhangPercent;
-        extent = [extent[0] + overhangExtent / 2, extent[1], extent[2] + overhangExtent, extent[3]];
-
         // als Parameter kann ein Wert in Metern übergeben werden, der um die Spielplatzgeometrie herum zum Kartenrand den Extent vergrößert
         // (um die Auswahl mittig zu halten/nicht die ganze Karte auszufüllen)
         if (padding) {
             extent = [extent[0] - padding, extent[1] - padding, extent[2] + padding, extent[3] + padding];
-        }        
+        }
         return extent;
     } else {
         return false;

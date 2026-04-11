@@ -30,8 +30,9 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 - Add photos and equipment directly via [MapComplete](https://mapcomplete.org/playgrounds)
 
 **Navigation & UX**
-- Location search via [Nominatim](https://nominatim.openstreetmap.org) with nearby playground suggestions
+- Location search via [Nominatim](https://nominatim.openstreetmap.org) with nearby playground suggestions — focus with **Double-Shift**
 - Geolocation: show nearest playgrounds to current position
+- **ESC** deselects the active playground and clears the URL hash
 - Responsive layout: desktop (left sidebar card) and mobile (swipeable bottom sheet with drag-to-close)
 
 ---

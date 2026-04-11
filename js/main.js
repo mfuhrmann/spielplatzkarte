@@ -20,7 +20,7 @@ import { showLocation, hideLocation } from './locate.js';
 import { searchLocation } from './search.js';
 import { osmRelationId, regionPlaygroundWikiUrl, regionChatUrl } from './config.js';
 import { fetchRegionInfo } from './region.js';
-import { restoreFromHash } from './selectPlayground.js';
+import { restoreFromHash, clearSelection } from './selectPlayground.js';
 import { version } from '../package.json';
 
 const projectAuthorOsmUrl = 'https://www.openstreetmap.org/user/Supaplex030/';
@@ -113,6 +113,23 @@ setCurrentDate();
 // Also handles hash changes when embedded as iframe in Spielplatzkarte Hub.
 restoreFromHash();
 window.addEventListener('hashchange', restoreFromHash);
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') clearSelection();
+});
+
+// Double-Shift → focus search box
+let lastShift = 0;
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Shift') { lastShift = 0; return; }
+    const now = Date.now();
+    if (now - lastShift < 500) {
+        document.getElementById('inputSearch').select();
+        lastShift = 0;
+    } else {
+        lastShift = now;
+    }
+});
 
 // TODO Bekannte Bugs:
 // - Sind nach Selektion eines Spielplatzes Spielplatzausstattungslayer geladen und bewegt man die Karte oder zoomt man heraus (auf einen Wert < Zoomstufe ~20,5), werden die Features mehrfach eingeladen
