@@ -142,9 +142,12 @@ export function selectPlayground(coord, distance, multiSelect, feature = null) {
             duration = Math.min(Math.max(duration, 0), 3000); // sicherheitshalber Extremwerte abfangen
 
             // zum Spielplatz zoomen
+            // Padding left = info panel width so the playground centres in the visible map area
+            const infoPanelWidth = document.getElementById('info')?.offsetWidth ?? 0;
             map.getView().fit(extent, {
                 size: map.getSize(),
                 duration: duration,
+                padding: [20, 20, 20, infoPanelWidth + 20],
                 callback: function() {
                     // nach Abschluss der Zoom-Animation Spielplatzgeometrie anzeigen
                     showSelection(getSelectionCenter(), geojson);
