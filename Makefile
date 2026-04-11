@@ -1,57 +1,63 @@
 .PHONY: install dev build serve \
-        up down import db-apply db-shell \
-        docker-build check-node check-docker help
+        up down import docker-build db-apply db-shell \
+        require-npm require-docker help
 
-# ── Dependency checks ─────────────────────────────────────────────────────────
+# Bail with a clear message when a required tool is missing.
+define require
+@command -v $(1) >/dev/null 2>&1 || \
+  { printf '\033[31merror:\033[0m %s is required but not found in PATH\n' '$(1)' >&2; exit 1; }
+endef
 
-check-node:
-	@command -v node >/dev/null 2>&1 || { echo "Error: node is not installed (https://nodejs.org/)"; exit 1; }
-	@command -v npm  >/dev/null 2>&1 || { echo "Error: npm is not installed"; exit 1; }
+require-npm:
+	$(call require,node)
+	$(call require,npm)
 
-check-docker:
-	@command -v docker >/dev/null 2>&1 || { echo "Error: docker is not installed (https://docs.docker.com/get-docker/)"; exit 1; }
-	@docker compose version >/dev/null 2>&1 || { echo "Error: docker compose plugin is not available"; exit 1; }
-	@docker info >/dev/null 2>&1         || { echo "Error: docker daemon is not running"; exit 1; }
+require-docker:
+	$(call require,docker)
+	@docker compose version >/dev/null 2>&1 || \
+	  { printf '\033[31merror:\033[0m docker compose plugin is not available\n' >&2; exit 1; }
+	@docker info >/dev/null 2>&1 || \
+	  { printf '\033[31merror:\033[0m docker daemon is not running\n' >&2; exit 1; }
 
-# ── Frontend ──────────────────────────────────────────────────────────────────
+## ── Frontend ──────────────────────────────────────────────────────────────────
 
-install: check-node    ## Install Node dependencies
+install: require-npm      ## Install Node dependencies
 	npm ci
 
-dev: check-node        ## Start Vite dev server (hot-reload at http://localhost:5173)
+dev: require-npm          ## Start Vite dev server at http://localhost:5173
 	npm start
 
-build: check-node      ## Production build → dist/
+build: require-npm        ## Production build → dist/
 	npm run build
 
-serve: check-node      ## Preview the production build locally
+serve: require-npm        ## Preview production build locally
 	npm run serve
 
-# ── Docker Compose stack ──────────────────────────────────────────────────────
+## ── Docker Compose stack ──────────────────────────────────────────────────────
 
-up: check-docker           ## Start db + PostgREST + nginx (detached)
+up: require-docker        ## Start db + PostgREST + nginx (detached)
 	docker compose up -d
 
-down: check-docker         ## Stop and remove containers
+down: require-docker      ## Stop and remove containers
 	docker compose down
 
-import: check-docker       ## Download PBF and import OSM data into PostGIS (run once or to refresh)
+import: require-docker    ## Download PBF and import OSM data into PostGIS (run once or to refresh)
 	docker compose run --rm importer
 
-docker-build: check-docker ## Rebuild and restart the nginx/app container after frontend changes
+docker-build: require-docker  ## Rebuild and restart the nginx/app container after frontend changes
 	docker compose up -d --build app
 
-# ── Database ──────────────────────────────────────────────────────────────────
+## ── Database ──────────────────────────────────────────────────────────────────
 
-db-apply: check-docker     ## Apply importer/api.sql to the running database and reload PostgREST schema
+db-apply: require-docker  ## Apply importer/api.sql to the running database and reload PostgREST schema
 	docker compose exec -T db psql -U osm -d osm < importer/api.sql
 	docker compose exec db psql -U osm -d osm -c "NOTIFY pgrst, 'reload schema';"
 
-db-shell: check-docker     ## Open a psql shell in the running database container
+db-shell: require-docker  ## Open a psql shell in the running database container
 	docker compose exec db psql -U osm -d osm
 
-# ── Help ──────────────────────────────────────────────────────────────────────
+## ── Help ──────────────────────────────────────────────────────────────────────
 
-help:          ## List available targets
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
-		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
+help:                     ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) \
+	  | awk 'BEGIN {FS = ":.*##"}; {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
