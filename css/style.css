@@ -78,6 +78,7 @@ ul {
     color: #9ca3af;
     font-size: 15px;
     flex-shrink: 0;
+    cursor: pointer;
 }
 
 .search-input {
@@ -289,6 +290,22 @@ ul {
 /* ===========================
    Device List (Ausstattung)
    =========================== */
+
+/* Übersicht-Zusammenfassung (Anzahl Geräte, Bänke …) */
+#info-equipment ul {
+    background: var(--bs-tertiary-bg);
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin-bottom: 0;
+    font-size: 0.875rem;
+}
+
+/* Trennlinie zwischen Übersicht und Einzelliste */
+#info-device-list:not(:empty) {
+    border-top: 1px solid var(--bs-border-color);
+    margin-top: 8px;
+    padding-top: 6px;
+}
 
 .device-list {
     list-style: none;

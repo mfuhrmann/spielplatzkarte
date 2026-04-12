@@ -1,6 +1,6 @@
 .PHONY: install dev build serve \
         up down import docker-build db-apply db-shell \
-        require-npm require-docker installer help
+        require-npm require-docker installer lan-url help
 
 # Bail with a clear message when a required tool is missing.
 define require
@@ -24,7 +24,7 @@ require-docker:
 install: require-npm      ## Install Node dependencies
 	npm ci
 
-dev: require-npm          ## Start Vite dev server at http://localhost:5173
+dev: require-npm          ## Start Vite dev server (localhost:5173 + LAN, see make lan-url)
 	npm start
 
 build: require-npm        ## Production build → dist/
@@ -60,6 +60,19 @@ db-shell: require-docker  ## Open a psql shell in the running database container
 
 installer: require-docker ## Run the interactive production installer (no git clone required)
 	bash install.sh
+
+## ── Local / mobile testing ────────────────────────────────────────────────────
+
+lan-url:                  ## Print the LAN URLs to open the app on a phone (same WiFi)
+	@LAN_IP=$$(hostname -I 2>/dev/null | awk '{print $$1}') && \
+	  APP_PORT=$${APP_PORT:-8080} && \
+	  if [ -z "$$LAN_IP" ]; then \
+	    printf '\n  \033[33mCould not detect LAN IP.\033[0m Run: ip route get 1 | awk '"'"'{print $$7; exit}'"'"'\n\n'; \
+	  else \
+	    printf '\n  \033[36mLAN IP:\033[0m            %s\n' "$$LAN_IP" && \
+	    printf '  \033[36mVite dev server:\033[0m   http://%s:5173\n' "$$LAN_IP" && \
+	    printf '  \033[36mDocker stack:\033[0m      http://%s:%s\n\n' "$$LAN_IP" "$$APP_PORT"; \
+	  fi
 
 ## ── Help ──────────────────────────────────────────────────────────────────────
 
