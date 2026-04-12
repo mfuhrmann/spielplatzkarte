@@ -283,6 +283,25 @@ SQL changes to `importer/api.sql` (PostgREST functions, indexes) can be applied 
 make db-apply
 ```
 
+### Testing on a phone / LAN access
+
+To open the app on a phone or any other device on the same WiFi network:
+
+```bash
+make lan-url
+```
+
+This prints your machine's LAN IP and the ready-to-use URLs, for example:
+
+```
+  LAN IP:            192.168.1.42
+  Vite dev server:   http://192.168.1.42:5173
+  Docker stack:      http://192.168.1.42:8080
+```
+
+- **Vite dev server** (`make dev`): already binds to all interfaces — open the printed URL on the phone. If it doesn't load, check that port 5173 is not blocked by a firewall on the host.
+- **Docker stack** (`make up`): binds to `0.0.0.0` by default, so `http://<LAN-IP>:8080` works immediately without any extra configuration.
+
 ---
 
 ## License

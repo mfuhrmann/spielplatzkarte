@@ -41,6 +41,26 @@ make down              # stop all containers
 
 The importer is not started by `make up`. Run `make import` once before the app has any data.
 
+## Testing on mobile / LAN access
+
+To test the app on a phone (or any device on the same WiFi), run:
+
+```bash
+make lan-url
+```
+
+This prints your machine's LAN IP and the ready-to-use URLs:
+
+```
+  LAN IP:            192.168.1.42
+  Vite dev server:   http://192.168.1.42:5173
+  Docker stack:      http://192.168.1.42:8080
+```
+
+**Vite dev server** (`make dev`): binds to all interfaces automatically — open the printed Network URL on the phone. If the page doesn't load, check that port 5173 is not blocked by a firewall on the host.
+
+**Docker stack** (`make up`): already binds to `0.0.0.0` by default, so `http://<LAN-IP>:8080` (or `$APP_PORT`) works immediately without any extra config.
+
 ## Architecture
 
 ```
