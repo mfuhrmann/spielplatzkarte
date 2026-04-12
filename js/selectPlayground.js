@@ -1338,21 +1338,93 @@ function setPanelClosed() {
     document.body.classList.remove('sheet-expanded');
 }
 
-// Drag Handle: Peek → runter schließen / hoch = Vollbild; Vollbild → runter = Peek
-let dragSwipeStartY = 0;
-el('info-drag-handle').addEventListener('touchstart', e => {
-    dragSwipeStartY = e.touches[0].clientY;
-    e.preventDefault(); // prevent pull-to-refresh and scroll interference
-}, { passive: false });
-el('info-drag-handle').addEventListener('touchend', e => {
-    const deltaY = e.changedTouches[0].clientY - dragSwipeStartY;
+// ── Live-Drag mit Finger-Tracking ────────────────────────────────────────────
+const PEEK_HEIGHT = 108; // px — muss mit CSS übereinstimmen
+const PANEL_TRANSITION = 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
+
+let dragActive = false;
+let dragStartY = 0;
+let dragMode = null; // 'peek' | 'open'
+let dragPanelH = 0;
+
+function startPanelDrag(touchY, mode) {
     const info = el('info');
-    if (info.classList.contains('panel-peek')) {
-        if (deltaY > 40) clearSelection();
-        else if (deltaY < -40) setPanelOpen();
-    } else if (info.classList.contains('panel-open')) {
-        if (deltaY > 40) setPanelPeek();
+    dragPanelH = info.offsetHeight;
+    dragStartY = touchY;
+    dragMode = mode;
+    dragActive = true;
+    info.style.transition = 'none';
+}
+
+function movePanelDrag(touchY) {
+    if (!dragActive) return;
+    const dy = touchY - dragStartY;
+    let T;
+    if (dragMode === 'peek') {
+        T = (dragPanelH - PEEK_HEIGHT) + dy;
+        T = Math.max(0, Math.min(dragPanelH, T));
+    } else {
+        T = Math.max(0, Math.min(dragPanelH - PEEK_HEIGHT, dy));
     }
+    el('info').style.transform = `translateY(${T}px)`;
+}
+
+function endPanelDrag(touchY) {
+    if (!dragActive) return;
+    dragActive = false;
+    const info = el('info');
+    const dy = touchY - dragStartY;
+
+    let finalT, action;
+    if (dragMode === 'peek') {
+        if (dy < -40)      { finalT = 0;                        action = 'open';  }
+        else if (dy > 40)  { finalT = dragPanelH;               action = 'close'; }
+        else               { finalT = dragPanelH - PEEK_HEIGHT; action = 'peek';  }
+    } else {
+        if (dy > 40)  { finalT = dragPanelH - PEEK_HEIGHT; action = 'peek'; }
+        else          { finalT = 0;                         action = 'open'; }
+    }
+
+    info.style.transition = PANEL_TRANSITION;
+    info.style.transform = `translateY(${finalT}px)`;
+
+    info.addEventListener('transitionend', function onEnd() {
+        info.removeEventListener('transitionend', onEnd);
+        info.style.transition = '';
+        info.style.transform = '';
+        if (action === 'open')  setPanelOpen();
+        else if (action === 'peek') setPanelPeek();
+        else clearSelection();
+    }, { once: true });
+}
+
+function onDragMove(e) { movePanelDrag(e.touches[0].clientY); }
+function onDragEnd(e)  {
+    document.removeEventListener('touchmove', onDragMove);
+    document.removeEventListener('touchend',  onDragEnd);
+    endPanelDrag(e.changedTouches[0].clientY);
+}
+
+function attachDragListeners() {
+    document.addEventListener('touchmove', onDragMove, { passive: true });
+    document.addEventListener('touchend',  onDragEnd);
+}
+
+// Peek: ganzes Panel als Drag-Fläche
+el('info').addEventListener('touchstart', e => {
+    if (!el('info').classList.contains('panel-peek')) return;
+    startPanelDrag(e.touches[0].clientY, 'peek');
+    attachDragListeners();
+}, { passive: true });
+
+// Vollbild: Drag Handle und blauer Header als Drag-Fläche
+[el('info-drag-handle'), el('info-base')].forEach(target => {
+    target.addEventListener('touchstart', e => {
+        if (!el('info').classList.contains('panel-open')) return;
+        e.preventDefault();
+        startPanelDrag(e.touches[0].clientY, 'open');
+        attachDragListeners();
+    }, { passive: false });
 });
 
 // Tap auf Drag Handle: Peek → Vollbild; Vollbild → Peek
@@ -1360,34 +1432,6 @@ el('info-drag-handle').addEventListener('click', () => {
     const info = el('info');
     if (info.classList.contains('panel-peek')) setPanelOpen();
     else if (info.classList.contains('panel-open')) setPanelPeek();
-});
-
-// Wischen auf dem gesamten Panel im Peek-Modus (größere Zielfläche)
-let peekSwipeStartY = 0;
-el('info').addEventListener('touchstart', e => {
-    if (el('info').classList.contains('panel-peek')) {
-        peekSwipeStartY = e.touches[0].clientY;
-    }
-}, { passive: true });
-el('info').addEventListener('touchend', e => {
-    if (!el('info').classList.contains('panel-peek')) return;
-    const deltaY = e.changedTouches[0].clientY - peekSwipeStartY;
-    if (deltaY > 40) clearSelection();
-    else if (deltaY < -40) setPanelOpen();
-});
-
-// Wischen auf dem blauen Header im Vollbild-Modus (große Zielfläche, runter = Peek)
-let headerSwipeStartY = 0;
-el('info-base').addEventListener('touchstart', e => {
-    if (el('info').classList.contains('panel-open')) {
-        headerSwipeStartY = e.touches[0].clientY;
-        e.preventDefault();
-    }
-}, { passive: false });
-el('info-base').addEventListener('touchend', e => {
-    if (!el('info').classList.contains('panel-open')) return;
-    const deltaY = e.changedTouches[0].clientY - headerSwipeStartY;
-    if (deltaY > 40) setPanelPeek();
 });
 
 
