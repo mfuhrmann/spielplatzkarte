@@ -1345,27 +1345,32 @@ const PANEL_TRANSITION = 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
 let dragActive = false;
 let dragStartY = 0;
 let dragMode = null; // 'peek' | 'open'
-let dragPanelH = 0;
+const VH = () => window.innerHeight; // always full viewport height
 
 function startPanelDrag(touchY, mode) {
     const info = el('info');
-    dragPanelH = info.offsetHeight;
     dragStartY = touchY;
     dragMode = mode;
     dragActive = true;
     info.style.transition = 'none';
+
+    if (mode === 'peek') {
+        // Expand to full height so the panel can reach the top during drag
+        info.style.height = '100dvh';
+        info.style.maxHeight = '100dvh';
+        info.style.overflow = 'hidden';
+        // Lock the starting transform to the correct pixel position
+        info.style.transform = `translateY(${VH() - PEEK_HEIGHT}px)`;
+    } else {
+        info.style.transform = 'translateY(0)';
+    }
 }
 
 function movePanelDrag(touchY) {
     if (!dragActive) return;
     const dy = touchY - dragStartY;
-    let T;
-    if (dragMode === 'peek') {
-        T = (dragPanelH - PEEK_HEIGHT) + dy;
-        T = Math.max(0, Math.min(dragPanelH, T));
-    } else {
-        T = Math.max(0, Math.min(dragPanelH - PEEK_HEIGHT, dy));
-    }
+    const startT = dragMode === 'peek' ? VH() - PEEK_HEIGHT : 0;
+    const T = Math.max(0, Math.min(VH(), startT + dy));
     el('info').style.transform = `translateY(${T}px)`;
 }
 
@@ -1377,12 +1382,12 @@ function endPanelDrag(touchY) {
 
     let finalT, action;
     if (dragMode === 'peek') {
-        if (dy < -40)      { finalT = 0;                        action = 'open';  }
-        else if (dy > 40)  { finalT = dragPanelH;               action = 'close'; }
-        else               { finalT = dragPanelH - PEEK_HEIGHT; action = 'peek';  }
+        if (dy < -40)     { finalT = 0;               action = 'open';  }
+        else if (dy > 40) { finalT = VH();             action = 'close'; }
+        else              { finalT = VH() - PEEK_HEIGHT; action = 'peek'; }
     } else {
-        if (dy > 40)  { finalT = dragPanelH - PEEK_HEIGHT; action = 'peek'; }
-        else          { finalT = 0;                         action = 'open'; }
+        if (dy > 40)  { finalT = VH() - PEEK_HEIGHT; action = 'peek'; }
+        else          { finalT = 0;                   action = 'open'; }
     }
 
     info.style.transition = PANEL_TRANSITION;
@@ -1392,9 +1397,12 @@ function endPanelDrag(touchY) {
         info.removeEventListener('transitionend', onEnd);
         info.style.transition = '';
         info.style.transform = '';
-        if (action === 'open')  setPanelOpen();
+        info.style.height = '';
+        info.style.maxHeight = '';
+        info.style.overflow = '';
+        if (action === 'open')      setPanelOpen();
         else if (action === 'peek') setPanelPeek();
-        else clearSelection();
+        else                        clearSelection();
     }, { once: true });
 }
 
