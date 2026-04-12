@@ -1335,20 +1335,19 @@ function setPanelClosed() {
     document.body.classList.remove('sheet-expanded');
 }
 
-// Wischen auf dem Drag Handle
+// Wischen auf dem Drag Handle (nur im Peek-Modus aktiv)
 let swipeTouchStartY = 0;
-el('info-drag-handle').addEventListener('touchstart', e => { swipeTouchStartY = e.touches[0].clientY; });
+el('info-drag-handle').addEventListener('touchstart', e => {
+    swipeTouchStartY = e.touches[0].clientY;
+    e.preventDefault(); // prevent pull-to-refresh
+}, { passive: false });
 el('info-drag-handle').addEventListener('touchend', e => {
     const deltaY = e.changedTouches[0].clientY - swipeTouchStartY;
     const info = el('info');
-    if (deltaY > 60) {
-        if (info.classList.contains('panel-open')) {
-            setPanelPeek();
-        } else if (info.classList.contains('panel-peek')) {
+    if (info.classList.contains('panel-peek')) {
+        if (deltaY > 40) {
             clearSelection();
-        }
-    } else if (deltaY < -60) {
-        if (info.classList.contains('panel-peek')) {
+        } else if (deltaY < -40) {
             setPanelOpen();
         }
     }

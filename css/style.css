@@ -574,13 +574,25 @@ ul {
         overflow-y: auto;
     }
 
+    /* Sticky header in full-screen so X button is always reachable */
+    #info.panel-open #info-base {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    /* Hide drag handle in full-screen — X button is the close action */
+    #info.panel-open #info-drag-handle {
+        display: none;
+    }
+
     /* Hide search bar and FABs when panel is full-screen */
     body.sheet-expanded #search-bar,
     body.sheet-expanded #map-fabs {
         display: none !important;
     }
 
-    /* Drag handle visible on mobile */
+    /* Drag handle visible on mobile (peek state only) */
     #info-drag-handle {
         display: block;
         width: 36px;
