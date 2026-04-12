@@ -68,18 +68,11 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
                    requests)                                            │
                   └─────────────────────────────────────────────────────┘
 
-                  ┌─────────────────────────────────────────────────────┐
-                  │              Local dev (no database needed)         │
-                  │                                                     │
-  Browser ──────► Vite dev server ──────► Overpass API (internet)      │
-                  (serves JS with          (live OSM query,            │
-                   hot-reload)             slower but zero setup)      │
-                  └─────────────────────────────────────────────────────┘
 ```
 
 **In production**, your browser loads the app from nginx. When it needs playground data, it calls `/api/`, which nginx forwards to PostgREST. PostgREST runs a SQL function in PostgreSQL and returns the results as JSON — no custom server code needed. The database was pre-loaded with OpenStreetMap data by the osm2pgsql importer (a one-time step that you re-run whenever you want fresh data).
 
-**During local development**, you skip the database entirely. The Vite dev server serves the JavaScript with hot-reload, and the app falls back to the Overpass API — a live query service for OpenStreetMap data. This is slower than the database but means you can start hacking on the frontend without setting up PostgreSQL.
+**During local development**, the Vite dev server serves the JavaScript with instant hot-reload. The Docker stack (database + PostgREST + nginx) still needs to be running in the background to provide the API — `make up` handles this.
 
 ---
 
@@ -121,7 +114,7 @@ These are the tools and concepts you'll encounter when working on this project. 
 | **PostgREST** | A server that automatically turns your PostgreSQL database into a REST API. Instead of writing server-side code, you write SQL functions and PostgREST exposes them as HTTP endpoints. |
 | **OpenLayers** | A JavaScript library for interactive maps. It handles rendering the map tiles, drawing the playground polygons, and responding to clicks. |
 | **i18next** | A JavaScript library for internationalisation (i18n). It loads the translation files from `locales/*.json` and swaps in the right string for the user's language. |
-| **Overpass API** | A read-only query service for OpenStreetMap data, available on the internet. The app uses it as a fallback during local development so you don't need a database running. |
+| **Overpass Turbo** | A web tool ([overpass-turbo.eu](https://overpass-turbo.eu)) for running ad-hoc queries against OpenStreetMap data. Useful for finding playgrounds with a specific device when testing your changes. |
 
 ---
 
@@ -239,7 +232,7 @@ make up           # start db + PostgREST + nginx (required backend)
 make dev          # dev server with hot-reload at http://localhost:5173
 ```
 
-> **Note:** `make dev` starts the Vite dev server, which serves the JS with instant hot-reload. It still needs the Docker stack running for the API. If you don't want to run Docker at all, the app will fall back to Overpass for playground data — but this is slower and has rate limits.
+> **Note:** `make dev` starts the Vite dev server, which serves the JS with instant hot-reload. The Docker stack (`make up`) must be running alongside it to provide the API — the app requires a live PostgREST backend.
 
 ### Rebuild the app container after code changes
 
@@ -330,7 +323,7 @@ make dev
 
 Open the app at `http://localhost:5173`, navigate to a playground that has the device you added (search for a street near such a playground, then click it), and expand the device's entry in the equipment list. You should see the German name, the example image, and any attributes.
 
-If you don't know a playground with that device, you can check [openstreetmap.org](https://openstreetmap.org) by searching `playground=balance_beam` in Overpass Turbo: [overpass-turbo.eu](https://overpass-turbo.eu).
+If you don't know a playground with that device, you can find one using [Overpass Turbo](https://overpass-turbo.eu) — search for `playground=balance_beam` (replace with your tag value) to locate playgrounds that have it mapped.
 
 ### Step 5 — Commit and open a PR
 
@@ -448,7 +441,7 @@ If the database shows as unhealthy, try `make down && make up` to restart it cle
 
 1. **Import not run:** Did you run `make import` after starting the stack? Playground data is not loaded automatically.
 2. **Wrong relation ID:** Check `OSM_RELATION_ID` in your `.env`. An incorrect ID means the app filters out all playgrounds. Verify your ID at [nominatim.openstreetmap.org](https://nominatim.openstreetmap.org).
-3. **Overpass timeout (dev mode only):** If you're running `make dev` without the Docker stack, the app queries Overpass, which can be slow or temporarily unavailable. Wait a moment and reload.
+3. **Docker stack not running:** The app requires the PostgREST backend. Make sure `make up` is running and healthy before starting `make dev`.
 4. **Browser cache:** Try a hard reload: `Ctrl+Shift+R` (Windows/Linux) or `Cmd+Shift+R` (Mac).
 
 ---
