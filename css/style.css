@@ -574,29 +574,23 @@ ul {
         overflow-y: auto;
     }
 
-    /* Drag handle + header form one continuous sticky blue block in full-screen */
+    /* Drag handle in full-screen: sticky, no color, minimal height */
     #info.panel-open #info-drag-handle {
         position: sticky;
         top: 0;
         z-index: 2;
-        background: var(--bs-primary);
-        padding-bottom: 0;
-        margin-bottom: 0;
-    }
-
-    #info.panel-open #info-drag-handle::before {
-        background: rgba(255, 255, 255, 0.5);
+        padding: 6px 0 4px;
+        background: #fff;
     }
 
     #info.panel-open #info-drag-handle .bi-chevron-compact-up {
         transform: rotate(180deg);
-        color: rgba(255, 255, 255, 0.7);
     }
 
     /* Header sticks just below the drag handle */
     #info.panel-open #info-base {
         position: sticky;
-        top: 38px;
+        top: 34px;
         z-index: 1;
     }
 
