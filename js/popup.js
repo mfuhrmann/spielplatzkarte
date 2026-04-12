@@ -469,16 +469,44 @@ function getEquipmentAttributes (feature) {
         contentHtml += "</ul>";
     }
 
+    const leisure = feature.get('leisure');
+    const osmTypeMap = { N: 'node', W: 'way', R: 'relation' };
+    const osmType = osmTypeMap[feature.get('osm_type')] || 'node';
+    const osmId = feature.get('osm_id');
+    const mapCompleteTheme = (leisure === 'fitness_station' || leisure === 'pitch') ? 'sports' : 'playgrounds';
+    const mapCompleteUrl = `https://mapcomplete.org/${mapCompleteTheme}.html` + (osmId ? `#${osmType}/${osmId}` : '');
+    const addPhotoLink = `<p class="mb-0 mt-1"><a href="${mapCompleteUrl}" target="_blank" rel="noopener" style="font-size:0.75rem;"><span class="bi bi-camera-fill"></span> Foto hinzufügen</a></p>`;
+
     // Kein Panoramax, kein Inhalt: Vorschaubild des Geräts aus Wikimedia Commons anzeigen
     if (!contentHtml) {
         const deviceKey = feature.get('playground');
+        const sportRaw = feature.get('sport');
+        const onerror = `if(this.dataset.fallback){this.src=this.dataset.fallback;delete this.dataset.fallback}else{this.parentElement.style.display='none'}`;
+
         if (deviceKey && deviceKey in objDevices && objDevices[deviceKey].image) {
             const imgFile = objDevices[deviceKey].image.replace(/^File:/, '').replace(/ /g, '_');
-            const imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800`;
-            contentHtml = `<img src="${imgUrl}" alt="${objDevices[deviceKey].name_de}"
-                style="object-fit:contain;">` +
-                `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> Symbolbild</p>`;
+            const commonsUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800`;
+            const osmWikiUrl = `https://wiki.openstreetmap.org/wiki/Special:FilePath/${imgFile}`;
+            contentHtml = `<div class="device-img-wrap">` +
+                `<img src="${commonsUrl}" data-fallback="${osmWikiUrl}" alt="${objDevices[deviceKey].name_de}" style="object-fit:contain;" onerror="${onerror}">` +
+                `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> Symbolbild</p>` +
+                `</div>`;
         }
+
+        // Sportfelder (leisure=pitch): sportartspezifisches Symbolbild anzeigen
+        if (leisure === 'pitch' && sportRaw && sportRaw in pitchImages) {
+            const imgFile = pitchImages[sportRaw].replace(/^File:/, '').replace(/ /g, '_');
+            const commonsUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800`;
+            const osmWikiUrl = `https://wiki.openstreetmap.org/wiki/Special:FilePath/${imgFile}`;
+            contentHtml = `<div class="device-img-wrap">` +
+                `<img src="${commonsUrl}" data-fallback="${osmWikiUrl}" alt="${sportRaw}" style="object-fit:contain;" onerror="${onerror}">` +
+                `</div>`;
+        }
+    }
+
+    // Foto-hinzufügen-Link anzeigen wenn kein eigenes Panoramax-Foto vorhanden
+    if (!panoramaxUuid) {
+        contentHtml += addPhotoLink;
     }
 
     return contentHtml;
@@ -694,6 +722,27 @@ const objIssueFeatures = {
     tree: "Baum",
     building: "Gebäude",
 }
+
+// Symbolbilder für Sportfelder (leisure=pitch) nach sport=* — Wikimedia-Commons-Dateinamen
+const pitchImages = {
+    soccer:          'File:Association football pitch imperial.svg',
+    basketball:      'File:Basketball court dimensions in meters.svg',
+    table_tennis:    'File:Table tennis table blue.jpg',
+    volleyball:      'File:Volleyball court with dimensions.svg',
+    tennis:          'File:Hard tennis court 1.jpg',
+    handball:        'File:Handball court metric.svg',
+    badminton:       'File:Badminton court 8shuttle.svg',
+    hockey:          'File:Field Hockey Pitch Dimensions.svg',
+    field_hockey:    'File:Field Hockey Pitch Dimensions.svg',
+    boules:          'File:Boules-coloured.jpg',
+    petanque:        'File:Boules-coloured.jpg',
+    multi:           'File:Multi-use games area.jpg',
+    skateboard:      'File:Skatepark Vienna Praterstern 2015.jpg',
+    bmx:             'File:BMX track Canberra.jpg',
+    athletics:       'File:Athletics track.jpg',
+    beachvolleyball: 'File:BeachvolleyballAthens04.jpg',
+    climbing:        'File:Outdoor bouldering wall.jpg',
+};
 
 // Icons für Datenprobleme
 const objIssueIcons = {
