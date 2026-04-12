@@ -2,9 +2,10 @@
 set -e
 
 # Sanitize string env vars that are interpolated directly into a JS string literal.
-# Only characters valid in an origin (scheme, host, port) are allowed; everything
+# Only characters valid in their respective value types are allowed; everything
 # else is stripped to prevent single-quote breakout / code injection.
-SAFE_PARENT_ORIGIN=$(printf '%s' "${PARENT_ORIGIN:-}" | tr -cd 'A-Za-z0-9:/.+-')
+SAFE_PARENT_ORIGIN=$(printf '%s' "${PARENT_ORIGIN:-}"  | tr -cd 'A-Za-z0-9:/.+-')
+SAFE_API_BASE_URL=$(printf '%s'  "${API_BASE_URL:-}"   | tr -cd 'A-Za-z0-9:/.+_%~-')
 
 cat > /usr/share/nginx/html/config.js << JSEOF
 window.APP_CONFIG = {
@@ -14,7 +15,7 @@ window.APP_CONFIG = {
   mapZoom: ${MAP_ZOOM:-12},
   mapMinZoom: ${MAP_MIN_ZOOM:-10},
   poiRadiusM: ${POI_RADIUS_M:-5000},
-  apiBaseUrl: '${API_BASE_URL:-}', // TODO: API_BASE_URL is interpolated raw — same injection risk as PARENT_ORIGIN was; sanitize in a follow-up
+  apiBaseUrl: '${SAFE_API_BASE_URL}',
   parentOrigin: '${SAFE_PARENT_ORIGIN}'
 };
 JSEOF
