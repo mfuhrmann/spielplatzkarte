@@ -1281,9 +1281,12 @@ function showAttributes(visibility) {
         hide('info-base');
         hide('info-accordion');
 
-        // Bottom sheet auf mobil wieder einfahren — aber offen lassen wenn die Nähe-Liste noch Inhalt hat
-        if (!el('info-more').firstChild) {
-            setPanelClosed();
+        // Bottom sheet auf mobil einfahren; offen lassen nur wenn die Nähe-Liste aktiv ist
+        if (window.innerWidth <= 768) {
+            const hasNearbyList = el('info-more').querySelector('.nearby-panel');
+            if (!hasNearbyList) setPanelClosed();
+        } else {
+            el('info').classList.remove('panel-open');
         }
 
         // Bildergalerie leeren und ausblenden (falls vorhanden)
@@ -1335,7 +1338,7 @@ function setPanelClosed() {
     document.body.classList.remove('sheet-expanded');
 }
 
-// Wischen auf dem Drag Handle (nur im Peek-Modus aktiv)
+// Wischen auf dem Drag Handle (Peek-Modus: runter = schließen, hoch = Vollbild)
 let swipeTouchStartY = 0;
 el('info-drag-handle').addEventListener('touchstart', e => {
     swipeTouchStartY = e.touches[0].clientY;
@@ -1343,13 +1346,21 @@ el('info-drag-handle').addEventListener('touchstart', e => {
 }, { passive: false });
 el('info-drag-handle').addEventListener('touchend', e => {
     const deltaY = e.changedTouches[0].clientY - swipeTouchStartY;
-    const info = el('info');
-    if (info.classList.contains('panel-peek')) {
-        if (deltaY > 40) {
-            clearSelection();
-        } else if (deltaY < -40) {
-            setPanelOpen();
-        }
+    if (el('info').classList.contains('panel-peek')) {
+        if (deltaY > 40) clearSelection();
+        else if (deltaY < -40) setPanelOpen();
+    }
+});
+
+// Wischen auf dem sticky Header (Vollbild-Modus: runter = zurück zu Peek)
+let headerSwipeStartY = 0;
+el('info-base').addEventListener('touchstart', e => {
+    headerSwipeStartY = e.touches[0].clientY;
+}, { passive: true });
+el('info-base').addEventListener('touchend', e => {
+    const deltaY = e.changedTouches[0].clientY - headerSwipeStartY;
+    if (el('info').classList.contains('panel-open') && deltaY > 40) {
+        setPanelPeek();
     }
 });
 
