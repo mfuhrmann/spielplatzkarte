@@ -472,20 +472,33 @@ function getEquipmentAttributes (feature) {
     // Kein Panoramax, kein Inhalt: Vorschaubild des Geräts aus Wikimedia Commons anzeigen
     if (!contentHtml) {
         const deviceKey = feature.get('playground');
+        const leisure = feature.get('leisure');
+        const sport = feature.get('sport');
+        const osmTypeMap = { N: 'node', W: 'way', R: 'relation' };
+        const osmType = osmTypeMap[feature.get('osm_type')] || 'node';
+        const osmId = feature.get('osm_id');
+        const mapCompleteTheme = (leisure === 'fitness_station' || leisure === 'pitch') ? 'sports' : 'playgrounds';
+        const mapCompleteUrl = `https://mapcomplete.org/${mapCompleteTheme}.html` + (osmId ? `#${osmType}/${osmId}` : '');
+        const addPhotoLink = `<p class="mb-0 mt-1"><a href="${mapCompleteUrl}" target="_blank" rel="noopener" style="font-size:0.75rem;"><span class="bi bi-camera-fill"></span> Foto hinzufügen</a></p>`;
+
         if (deviceKey && deviceKey in objDevices && objDevices[deviceKey].image) {
             const imgFile = objDevices[deviceKey].image.replace(/^File:/, '').replace(/ /g, '_');
             const imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800`;
-            contentHtml = `<img src="${imgUrl}" alt="${objDevices[deviceKey].name_de}"
-                style="object-fit:contain;">` +
-                `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> Symbolbild</p>`;
+            contentHtml = `<div class="device-img-wrap">` +
+                `<img src="${imgUrl}" alt="${objDevices[deviceKey].name_de}" style="object-fit:contain;" onerror="this.parentElement.style.display='none'">` +
+                `<p class="mb-0 text-muted" style="font-size:0.75rem;"><span class="bi bi-image"></span> Symbolbild</p>` +
+                `</div>` +
+                addPhotoLink;
         }
 
         // Sportfelder (leisure=pitch): sportartspezifisches Symbolbild anzeigen
-        const sport = feature.get('sport');
-        if (feature.get('leisure') === 'pitch' && sport && sport in pitchImages) {
+        if (leisure === 'pitch' && sport && sport in pitchImages) {
             const imgFile = pitchImages[sport].replace(/^File:/, '').replace(/ /g, '_');
             const imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800`;
-            contentHtml = `<img src="${imgUrl}" alt="${sport}" style="object-fit:contain;">`;
+            contentHtml = `<div class="device-img-wrap">` +
+                `<img src="${imgUrl}" alt="${sport}" style="object-fit:contain;" onerror="this.parentElement.style.display='none'">` +
+                `</div>` +
+                addPhotoLink;
         }
     }
 

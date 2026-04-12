@@ -22,7 +22,7 @@
 export const objDevices = {
     slide: {
         name_de: "Rutsche",
-        image: "File:Accessibleplay-Slide.jpg",
+        image: "File:Slide_in_Bhutan.jpg",
         category: "stationary",
         filterable: true,
         filter_attr: ["length", "height"],
@@ -217,7 +217,7 @@ export const objDevices = {
     },
     excavator: {
         name_de: "Spielbagger",
-        image: "File:Playground excavator, unpowered.jpg",
+        image: "File:Playground_digger_2,_Darland_Banks_-_geograph.org.uk_-_1588398.jpg",
         category: "sand",
         filterable: true,
     },
