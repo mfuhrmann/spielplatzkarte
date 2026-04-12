@@ -412,12 +412,7 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
         bocce:        ['Bocciabahn',          'Bocciabahnen'],
     };
 
-    // Pitches nach Sportart gruppieren
-    const pitchBySport = {};
-    for (const f of features.filter(f => f.properties.leisure === 'pitch')) {
-        const sport = f.properties.sport ?? '';
-        pitchBySport[sport] = (pitchBySport[sport] || 0) + 1;
-    }
+    const pitchFeatures = features.filter(f => f.properties.leisure === 'pitch');
 
     let equipment_str = '<ul>';
     if (deviceCount)  equipment_str += `<li>${t('equipment.devices',  { count: deviceCount  })}</li>`;
@@ -466,12 +461,23 @@ function updateEquipmentPanel(features, playgroundAttr = {}) {
             device_string += `<li><span style="color:${fitnessColor}">●</span> ${name}</li>`;
         }
     }
-    // Sportfelder (pitches) mit farbigem Punkt in die Geräteliste einreihen
+    // Sportfelder (pitches) einzeln auflisten — jedes als aufklappbares Element mit Details
     const pitchColor = objColors['fallback'];
-    for (const [sport, count] of Object.entries(pitchBySport)) {
-        const [singular, plural] = pitchLabels[sport] ?? ['Sportfeld', 'Sportfelder'];
-        const label = count === 1 ? singular : `${count}× ${plural}`;
-        device_string += `<li><span style="color:${pitchColor}">●</span> ${label}</li>`;
+    for (const f of pitchFeatures) {
+        const sport = f.properties.sport ?? '';
+        const [singular] = pitchLabels[sport]
+            ?? (sport ? [`Sportfeld (${sport})`, `Sportfelder (${sport})`] : ['Sportfeld', 'Sportfelder']);
+        const detail = getEquipmentAttributesFromProps(f.properties);
+        const uid = `dev-${f.properties.osm_id ?? Math.random().toString(36).slice(2)}`;
+        if (detail) {
+            device_string += `<li>` +
+                `<div class="device-toggle" data-bs-toggle="collapse" data-bs-target="#${uid}" role="button">` +
+                `<span style="color:${pitchColor}">●</span> ${singular}` +
+                ` <span class="bi bi-chevron-down device-chevron"></span></div>` +
+                `<div id="${uid}" class="collapse device-detail">${detail}</div></li>`;
+        } else {
+            device_string += `<li><span style="color:${pitchColor}">●</span> ${singular}</li>`;
+        }
     }
     device_string += '</ul>';
 

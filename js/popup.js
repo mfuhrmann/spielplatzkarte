@@ -477,6 +477,14 @@ function getEquipmentAttributes (feature) {
             contentHtml = `<img src="${imgUrl}" alt="${objDevices[deviceKey].name_de}"
                 style="object-fit:contain;">`;
         }
+
+        // Sportfelder (leisure=pitch): sportartspezifisches Symbolbild anzeigen
+        const sport = feature.get('sport');
+        if (feature.get('leisure') === 'pitch' && sport && sport in pitchImages) {
+            const imgFile = pitchImages[sport].replace(/^File:/, '').replace(/ /g, '_');
+            const imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgFile}?width=800`;
+            contentHtml = `<img src="${imgUrl}" alt="${sport}" style="object-fit:contain;">`;
+        }
     }
 
     return contentHtml;
@@ -692,6 +700,27 @@ const objIssueFeatures = {
     tree: "Baum",
     building: "Gebäude",
 }
+
+// Symbolbilder für Sportfelder (leisure=pitch) nach sport=* — Wikimedia-Commons-Dateinamen
+const pitchImages = {
+    soccer:          'File:Association football pitch imperial.svg',
+    basketball:      'File:Basketball court dimensions in meters.svg',
+    table_tennis:    'File:Table tennis table blue.jpg',
+    volleyball:      'File:Volleyball court with dimensions.svg',
+    tennis:          'File:Hard tennis court 1.jpg',
+    handball:        'File:Handball court metric.svg',
+    badminton:       'File:Badminton court 8shuttle.svg',
+    hockey:          'File:Field Hockey Pitch Dimensions.svg',
+    field_hockey:    'File:Field Hockey Pitch Dimensions.svg',
+    boules:          'File:Boules-coloured.jpg',
+    petanque:        'File:Boules-coloured.jpg',
+    multi:           'File:Multi-use games area.jpg',
+    skateboard:      'File:Skatepark Vienna Praterstern 2015.jpg',
+    bmx:             'File:BMX track Canberra.jpg',
+    athletics:       'File:Athletics track.jpg',
+    beachvolleyball: 'File:BeachvolleyballAthens04.jpg',
+    climbing:        'File:Outdoor bouldering wall.jpg',
+};
 
 // Icons für Datenprobleme
 const objIssueIcons = {
