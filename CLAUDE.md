@@ -10,6 +10,7 @@ Spielplatzkarte is an interactive web map for exploring playgrounds based on Ope
 
 - **Never push directly to `main`.** All changes go through a feature branch and a pull request.
 - **Never create branches or push to `upstream`** (`SupaplexOSM/spielplatzkarte`). Always work on `origin` (the fork: `mfuhrmann/spielplatzkarte`).
+- **Never create pull requests or issues on `upstream`** (`SupaplexOSM/spielplatzkarte`). All PRs and issues must be created on the fork (`mfuhrmann/spielplatzkarte`).
 - Branch naming: `<type>/<short-description>` (e.g. `feat/add-filter-panel`, `fix/popup-scroll`).
 - Use **Conventional Commits** for all commit messages: `<type>[optional scope]: <description>`. Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`, `build`, `revert`. Breaking changes: append `!` after type/scope or add a `BREAKING CHANGE:` footer.
 - Releases are cut from version tags (e.g. `v0.2.3`). The tag drives both the app version (read from `package.json` at build time) and the container image tag — keep all three in sync when releasing.
@@ -47,6 +48,49 @@ make down              # stop all containers
 ```
 
 The importer is not started by `make up`. Run `make import` once before the app has any data.
+
+## Automated weekly import (systemd)
+
+Ready-to-use systemd unit files live in `deploy/`. They run `docker compose run --rm importer` automatically once a week and catch missed runs on the next boot.
+
+**Prerequisites**
+
+- systemd must be available on the host (standard on most Linux servers)
+- The service user must be a member of the `docker` group
+
+**Install**
+
+```bash
+# 1. Copy the unit files
+sudo cp deploy/spielplatzkarte-import.service /etc/systemd/system/
+sudo cp deploy/spielplatzkarte-import.timer   /etc/systemd/system/
+
+# 2. Edit the service unit — set WorkingDirectory and EnvironmentFile to the
+#    actual deployment path, and uncomment + set User= to the deployment user
+sudo editor /etc/systemd/system/spielplatzkarte-import.service
+
+# 3. Reload and enable
+sudo systemctl daemon-reload
+sudo systemctl enable --now spielplatzkarte-import.timer
+
+# 4. Verify
+systemctl status spielplatzkarte-import.timer
+```
+
+The timer fires every Sunday at 00:00 local time. To use a different time, create a drop-in override:
+
+```bash
+sudo systemctl edit spielplatzkarte-import.timer
+# Add: [Timer]\nOnCalendar=Sun 03:00
+```
+
+**Disable / rollback**
+
+```bash
+sudo systemctl disable --now spielplatzkarte-import.timer
+sudo rm /etc/systemd/system/spielplatzkarte-import.{service,timer}
+sudo systemctl daemon-reload
+```
 
 ## Testing on mobile / LAN access
 
