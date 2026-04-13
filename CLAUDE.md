@@ -13,6 +13,13 @@ Spielplatzkarte is an interactive web map for exploring playgrounds based on Ope
 - Branch naming: `<type>/<short-description>` (e.g. `feat/add-filter-panel`, `fix/popup-scroll`).
 - Use **Conventional Commits** for all commit messages: `<type>[optional scope]: <description>`. Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`, `build`, `revert`. Breaking changes: append `!` after type/scope or add a `BREAKING CHANGE:` footer.
 - Releases are cut from version tags (e.g. `v0.2.3`). The tag drives both the app version (read from `package.json` at build time) and the container image tag — keep all three in sync when releasing.
+- **`main` always carries an `-rc` version.** The `version` field in `package.json` on `main` must always be one patch increment above the latest release tag and carry an `-rc` suffix (e.g. after releasing `v0.1.4` the branch version becomes `0.1.5-rc`). This version is what gets embedded in the `:rc` container image on every merge.
+
+### Release procedure
+
+1. **Bump version on `main`**: update `package.json` → remove `-rc`, e.g. `0.1.5-rc` → `0.1.5`. Commit: `chore: release v0.1.5`.
+2. **Tag**: `git tag v0.1.5 && git push origin v0.1.5`. The `build.yml` workflow publishes `:latest`, `:0.1.5`, and `:0.1` container images automatically.
+3. **Advance `main` to the next `-rc`**: update `package.json` → `0.1.6-rc`. Commit: `chore: bump version to 0.1.6-rc`.
 
 ## Development commands
 
