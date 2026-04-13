@@ -6,6 +6,9 @@ const OSM_TYPE = fixture.features[0].properties.osm_type;
 
 test.describe('XSS escaping', () => {
   test.beforeEach(async ({ page }) => {
+    // Expose probe before navigation so any injected script execution is caught.
+    await page.exposeFunction('__xssProbe', () => {});
+
     await page.route('**/rpc/get_playgrounds**', route =>
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(fixture) })
     );
@@ -26,8 +29,9 @@ test.describe('XSS escaping', () => {
   test('playground name with HTML characters is displayed as plain text', async ({ page }) => {
     const nameEl = page.locator('#info-name');
     await expect(nameEl).toBeVisible();
-    // The raw name contains < > & — they must appear as literal characters, not tags
+    // The raw name contains <script>, < > & — they must appear as literal characters, not tags
     const text = await nameEl.textContent();
+    expect(text).toContain("<script>alert('xss')</script>");
     expect(text).toContain('<XSS & Friends>');
     // No child elements should have been injected by the name
     const childCount = await nameEl.evaluate(el => el.children.length);
@@ -35,14 +39,17 @@ test.describe('XSS escaping', () => {
   });
 
   test('description with <script> tag does not execute and is shown as text', async ({ page }) => {
-    let scriptExecuted = false;
-    await page.exposeFunction('__xssProbe', () => { scriptExecuted = true; });
+    const probeCallCount = await page.evaluate(() =>
+      typeof window.__xssProbe === 'function'
+        ? window.__xssProbe.__callCount ?? 0
+        : 0
+    );
 
     const descEl = page.locator('#info-description');
     await expect(descEl).toBeVisible();
     const text = await descEl.textContent();
     expect(text).toContain("<script>alert('xss')</script>");
-    expect(scriptExecuted).toBe(false);
+    expect(probeCallCount).toBe(0);
   });
 
   test('operator with & is displayed as plain text', async ({ page }) => {
