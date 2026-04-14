@@ -65,7 +65,7 @@ down: require-docker      ## Stop and remove containers
 import: require-docker    ## Download PBF and import OSM data into PostGIS (run once or to refresh)
 	docker compose run --rm importer
 
-docker-build: require-docker  ## Rebuild and restart the nginx/app container after frontend changes
+docker-build: require-docker  ## Rebuild and restart the Svelte app container (Dockerfile.app)
 	docker compose up -d --build app
 
 ## ── Database ──────────────────────────────────────────────────────────────────

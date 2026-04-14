@@ -63,14 +63,15 @@ services:
       PGRST_LOG_LEVEL:    warn
     restart: unless-stopped
 
-  # ── nginx — serves the app and proxies /api/ to PostgREST ───────────────────
+  # ── Svelte app — serves the frontend and proxies /api/ to PostgREST ─────────
   app:
-    image: ghcr.io/mfuhrmann/spielplatzkarte:latest
+    image: ghcr.io/mfuhrmann/spielplatzkarte:rc
     depends_on:
       - postgrest
     ports:
       - "${APP_PORT:-8080}:80"
     environment:
+      APP_MODE:                   ${APP_MODE:-standalone}
       OSM_RELATION_ID:            ${OSM_RELATION_ID}
       REGION_PLAYGROUND_WIKI_URL: ${REGION_PLAYGROUND_WIKI_URL:-}
       REGION_CHAT_URL:            ${REGION_CHAT_URL:-}
