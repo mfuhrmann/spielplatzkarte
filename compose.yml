@@ -1,4 +1,4 @@
-# Spielplatzkarte — full stack
+# Spielplatzkarte — full stack (local development)
 #
 # Normal start:
 #   docker compose up -d
@@ -62,14 +62,18 @@ services:
       PGRST_LOG_LEVEL:     warn
     restart: unless-stopped
 
-  # ── nginx — serves the Vite app and proxies /api/ to PostgREST ──────────────
+  # ── Svelte app — serves the new frontend and proxies /api/ to PostgREST ─────
+  # Built from oci/app/Dockerfile; use APP_MODE=standalone (default) or hub.
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: oci/app/Dockerfile
     depends_on:
       - postgrest
     ports:
       - "${APP_PORT:-8080}:80"
     environment:
+      APP_MODE:                    ${APP_MODE:-standalone}
       OSM_RELATION_ID:             ${OSM_RELATION_ID:-62700}
       REGION_PLAYGROUND_WIKI_URL:  ${REGION_PLAYGROUND_WIKI_URL:-}
       REGION_CHAT_URL:             ${REGION_CHAT_URL:-}

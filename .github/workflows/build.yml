@@ -55,7 +55,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (app)
+      - name: Extract metadata (data-node)
         id: meta
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051  # v5
         with:
@@ -67,10 +67,10 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=
 
-      - name: Build and push app image
+      - name: Build and push data-node image
         uses: docker/build-push-action@14487ce63c7a62a4a324b0bfb37086795e31c6c1  # v6
         with:
-          context: .
+          context: oci/data-node
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
