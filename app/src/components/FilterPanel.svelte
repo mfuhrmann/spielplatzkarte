@@ -1,6 +1,6 @@
 <script>
   import { filterStore, hasActiveFilters } from '../stores/filters.js';
-  import { Filter, X, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, TableTennis, Goal, CircleDot, Lock } from 'lucide-svelte';
+  import { Filter, X, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock } from 'lucide-svelte';
   import Button from './ui/Button.svelte';
   import { cn } from '../lib/utils.js';
 
@@ -20,7 +20,7 @@
     { key: 'bench',       label: 'Mit Sitzbank',         icon: Armchair },
     { key: 'picnic',      label: 'Mit Picknicktisch',    icon: UtensilsCrossed },
     { key: 'shelter',     label: 'Mit Unterstand',       icon: Home },
-    { key: 'tableTennis', label: 'Tischtennisplatte',    icon: TableTennis },
+    { key: 'tableTennis', label: 'Tischtennisplatte',    icon: RectangleHorizontal },
     { key: 'soccer',      label: 'Mit Bolzplatz',        icon: Goal },
     { key: 'basketball',  label: 'Basketballfeld',       icon: CircleDot },
   ];
