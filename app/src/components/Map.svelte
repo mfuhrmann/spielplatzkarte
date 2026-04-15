@@ -16,12 +16,18 @@
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
   import { filterStore, matchesFilters } from '../stores/filters.js';
+  import { debounce } from '../lib/utils.js';
 
   // Props: optional overrides for hub mode (multiple backends feed into one shared source)
   /** @type {VectorSource | null} - when provided, the map uses this source instead of creating one */
   export let playgroundSource = null;
   /** Backend URL used for selection — standalone passes apiBaseUrl, hub passes per-feature URL */
   export let defaultBackendUrl = apiBaseUrl;
+  
+  /** Hover callback: (feature, pixel) => void */
+  export let onhover = null;
+  /** Clear hover callback: () => void */
+  export let onclearhover = null;
 
   let mapContainer;
   let olMap = null;
@@ -77,12 +83,26 @@
       }
     });
 
-    // Pointer cursor on hover
+    // Pointer cursor on hover + hover preview callback
+    let lastHoverFeature = null;
+    const debouncedHover = debounce((feature, pixel) => {
+      if (onhover) onhover(feature, pixel);
+    }, 100);
+
     olMap.on('pointermove', (evt) => {
-      const hit = olMap.hasFeatureAtPixel(evt.pixel, {
+      const hit = olMap.forEachFeatureAtPixel(evt.pixel, (feature) => feature, {
         layerFilter: (l) => l === playgroundLayer,
       });
+      
       mapContainer.style.cursor = hit ? 'pointer' : '';
+      
+      if (hit && hit !== lastHoverFeature) {
+        lastHoverFeature = hit;
+        debouncedHover(hit, evt.pixel);
+      } else if (!hit && lastHoverFeature) {
+        lastHoverFeature = null;
+        if (onclearhover) onclearhover();
+      }
     });
 
     // Standalone: fetch playgrounds and fit to region

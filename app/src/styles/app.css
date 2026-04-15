@@ -1,0 +1,172 @@
+@import "tailwindcss";
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPIELPLATZKARTE DESIGN SYSTEM
+   Modern UI with shadcn-inspired components using Tailwind CSS v4
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ─── Color Palette ─────────────────────────────────────────────────────── */
+  
+  /* Primary - Emerald green for nature/outdoor feel */
+  --color-primary: oklch(0.696 0.17 162.48);
+  --color-primary-foreground: oklch(0.985 0 0);
+  
+  /* Secondary - Sky blue for water playgrounds */
+  --color-secondary: oklch(0.9 0.05 240);
+  --color-secondary-foreground: oklch(0.3 0.05 240);
+  
+  /* Accent - Amber for highlights */
+  --color-accent: oklch(0.9 0.1 84);
+  --color-accent-foreground: oklch(0.3 0.1 84);
+  
+  /* Destructive - Red for alerts */
+  --color-destructive: oklch(0.577 0.245 27.325);
+  --color-destructive-foreground: oklch(0.985 0 0);
+  
+  /* Muted - Subtle backgrounds */
+  --color-muted: oklch(0.97 0 0);
+  --color-muted-foreground: oklch(0.556 0 0);
+  
+  /* Background & Foreground */
+  --color-background: oklch(1 0 0);
+  --color-foreground: oklch(0.145 0 0);
+  
+  /* Card */
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.145 0 0);
+  
+  /* Popover */
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.145 0 0);
+  
+  /* Border & Input */
+  --color-border: oklch(0.922 0 0);
+  --color-input: oklch(0.922 0 0);
+  --color-ring: oklch(0.696 0.17 162.48);
+  
+  /* ─── Category Colors (for map markers) ──────────────────────────────────── */
+  --color-water: oklch(0.588 0.158 241.966);
+  --color-nature: oklch(0.723 0.219 149.579);
+  --color-accessible: oklch(0.627 0.265 303.9);
+  
+  /* ─── Semantic Colors ────────────────────────────────────────────────────── */
+  --color-success: oklch(0.723 0.219 149.579);
+  --color-warning: oklch(0.769 0.188 70.08);
+  --color-info: oklch(0.588 0.158 241.966);
+  
+  /* ─── Spacing ────────────────────────────────────────────────────────────── */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  
+  /* ─── Shadows ────────────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  
+  /* ─── Panel Dimensions ───────────────────────────────────────────────────── */
+  --panel-width: 380px;
+  --toolbar-height: 56px;
+  --bottom-sheet-peek: 140px;
+  --bottom-sheet-half: 50vh;
+  --bottom-sheet-full: calc(100vh - 60px);
+  
+  /* ─── Animations ─────────────────────────────────────────────────────────── */
+  --animate-slide-in: slide-in 0.3s ease-out;
+  --animate-slide-up: slide-up 0.3s ease-out;
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-scale-in: scale-in 0.15s ease-out;
+  
+  @keyframes slide-in {
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  
+  @keyframes slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes scale-in {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+}
+
+/* ─── Dark Mode (optional, for future) ─────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-background: oklch(0.145 0 0);
+    --color-foreground: oklch(0.985 0 0);
+    --color-card: oklch(0.205 0 0);
+    --color-card-foreground: oklch(0.985 0 0);
+    --color-popover: oklch(0.205 0 0);
+    --color-popover-foreground: oklch(0.985 0 0);
+    --color-muted: oklch(0.269 0 0);
+    --color-muted-foreground: oklch(0.708 0 0);
+    --color-border: oklch(0.269 0 0);
+    --color-input: oklch(0.269 0 0);
+    --color-secondary: oklch(0.269 0 0);
+    --color-secondary-foreground: oklch(0.985 0 0);
+    --color-accent: oklch(0.269 0 0);
+    --color-accent-foreground: oklch(0.985 0 0);
+  }
+}
+
+/* ─── Base Styles ──────────────────────────────────────────────────────────── */
+* {
+  @apply border-border;
+}
+
+body {
+  @apply bg-background text-foreground;
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* ─── Scrollbar Styling ────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted/50;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/30 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/50;
+}
+
+/* ─── Focus Ring Utility ───────────────────────────────────────────────────── */
+.focus-ring {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+/* ─── OpenLayers Map Overrides ─────────────────────────────────────────────── */
+.ol-control button {
+  @apply bg-card text-card-foreground border border-border shadow-md rounded-md;
+}
+
+.ol-control button:hover {
+  @apply bg-muted;
+}
+
+.ol-attribution {
+  @apply text-xs bg-card/80 backdrop-blur-sm rounded-tl-md;
+}
+
+.ol-scale-line {
+  @apply bg-card/80 backdrop-blur-sm rounded-md;
+}
