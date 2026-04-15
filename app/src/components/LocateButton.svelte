@@ -1,9 +1,7 @@
 <script>
   import { fromLonLat } from 'ol/proj';
   import { mapStore } from '../stores/map.js';
-  import { MapPin, Loader2 } from 'lucide-svelte';
-  import Button from './ui/Button.svelte';
-  import { cn } from '../lib/utils.js';
+  import { Navigation2, Loader2 } from 'lucide-svelte';
 
   let locating = false;
   let error = '';
@@ -30,18 +28,48 @@
   }
 </script>
 
-<Button
-  variant="outline"
-  size="icon"
-  class={cn('h-8 w-8', error && 'border-destructive')}
+<button
+  class="control-btn"
+  class:error={!!error}
   onclick={locate}
   disabled={locating}
   title={error || 'Meinen Standort anzeigen'}
   aria-label="Meinen Standort anzeigen"
 >
   {#if locating}
-    <Loader2 class="h-4 w-4 animate-spin" />
+    <Loader2 class="h-5 w-5 animate-spin" />
   {:else}
-    <MapPin class={cn('h-4 w-4', error && 'text-destructive')} />
+    <Navigation2 class="h-5 w-5" />
   {/if}
-</Button>
+</button>
+
+<style>
+  .control-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: white;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    color: #5f6368;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .control-btn:hover {
+    background: #f1f3f4;
+    color: #202124;
+  }
+
+  .control-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .control-btn.error {
+    color: #d93025;
+  }
+</style>

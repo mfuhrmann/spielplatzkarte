@@ -1,7 +1,6 @@
 <script>
   import { filterStore, hasActiveFilters } from '../stores/filters.js';
   import { X } from 'lucide-svelte';
-  import Badge from './ui/Badge.svelte';
 
   const FILTER_LABELS = {
     private:     'Nur öffentlich',
@@ -33,28 +32,22 @@
 </script>
 
 {#if hasFilters}
-  <div class="flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-hide">
+  <div class="chips-container">
     {#each activeFilters as filter (filter.key)}
-      <Badge 
-        variant="secondary" 
-        class="shrink-0 flex items-center gap-1 pr-1 cursor-pointer hover:bg-secondary/60 transition-colors"
-      >
-        <span class="text-xs">{filter.label}</span>
+      <span class="chip">
+        <span class="chip-label">{filter.label}</span>
         <button
-          class="p-0.5 rounded-full hover:bg-foreground/10 transition-colors"
+          class="chip-remove"
           onclick={() => removeFilter(filter.key)}
           aria-label="{filter.label} entfernen"
         >
           <X class="h-3 w-3" />
         </button>
-      </Badge>
+      </span>
     {/each}
 
     {#if activeFilters.length > 1}
-      <button
-        class="shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors px-2"
-        onclick={clearAll}
-      >
+      <button class="clear-all" onclick={clearAll}>
         Alle löschen
       </button>
     {/if}
@@ -62,11 +55,61 @@
 {/if}
 
 <style>
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  .chips-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px 0;
   }
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px 6px 12px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    font-size: 13px;
+    color: #1b5e20;
+    white-space: nowrap;
+  }
+
+  .chip-label {
+    font-weight: 500;
+  }
+
+  .chip-remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 50%;
+    cursor: pointer;
+    color: #5f6368;
+    transition: background 0.15s;
+  }
+
+  .chip-remove:hover {
+    background: rgba(0, 0, 0, 0.16);
+  }
+
+  .clear-all {
+    font-size: 12px;
+    color: #1a73e8;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 8px;
+    white-space: nowrap;
+  }
+
+  .clear-all:hover {
+    text-decoration: underline;
   }
 </style>

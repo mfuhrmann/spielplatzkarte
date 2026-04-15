@@ -8,7 +8,6 @@
   import BottomSheet from '../components/BottomSheet.svelte';
   import HoverPreview from '../components/HoverPreview.svelte';
   import DataContributionModal from '../components/DataContributionModal.svelte';
-  import Button from '../components/ui/Button.svelte';
   import { Pencil } from 'lucide-svelte';
   import { apiBaseUrl } from '../lib/config.js';
   import { mapStore } from '../stores/map.js';
@@ -73,37 +72,38 @@
 <svelte:window onresize={checkMobile} />
 
 <div class="app-root">
+  <!-- Full-screen map -->
   <Map 
     defaultBackendUrl={apiBaseUrl} 
     onhover={handleHover}
     onclearhover={clearHover}
   />
 
-  <!-- Toolbar: search + locate + filter + data contribution -->
-  <div class="map-toolbar">
+  <!-- Search bar: top-left, Google Maps style -->
+  <div class="search-area">
     <SearchBar {regionExtent} />
-    <LocateButton />
-    <FilterPanel />
-    <Button
-      variant="outline"
-      size="icon"
-      onclick={() => dataModalOpen = true}
-      title="Daten ergänzen"
-      aria-label="Daten ergänzen"
-      class="h-8 w-8"
-    >
-      <Pencil class="h-4 w-4" />
-    </Button>
-  </div>
-
-  <!-- Filter chips (shown below toolbar when filters active) -->
-  <div class="filter-chips-container">
     <FilterChips />
   </div>
 
-  <!-- Desktop: Side panel -->
+  <!-- Right side controls: locate, filter, edit -->
+  <div class="controls-right">
+    <LocateButton />
+    <FilterPanel />
+    <button
+      class="control-btn"
+      onclick={() => dataModalOpen = true}
+      title="Daten ergänzen"
+      aria-label="Daten ergänzen"
+    >
+      <Pencil class="h-5 w-5" />
+    </button>
+  </div>
+
+  <!-- Desktop: Side panel slides in from left -->
   {#if !isMobile && $hasSelection}
-    <PlaygroundPanel />
+    <div class="side-panel">
+      <PlaygroundPanel />
+    </div>
   {/if}
 
   <!-- Mobile: Bottom sheet -->
@@ -132,44 +132,93 @@
     width: 100vw;
     height: 100vh;
     overflow: hidden;
-    background: var(--color-background);
   }
 
-  .map-toolbar {
+  /* Search area: top-left floating card */
+  .search-area {
     position: absolute;
-    top: 0.75rem;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 1rem;
+    left: 1rem;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* Right side controls: stacked vertically */
+  .controls-right {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* Control button (for edit button) */
+  .control-btn {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    z-index: 100;
-    background: oklch(1 0 0 / 0.95);
-    backdrop-filter: blur(8px);
-    padding: 0.5rem;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    border: 1px solid var(--color-border);
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: white;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    color: #5f6368;
+    transition: background 0.15s, color 0.15s;
   }
 
-  .filter-chips-container {
+  .control-btn:hover {
+    background: #f1f3f4;
+    color: #202124;
+  }
+
+  /* Side panel: slides in from left on desktop */
+  .side-panel {
     position: absolute;
-    top: 4.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 99;
-    max-width: calc(100vw - 2rem);
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 380px;
+    z-index: 200;
+    background: white;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+    overflow-y: auto;
+    animation: slideInLeft 0.3s ease-out;
   }
 
-  /* On mobile, adjust for bottom sheet */
+  @keyframes slideInLeft {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  /* Mobile adjustments */
   @media (max-width: 1023px) {
-    .map-toolbar {
-      top: 0.5rem;
-      padding: 0.375rem;
+    .search-area {
+      top: 0.75rem;
+      left: 0.75rem;
+      right: 4rem;
     }
 
-    .filter-chips-container {
-      top: 4rem;
+    .controls-right {
+      top: 0.75rem;
+      right: 0.75rem;
+    }
+  }
+
+  /* When panel is open on desktop, shift search area */
+  @media (min-width: 1024px) {
+    .app-root:has(.side-panel) .search-area {
+      left: calc(380px + 1rem);
+      transition: left 0.3s ease-out;
     }
   }
 </style>
