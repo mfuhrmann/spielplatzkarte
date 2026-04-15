@@ -63,7 +63,14 @@
       target: mapContainer,
       layers: [basemap, playgroundLayer],
       view,
-      controls: defaultControls().extend([new ScaleLine({ units: 'metric' })]),
+      // Disable default zoom/rotate controls for cleaner UI like Google Maps
+      controls: defaultControls({ 
+        zoom: false, 
+        rotate: false,
+        attribution: true 
+      }).extend([
+        new ScaleLine({ units: 'metric', className: 'custom-scale-line' })
+      ]),
       interactions: defaultInteractions({ altShiftDragRotate: false, pinchRotate: false }),
     });
 
@@ -174,5 +181,51 @@
     height: 100%;
     position: absolute;
     inset: 0;
+  }
+
+  /* Custom scale line styling - bottom left, minimal */
+  :global(.custom-scale-line) {
+    position: absolute;
+    bottom: 24px;
+    left: 10px;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    color: #333;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+
+  :global(.custom-scale-line .ol-scale-line-inner) {
+    border: 1px solid #333;
+    border-top: none;
+    color: #333;
+    font-size: 11px;
+    text-align: center;
+  }
+
+  /* Attribution styling - bottom right, minimal */
+  :global(.ol-attribution) {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+  }
+
+  :global(.ol-attribution ul) {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  :global(.ol-attribution li) {
+    display: inline;
+  }
+
+  :global(.ol-attribution button) {
+    display: none;
   }
 </style>

@@ -8,7 +8,7 @@
   import BottomSheet from '../components/BottomSheet.svelte';
   import HoverPreview from '../components/HoverPreview.svelte';
   import DataContributionModal from '../components/DataContributionModal.svelte';
-  import { Pencil } from 'lucide-svelte';
+  import { Pencil, Plus, Minus } from 'lucide-svelte';
   import { apiBaseUrl } from '../lib/config.js';
   import { mapStore } from '../stores/map.js';
   import { selection, hasSelection } from '../stores/selection.js';
@@ -67,6 +67,21 @@
     hoverFeature = null;
     hoverPosition = null;
   }
+
+  // Zoom controls
+  function zoomIn() {
+    if ($mapStore) {
+      const view = $mapStore.getView();
+      view.animate({ zoom: view.getZoom() + 1, duration: 200 });
+    }
+  }
+
+  function zoomOut() {
+    if ($mapStore) {
+      const view = $mapStore.getView();
+      view.animate({ zoom: view.getZoom() - 1, duration: 200 });
+    }
+  }
 </script>
 
 <svelte:window onresize={checkMobile} />
@@ -85,9 +100,8 @@
     <FilterChips />
   </div>
 
-  <!-- Right side controls: locate, filter, edit -->
-  <div class="controls-right">
-    <LocateButton />
+  <!-- Top-right controls: filter, edit -->
+  <div class="controls-top-right">
     <FilterPanel />
     <button
       class="control-btn"
@@ -97,6 +111,29 @@
     >
       <Pencil class="h-5 w-5" />
     </button>
+  </div>
+
+  <!-- Bottom-right controls: locate, zoom (Google Maps style) -->
+  <div class="controls-bottom-right">
+    <LocateButton />
+    <div class="zoom-controls">
+      <button
+        class="zoom-btn zoom-in"
+        onclick={zoomIn}
+        title="Vergrößern"
+        aria-label="Vergrößern"
+      >
+        <Plus class="h-4 w-4" />
+      </button>
+      <button
+        class="zoom-btn zoom-out"
+        onclick={zoomOut}
+        title="Verkleinern"
+        aria-label="Verkleinern"
+      >
+        <Minus class="h-4 w-4" />
+      </button>
+    </div>
   </div>
 
   <!-- Desktop: Side panel slides in from left -->
@@ -145,18 +182,30 @@
     gap: 0.5rem;
   }
 
-  /* Right side controls: stacked vertically */
-  .controls-right {
+  /* Top-right controls: filter, edit */
+  .controls-top-right {
     position: absolute;
     top: 1rem;
     right: 1rem;
     z-index: 100;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 0.5rem;
   }
 
-  /* Control button (for edit button) */
+  /* Bottom-right controls: locate, zoom (Google Maps style) */
+  .controls-bottom-right {
+    position: absolute;
+    bottom: 7rem;
+    right: 1rem;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  /* Control button (for edit button, locate button) */
   .control-btn {
     display: flex;
     align-items: center;
@@ -165,16 +214,48 @@
     height: 40px;
     background: white;
     border: none;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     cursor: pointer;
-    color: #5f6368;
+    color: #666;
     transition: background 0.15s, color 0.15s;
   }
 
   .control-btn:hover {
-    background: #f1f3f4;
-    color: #202124;
+    background: #f5f5f5;
+    color: #333;
+  }
+
+  /* Zoom controls container */
+  .zoom-controls {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+  }
+
+  .zoom-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: white;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .zoom-btn:hover {
+    background: #f5f5f5;
+    color: #333;
+  }
+
+  .zoom-in {
+    border-bottom: 1px solid #e0e0e0;
   }
 
   /* Side panel: slides in from left on desktop */
@@ -205,11 +286,18 @@
     .search-area {
       top: 0.75rem;
       left: 0.75rem;
-      right: 4rem;
+      right: 0.75rem;
     }
 
-    .controls-right {
+    .controls-top-right {
+      top: auto;
+      bottom: auto;
+      right: 0.75rem;
       top: 0.75rem;
+    }
+
+    .controls-bottom-right {
+      bottom: 10rem;
       right: 0.75rem;
     }
   }

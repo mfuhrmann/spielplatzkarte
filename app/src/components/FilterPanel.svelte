@@ -93,17 +93,17 @@
     height: 40px;
     background: white;
     border: none;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     cursor: pointer;
-    color: #5f6368;
+    color: #666;
     transition: background 0.15s, color 0.15s;
     position: relative;
   }
 
   .control-btn:hover {
-    background: #f1f3f4;
-    color: #202124;
+    background: #f5f5f5;
+    color: #333;
   }
 
   .control-btn.active {
