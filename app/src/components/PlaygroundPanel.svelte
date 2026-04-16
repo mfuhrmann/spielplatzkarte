@@ -9,7 +9,7 @@
   import { playgroundCompleteness } from '../lib/completeness.js';
   import { poiRadiusM } from '../lib/config.js';
   import { getPlaygroundTitle, getPlaygroundLocation } from '../lib/playgroundHelpers.js';
-  import { escapeHtml, cn } from '../lib/utils.js';
+  import { cn } from '../lib/utils.js';
   import EquipmentList from './EquipmentList.svelte';
   import POIPanel from './POIPanel.svelte';
   import PanoramaxViewer from './PanoramaxViewer.svelte';
@@ -101,7 +101,10 @@
   $: completeness = attr ? COMPLETENESS[playgroundCompleteness(attr)] : null;
 
   // ── Opening hours ─────────────────────────────────────────────────────────
-  function formatOpeningHours(ohStr) {
+  // Returns { color, label, suffix, error } so the template can render without
+  // {@html}. label includes the ● bullet; suffix is trailing plain text (e.g.
+  // "· Öffnet morgen um 09:00") rendered outside the coloured span.
+  function openingHoursState(ohStr) {
     const fmt = d => d.toLocaleTimeString('de', { hour: '2-digit', minute: '2-digit' });
     const dayLabel = (d, now) => {
       if (d.toDateString() === now.toDateString()) return 'heute';
@@ -184,7 +187,7 @@
     return uuids;
   })();
 
-  $: openingHoursInfo = attr?.opening_hours ? formatOpeningHours(attr.opening_hours) : null;
+  $: openingHoursInfo = attr?.opening_hours ? openingHoursState(attr.opening_hours) : null;
 </script>
 
 {#if feature && attr}
@@ -279,7 +282,7 @@
       {#if attr['contact:email'] || attr.email || attr['contact:phone'] || attr.phone || attr.operator}
         <div class="space-y-2 mb-4 p-3 rounded-lg border border-border">
           {#if attr.operator}
-            <div class="flex items-center gap-2 text-sm">
+            <div class="flex items-center gap-2 text-sm" data-testid="operator-value">
               <span class="text-muted-foreground">Betreiber:</span>
               {#if attr['operator:wikidata']}
                 <a href="https://www.wikidata.org/wiki/{attr['operator:wikidata']}"
