@@ -228,12 +228,12 @@ All common operations are available via `make`. Run `make help` to list all targ
 ### Frontend dev server
 
 ```bash
-make install      # install Node dependencies (only needed once)
+make install      # install Node dependencies for both root (Playwright) and app/ (Svelte) — only needed once
 make up           # start db + PostgREST + nginx (required backend)
 make dev          # dev server with hot-reload at http://localhost:5173
 ```
 
-> **Note:** `make dev` starts the Vite dev server, which serves the JS with instant hot-reload. The Docker stack (`make up`) must be running alongside it to provide the API — the app requires a live PostgREST backend.
+> **Note:** `make dev` starts the Vite dev server, which serves the Svelte app with instant hot-reload. The Docker stack (`make up`) must be running alongside it to provide the API — the app requires a live PostgREST backend.
 
 ### Rebuild the app container after code changes
 
@@ -242,6 +242,8 @@ make docker-build
 ```
 
 This runs the Vite build inside the container and replaces the nginx image without touching the database or PostgREST.
+
+> **Production deploys:** Use `compose.prod.yml` instead of `compose.yml` for production environments — it omits development-only overrides and is intended for use behind a reverse proxy.
 
 ### Applying database changes without a full rebuild
 
