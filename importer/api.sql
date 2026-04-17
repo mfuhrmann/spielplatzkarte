@@ -471,6 +471,74 @@ GRANT EXECUTE ON FUNCTION api.get_meta(bigint) TO web_anon;
 CREATE INDEX IF NOT EXISTS idx_osm_point_natural ON planet_osm_point ("natural") WHERE "natural" IS NOT NULL;
 
 -- Spatial indexes to speed up bbox and radius queries (idempotent)
+-- =========================================================================
+-- 6. get_nearest_playgrounds(lat, lon, relation_id, max_results)
+--    Returns the nearest playgrounds to a given WGS84 point,
+--    ordered by distance ascending.
+-- =========================================================================
+DROP FUNCTION IF EXISTS api.get_nearest_playgrounds(float8, float8, bigint, int);
+
+CREATE OR REPLACE FUNCTION api.get_nearest_playgrounds(
+  lat          float8,
+  lon          float8,
+  relation_id  bigint DEFAULT ${OSM_RELATION_ID},
+  max_results  int    DEFAULT 5
+)
+RETURNS json
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public, api
+AS $$
+  WITH center AS (
+    SELECT
+      ST_Transform(ST_SetSRID(ST_MakePoint(lon, lat), 4326), 3857)  AS geom_3857,
+      ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography            AS geog_4326
+  ),
+  region AS (
+    SELECT way FROM planet_osm_polygon WHERE osm_id = -relation_id LIMIT 1
+  ),
+  nearest AS (
+    SELECT
+      p.osm_id,
+      p.name,
+      p.operator,
+      p.access,
+      p.surface,
+      p.tags,
+      ST_Distance(ST_Transform(p.way, 4326)::geography, c.geog_4326)  AS distance_m,
+      ST_Y(ST_Transform(ST_Centroid(p.way), 4326))                    AS centroid_lat,
+      ST_X(ST_Transform(ST_Centroid(p.way), 4326))                    AS centroid_lon
+    FROM planet_osm_polygon p, center c, region r
+    WHERE p.leisure = 'playground'
+      AND ST_Within(p.way, r.way)
+    ORDER BY p.way <-> c.geom_3857
+    LIMIT max_results
+  )
+  SELECT COALESCE(
+    json_agg(
+      json_build_object(
+        'osm_id',      abs(osm_id),
+        'name',        name,
+        'lat',         centroid_lat,
+        'lon',         centroid_lon,
+        'distance_m',  round(distance_m::numeric),
+        'tags', (
+          jsonb_build_object(
+            'name',          name,
+            'operator',      operator,
+            'access',        access,
+            'surface',       surface
+          ) || COALESCE(hstore_to_jsonb(tags), '{}'::jsonb)
+        )
+      )
+      ORDER BY distance_m
+    ),
+    '[]'::json
+  )
+  FROM nearest;
+$$;
+
+GRANT EXECUTE ON FUNCTION api.get_nearest_playgrounds(float8, float8, bigint, int) TO web_anon;
+
 CREATE INDEX IF NOT EXISTS idx_osm_polygon_way  ON planet_osm_polygon USING GIST (way);
 CREATE INDEX IF NOT EXISTS idx_osm_point_way    ON planet_osm_point   USING GIST (way);
 CREATE INDEX IF NOT EXISTS idx_osm_polygon_lei  ON planet_osm_polygon (leisure) WHERE leisure IS NOT NULL;

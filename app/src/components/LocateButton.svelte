@@ -3,6 +3,9 @@
   import { mapStore } from '../stores/map.js';
   import { Navigation2, Loader2 } from 'lucide-svelte';
 
+  /** Called with (lat, lon) after a GPS fix is obtained. */
+  export let onlocation = null;
+
   let locating = false;
   let error = '';
 
@@ -16,8 +19,10 @@
     navigator.geolocation.getCurrentPosition(
       pos => {
         locating = false;
-        const coord = fromLonLat([pos.coords.longitude, pos.coords.latitude]);
+        const { latitude, longitude } = pos.coords;
+        const coord = fromLonLat([longitude, latitude]);
         $mapStore?.getView().animate({ center: coord, zoom: 16 });
+        if (onlocation) onlocation(latitude, longitude);
       },
       err => {
         locating = false;

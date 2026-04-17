@@ -7,7 +7,9 @@
   import FilterChips from '../components/FilterChips.svelte';
   import BottomSheet from '../components/BottomSheet.svelte';
   import HoverPreview from '../components/HoverPreview.svelte';
+  import NearbyPlaygrounds from '../components/NearbyPlaygrounds.svelte';
   import DataContributionModal from '../components/DataContributionModal.svelte';
+  import { onDestroy } from 'svelte';
   import { Pencil, Plus, Minus } from 'lucide-svelte';
   import { apiBaseUrl } from '../lib/config.js';
   import { mapStore } from '../stores/map.js';
@@ -28,6 +30,31 @@
   }
 
   let dataModalOpen = false;
+
+  // Nearest-playground suggestions panel
+  let nearbyLocation = null;  // { lat, lon } | null
+  let dismissUnsub = null;
+
+  function handleLocation(lat, lon) {
+    if (dismissUnsub) { dismissUnsub(); dismissUnsub = null; }
+    if (lat === null) { nearbyLocation = null; return; }
+    if (!apiBaseUrl) return; // no PostgREST in Overpass mode
+    nearbyLocation = { lat, lon };
+    // Dismiss the panel on the next selection-store change (map click or playground select)
+    let first = true;
+    dismissUnsub = selection.subscribe(() => {
+      if (first) { first = false; return; }
+      nearbyLocation = null;
+      if (dismissUnsub) { dismissUnsub(); dismissUnsub = null; }
+    });
+  }
+
+  function dismissNearby() {
+    nearbyLocation = null;
+    if (dismissUnsub) { dismissUnsub(); dismissUnsub = null; }
+  }
+
+  onDestroy(() => { if (dismissUnsub) dismissUnsub(); });
 
   // Responsive: track if we're on mobile
   let isMobile = false;
@@ -96,8 +123,11 @@
 
   <!-- Search bar: top-left, Google Maps style -->
   <div class="search-area">
-    <SearchBar {regionExtent} />
+    <SearchBar {regionExtent} onlocation={handleLocation} />
     <FilterChips />
+    {#if nearbyLocation}
+      <NearbyPlaygrounds lat={nearbyLocation.lat} lon={nearbyLocation.lon} ondismiss={dismissNearby} />
+    {/if}
   </div>
 
   <!-- Top-right controls: filter, edit -->
@@ -115,7 +145,7 @@
 
   <!-- Bottom-right controls: locate, zoom (Google Maps style) -->
   <div class="controls-bottom-right">
-    <LocateButton />
+    <LocateButton onlocation={handleLocation} />
     <div class="zoom-controls">
       <button
         class="zoom-btn zoom-in"
