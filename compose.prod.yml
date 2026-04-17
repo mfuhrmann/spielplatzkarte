@@ -15,6 +15,7 @@ services:
   # ── PostGIS database ────────────────────────────────────────────────────────
   db:
     image: postgis/postgis:16-3.4-alpine
+    profiles: [data-node, data-node-ui]
     environment:
       POSTGRES_DB:       osm
       POSTGRES_USER:     osm
@@ -33,6 +34,7 @@ services:
   # docker compose -f compose.prod.yml run --rm importer
   importer:
     image: ghcr.io/mfuhrmann/spielplatzkarte-importer:latest
+    profiles: [data-node, data-node-ui]
     depends_on:
       db:
         condition: service_healthy
@@ -47,12 +49,12 @@ services:
       OSM_RELATION_ID:   ${OSM_RELATION_ID}
     volumes:
       - pbf_cache:/data
-    profiles: [import]
     restart: "no"
 
   # ── PostgREST — auto-generates REST API from the api schema ─────────────────
   postgrest:
     image: postgrest/postgrest:v12.2.0
+    profiles: [data-node, data-node-ui]
     depends_on:
       db:
         condition: service_healthy
@@ -67,8 +69,7 @@ services:
   # ── Svelte app — serves the frontend and proxies /api/ to PostgREST ─────────
   app:
     image: ghcr.io/mfuhrmann/spielplatzkarte:rc
-    depends_on:
-      - postgrest
+    profiles: [ui, data-node-ui]
     ports:
       - "${APP_PORT:-8080}:80"
     environment:
