@@ -9,8 +9,8 @@
   const thumbUrl  = uuid => `https://api.panoramax.xyz/api/pictures/${uuid}/thumb.jpg`;
   const viewerUrl = uuid => `https://api.panoramax.xyz/?pic=${uuid}&nav=none&focus=pic`;
 
-  let fullscreen = false;
-  let modalIndex = 0;
+  let fullscreen = $state(false);
+  let modalIndex = $state(0);
 
   function openModal(i) {
     modalIndex = i;
@@ -33,6 +33,22 @@
     window.addEventListener('keydown', onKeydown, { capture: true });
     return () => window.removeEventListener('keydown', onKeydown, { capture: true });
   });
+
+  /**
+   * Svelte action to portal an element to document.body.
+   * This ensures the modal escapes the sidebar's stacking context
+   * and works correctly in all browsers including Safari.
+   */
+  function portal(node) {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        if (node.parentNode) {
+          node.parentNode.removeChild(node);
+        }
+      }
+    };
+  }
 </script>
 
 {#if uuids.length === 0}
@@ -83,10 +99,11 @@
 
 {/if}
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- Fullscreen modal: portaled to document.body to escape sidebar stacking context -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 {#if fullscreen}
-  <div class="panoramax-modal-backdrop" onclick={closeModal}>
+  <div use:portal class="panoramax-modal-backdrop" onclick={closeModal}>
     <div class="panoramax-modal" onclick={e => e.stopPropagation()}
          role="dialog" aria-modal="true" aria-label="Straßenfoto" tabindex="-1">
       <div class="panoramax-modal-header">
