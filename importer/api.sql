@@ -15,13 +15,19 @@ GRANT USAGE ON SCHEMA api TO web_anon;
 -- playground_stats — materialized view pre-computing per-playground stats.
 -- Rebuilt on every import / db-apply so get_playgrounds is a plain lookup.
 -- =========================================================================
-DROP MATERIALIZED VIEW IF EXISTS public.playground_stats;
+DROP MATERIALIZED VIEW IF EXISTS public.playground_stats CASCADE;
 
 CREATE MATERIALIZED VIEW public.playground_stats AS
-  WITH all_playgrounds AS (
-    SELECT osm_id, way
-    FROM planet_osm_polygon
-    WHERE leisure = 'playground'
+  WITH region AS (
+    SELECT way FROM planet_osm_polygon
+    WHERE osm_id = -${OSM_RELATION_ID}
+    LIMIT 1
+  ),
+  all_playgrounds AS (
+    SELECT p.osm_id, p.way
+    FROM planet_osm_polygon p
+    JOIN region r ON ST_Within(p.way, r.way)
+    WHERE p.leisure = 'playground'
   ),
   tree_counts AS (
     SELECT
@@ -87,8 +93,9 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     COALESCE(es.for_baby,       false) AS for_baby,
     COALESCE(es.for_toddler,    false) AS for_toddler,
     COALESCE(es.for_wheelchair, false) AS for_wheelchair
-  FROM tree_counts tc
-  LEFT JOIN equip_stats es ON es.osm_id = tc.osm_id;
+  FROM all_playgrounds pl
+  LEFT JOIN tree_counts  tc ON tc.osm_id = pl.osm_id
+  LEFT JOIN equip_stats  es ON es.osm_id = pl.osm_id;
 
 CREATE UNIQUE INDEX ON public.playground_stats (osm_id);
 
