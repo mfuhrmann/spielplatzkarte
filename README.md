@@ -520,9 +520,16 @@ GitHub will print a link to open a pull request. Click it, write a short descrip
 
 ## Federation
 
-Multiple regional instances can be aggregated into a single global map using the **[Spielplatzkarte Hub](https://github.com/mfuhrmann/spielplatzkarte-hub)**.
+Multiple regional instances can be aggregated into a single global map using the **Hub mode** built into this codebase. The Hub is not a separate repository — it is the same Svelte app deployed with `APP_MODE=hub` in the environment.
 
-Each instance exposes two federation endpoints (available since v0.2.1):
+```
+APP_MODE=standalone   →  regional map (one city / Kreis / Bundesland)
+APP_MODE=hub          →  aggregation map that fetches from all registered instances
+```
+
+To run the Hub, use the same `compose.yml` and set `APP_MODE=hub`. The Hub reads a `registry.json` file listing the regional instances to aggregate.
+
+Each regional instance exposes two federation endpoints (available since v0.2.1):
 
 - `GET /api/rpc/get_playgrounds` — full GeoJSON FeatureCollection of all playgrounds in the region
 - `GET /api/rpc/get_meta` — instance metadata: OSM relation name, playground count, bounding box
