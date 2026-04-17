@@ -188,6 +188,24 @@ fi
 
 printf "\n"
 if confirm "Start the stack now?"; then
+    # ── Check for stale pgdata volume ──────────────────────────────────────────
+    PROJECT_NAME="$(basename "$(cd "$DEPLOY_DIR" && pwd)")"
+    VOLUME_NAME="${PROJECT_NAME}_pgdata"
+    if docker volume ls --format '{{.Name}}' | grep -q "^${VOLUME_NAME}$"; then
+        warn "A database volume '${VOLUME_NAME}' already exists."
+        warn "This often means a previous install or a dev stack with the same"
+        warn "directory name already initialised the database with a different password."
+        warn "Starting without removing it will cause authentication failures."
+        printf "\n"
+        if confirm "Delete the existing volume and start fresh? (existing data will be lost)"; then
+            docker volume rm "$VOLUME_NAME" >/dev/null
+            success "Volume removed. Database will be initialised with the new password."
+        else
+            warn "Proceeding without removing the volume — authentication may fail."
+        fi
+        printf "\n"
+    fi
+
     info "Starting db, PostgREST, and app..."
     docker compose -f "$DEPLOY_DIR/compose.yml" --env-file "$DEPLOY_DIR/.env" up -d
     success "Stack started."
