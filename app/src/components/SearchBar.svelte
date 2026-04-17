@@ -6,6 +6,8 @@
 
   /** Bounding box [minLon, minLat, maxLon, maxLat] to restrict Nominatim search. */
   export let regionExtent = null;
+  /** Called with (lat, lon) after a result is selected; called with (null, null) on clear. */
+  export let onlocation = null;
 
   let query = '';
   let searching = false;
@@ -41,10 +43,13 @@
   }
 
   function selectResult(result) {
-    const coord = fromLonLat([parseFloat(result.lon), parseFloat(result.lat)]);
+    const lat = parseFloat(result.lat);
+    const lon = parseFloat(result.lon);
+    const coord = fromLonLat([lon, lat]);
     $mapStore?.getView().animate({ center: coord, zoom: 17 });
     query = result.display_name.split(',')[0];
     showResults = false;
+    if (onlocation) onlocation(lat, lon);
   }
 
   function onKeydown(e) {
@@ -70,6 +75,7 @@
     results = [];
     showResults = false;
     inputEl?.focus();
+    if (onlocation) onlocation(null, null);
   }
 
   function onFocus() {

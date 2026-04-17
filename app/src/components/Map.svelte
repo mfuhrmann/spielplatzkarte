@@ -15,6 +15,7 @@
   import { playgroundStyleFn, selectionStyle } from '../lib/vectorStyles.js';
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
+  import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { filterStore, matchesFilters } from '../stores/filters.js';
   import { debounce } from '../lib/utils.js';
 
@@ -114,6 +115,7 @@
 
     // Standalone: fetch playgrounds and fit to region
     if (ownSource) {
+      playgroundSourceStore.set(ownSource);
       loadStandaloneData(ownSource, view);
     }
 
@@ -135,6 +137,7 @@
       olMap.setTarget(undefined);
       mapStore.set(null);
     }
+    playgroundSourceStore.set(null);
   });
 
   // Re-style the playground layer whenever filters change.
