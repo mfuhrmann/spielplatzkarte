@@ -1,5 +1,5 @@
 <script>
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
 
   /** @type {string[]} List of Panoramax UUIDs for this playground. */
   export let uuids = [];
@@ -11,9 +11,6 @@
 
   let fullscreen = false;
   let modalIndex = 0;
-
-  // Portal element — mounted directly on document.body to escape sidebar stacking context.
-  let portalEl;
 
   function openModal(i) {
     modalIndex = i;
@@ -34,18 +31,7 @@
 
   onMount(() => {
     window.addEventListener('keydown', onKeydown, { capture: true });
-    // Create a portal host element appended to body so the modal
-    // renders outside the sidebar's stacking context.
-    portalEl = document.createElement('div');
-    portalEl.id = 'panoramax-portal';
-    document.body.appendChild(portalEl);
     return () => window.removeEventListener('keydown', onKeydown, { capture: true });
-  });
-
-  onDestroy(() => {
-    if (portalEl && portalEl.parentNode) {
-      portalEl.parentNode.removeChild(portalEl);
-    }
   });
 </script>
 
@@ -97,40 +83,37 @@
 
 {/if}
 
-<!-- Portal: rendered via <svelte:element> on document.body to escape sidebar stacking context -->
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 {#if fullscreen}
-  <svelte:body>
-    <div class="panoramax-modal-backdrop" onclick={closeModal}>
-      <div class="panoramax-modal" onclick={e => e.stopPropagation()}
-           role="dialog" aria-modal="true" aria-label="Straßenfoto" tabindex="-1">
-        <div class="panoramax-modal-header">
-          <div class="panoramax-nav">
-            <button type="button" class="nav-btn"
-                    onclick={prev} disabled={uuids.length < 2} title="Vorheriges Foto">
-              &#8249;
-            </button>
-            <button type="button" class="nav-btn"
-                    onclick={next} disabled={uuids.length < 2} title="Nächstes Foto">
-              &#8250;
-            </button>
-            <span class="photo-counter">{modalIndex + 1} / {uuids.length}</span>
-            <span class="photo-title">Straßenfoto</span>
-          </div>
-          <button type="button" class="close-btn" onclick={closeModal} aria-label="Schließen">
-            &#10005;
+  <div class="panoramax-modal-backdrop" onclick={closeModal}>
+    <div class="panoramax-modal" onclick={e => e.stopPropagation()}
+         role="dialog" aria-modal="true" aria-label="Straßenfoto" tabindex="-1">
+      <div class="panoramax-modal-header">
+        <div class="panoramax-nav">
+          <button type="button" class="nav-btn"
+                  onclick={prev} disabled={uuids.length < 2} title="Vorheriges Foto">
+            &#8249;
           </button>
+          <button type="button" class="nav-btn"
+                  onclick={next} disabled={uuids.length < 2} title="Nächstes Foto">
+            &#8250;
+          </button>
+          <span class="photo-counter">{modalIndex + 1} / {uuids.length}</span>
+          <span class="photo-title">Straßenfoto</span>
         </div>
-        <iframe
-          src={viewerUrl(uuids[modalIndex])}
-          style="width:100%; flex:1; border:none;"
-          title="Straßenfoto {modalIndex + 1}"
-          allowfullscreen
-        ></iframe>
+        <button type="button" class="close-btn" onclick={closeModal} aria-label="Schließen">
+          &#10005;
+        </button>
       </div>
+      <iframe
+        src={viewerUrl(uuids[modalIndex])}
+        style="width:100%; flex:1; border:none;"
+        title="Straßenfoto {modalIndex + 1}"
+        allowfullscreen
+      ></iframe>
     </div>
-  </svelte:body>
+  </div>
 {/if}
 
 <style>
