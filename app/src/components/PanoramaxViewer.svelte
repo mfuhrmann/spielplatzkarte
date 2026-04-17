@@ -1,10 +1,8 @@
 <script>
   import { onMount } from 'svelte';
 
-  /** @type {string[]} List of Panoramax UUIDs for this playground. */
-  export let uuids = [];
-  /** @type {string} MapComplete URL for the "add photo" link. */
-  export let mcUrl = '';
+  /** @type {{ uuids?: string[], mcUrl?: string }} */
+  let { uuids = [], mcUrl = '' } = $props();
 
   const thumbUrl  = uuid => `https://api.panoramax.xyz/api/pictures/${uuid}/thumb.jpg`;
   const viewerUrl = uuid => `https://api.panoramax.xyz/?pic=${uuid}&nav=none&focus=pic`;
