@@ -121,6 +121,7 @@
     <div
       class="fixed inset-0 z-40 bg-black/40 transition-opacity duration-200 lg:hidden"
       onclick={close}
+      onkeydown={e => e.key === 'Enter' && close()}
       role="button"
       tabindex="-1"
       aria-label="Schließen"
@@ -142,6 +143,7 @@
     role="dialog"
     aria-modal="true"
     aria-labelledby="bottom-sheet-title"
+    tabindex="-1"
   >
     <!-- Drag Handle -->
     <div class="bottom-sheet__handle flex flex-col items-center pt-3 pb-2 cursor-grab active:cursor-grabbing">
