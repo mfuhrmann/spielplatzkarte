@@ -1,16 +1,15 @@
 <script>
   import { onMount } from 'svelte';
 
-  /** @type {string[]} List of Panoramax UUIDs for this playground. */
-  export let uuids = [];
-  /** @type {string} MapComplete URL for the "add photo" link. */
-  export let mcUrl = '';
+  /** @type {{ uuids?: string[], mcUrl?: string }} */
+  let { uuids = [], mcUrl = '' } = $props();
 
   const thumbUrl  = uuid => `https://api.panoramax.xyz/api/pictures/${uuid}/thumb.jpg`;
   const viewerUrl = uuid => `https://api.panoramax.xyz/?pic=${uuid}&nav=none&focus=pic`;
 
-  let fullscreen = false;
-  let modalIndex = 0;
+  let fullscreen = $state(false);
+  let modalIndex = $state(0);
+  let selectedIndex = $state(0);
 
   function openModal(i) {
     modalIndex = i;
@@ -33,6 +32,22 @@
     window.addEventListener('keydown', onKeydown, { capture: true });
     return () => window.removeEventListener('keydown', onKeydown, { capture: true });
   });
+
+  /**
+   * Svelte action to portal an element to document.body.
+   * This ensures the modal escapes the sidebar's stacking context
+   * and works correctly in all browsers including Safari.
+   */
+  function portal(node) {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        if (node.parentNode) {
+          node.parentNode.removeChild(node);
+        }
+      }
+    };
+  }
 </script>
 
 {#if uuids.length === 0}
@@ -44,14 +59,14 @@
     </a>
   </div>
 {:else}
-  <!-- Inline viewer: first photo as clickable iframe -->
+  <!-- Inline viewer: selected photo as clickable iframe -->
   <div class="panoramax-preview" role="button" tabindex="0"
-       onclick={() => openModal(0)}
-       onkeydown={e => e.key === 'Enter' && openModal(0)}
+       onclick={() => openModal(selectedIndex)}
+       onkeydown={e => e.key === 'Enter' && openModal(selectedIndex)}
        title="Vollbild anzeigen"
   >
     <iframe
-      src={viewerUrl(uuids[0])}
+      src={viewerUrl(uuids[selectedIndex])}
       style="width:100%; height:240px; border:none; border-radius:4px; pointer-events:none;"
       title="Straßenfoto"
       allowfullscreen
@@ -65,8 +80,8 @@
   {#if uuids.length > 1}
     <div class="d-flex gap-1 mt-1 flex-wrap">
       {#each uuids as uuid, i}
-        <button type="button" class="thumb-btn {i === 0 ? 'thumb-active' : ''}"
-                onclick={() => openModal(i)}
+        <button type="button" class="thumb-btn {i === selectedIndex ? 'thumb-active' : ''}"
+                onclick={() => selectedIndex = i}
                 title="Foto {i + 1} von {uuids.length}">
           <img src={thumbUrl(uuid)} alt="Foto {i + 1}"
                style="width:52px; height:36px; object-fit:cover; border-radius:3px;" />
@@ -83,10 +98,11 @@
 
 {/if}
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- Fullscreen modal: portaled to document.body to escape sidebar stacking context -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 {#if fullscreen}
-  <div class="panoramax-modal-backdrop" onclick={closeModal}>
+  <div use:portal class="panoramax-modal-backdrop" onclick={closeModal}>
     <div class="panoramax-modal" onclick={e => e.stopPropagation()}
          role="dialog" aria-modal="true" aria-label="Straßenfoto" tabindex="-1">
       <div class="panoramax-modal-header">

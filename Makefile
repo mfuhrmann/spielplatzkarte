@@ -1,7 +1,9 @@
 .PHONY: install dev build serve test \
         up down import docker-build db-apply db-shell \
         seed-load seed-extract \
-        require-npm require-docker installer lan-url help
+        require-npm require-docker installer lan-url \
+        docs-install docs-serve docs-build docs-clean \
+        help
 
 # Bail with a clear message when a required tool is missing.
 define require
@@ -53,7 +55,7 @@ down: require-docker      ## Stop and remove containers
 	docker compose down
 
 import: require-docker    ## Download PBF and import OSM data into PostGIS (run once or to refresh)
-	docker compose run --rm importer
+	docker compose --profile data-node run --rm importer
 
 docker-build: require-docker  ## Rebuild and restart the Svelte app container (Dockerfile.app)
 	docker compose up -d --build app
@@ -93,6 +95,21 @@ lan-url:                  ## Print the LAN URLs to open the app on a phone (same
 	    printf '  \033[36mVite dev server:\033[0m   http://%s:5173\n' "$$LAN_IP" && \
 	    printf '  \033[36mDocker stack:\033[0m      http://%s:%s\n\n' "$$LAN_IP" "$$APP_PORT"; \
 	  fi
+
+## ── Documentation ────────────────────────────────────────────────────────────
+
+docs-install:             ## Set up Python venv and install MkDocs dependencies
+	python3 -m venv .venv
+	.venv/bin/pip install --quiet -r docs/requirements.txt
+
+docs-serve:               ## Start MkDocs live-reload server at http://localhost:8000
+	.venv/bin/mkdocs serve
+
+docs-build:               ## Build static docs site into site/
+	.venv/bin/mkdocs build --strict
+
+docs-clean:               ## Remove site/ and .venv
+	rm -rf site/ .venv
 
 ## ── Help ──────────────────────────────────────────────────────────────────────
 
