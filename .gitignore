@@ -16,3 +16,7 @@ playwright-report/
 _bmad-output/
 _bmad/
 openspec/
+
+# MkDocs
+site/
+.venv
