@@ -44,6 +44,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME}
       PBF_URL:           ${PBF_URL}
       OSM2PGSQL_THREADS: ${OSM2PGSQL_THREADS:-4}
+      OSM_RELATION_ID:   ${OSM_RELATION_ID}
     volumes:
       - pbf_cache:/data
     profiles: [import]
