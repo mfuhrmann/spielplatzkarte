@@ -1,4 +1,6 @@
 <script>
+  import { getCenter } from 'ol/extent';
+  import { transform } from 'ol/proj';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { selection } from '../stores/selection.js';
   import { fetchNearestPlaygrounds } from '../lib/api.js';
@@ -17,13 +19,46 @@
     load(lat, lon);
   }
 
+  function haversineM(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function nearestFromSource(lt, lg, maxResults = 5) {
+    const source = $playgroundSourceStore;
+    if (!source) return [];
+    return source.getFeatures()
+      .map(f => {
+        const [fLon, fLat] = transform(getCenter(f.getGeometry().getExtent()), 'EPSG:3857', 'EPSG:4326');
+        const props = f.getProperties();
+        return {
+          osm_id:     props.osm_id,
+          name:       props.name,
+          lat:        fLat,
+          lon:        fLon,
+          distance_m: haversineM(lt, lg, fLat, fLon),
+          tags:       props,
+        };
+      })
+      .sort((a, b) => a.distance_m - b.distance_m)
+      .slice(0, maxResults);
+  }
+
   async function load(lt, lg) {
     loading = true;
     items = [];
     try {
-      items = await fetchNearestPlaygrounds(lt, lg);
+      items = apiBaseUrl
+        ? await fetchNearestPlaygrounds(lt, lg)
+        : nearestFromSource(lt, lg);
     } catch (err) {
       console.error('Nearest playgrounds fetch failed:', err);
+      items = nearestFromSource(lt, lg);
     } finally {
       loading = false;
     }

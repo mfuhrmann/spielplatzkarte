@@ -38,7 +38,6 @@
   function handleLocation(lat, lon) {
     if (dismissUnsub) { dismissUnsub(); dismissUnsub = null; }
     if (lat === null) { nearbyLocation = null; return; }
-    if (!apiBaseUrl) return; // no PostgREST in Overpass mode
     nearbyLocation = { lat, lon };
     // Dismiss the panel on the next selection-store change (map click or playground select)
     let first = true;
