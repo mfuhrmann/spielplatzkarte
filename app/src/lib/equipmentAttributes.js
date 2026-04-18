@@ -103,7 +103,7 @@ export function getEquipmentAttributesFromProps(props, t) {
 
     const surface = g('surface');
     if (surface) {
-        const label = tl(t, `details.surfaceValues.${surface}`, escapeHtml(surface));
+        const label = surface.split(';').map(s => tl(t, `details.surfaceValues.${s.trim()}`, escapeHtml(s.trim()))).join(' / ');
         content.push(`${t('equipAttr.surface')}: ${label}`);
     }
 

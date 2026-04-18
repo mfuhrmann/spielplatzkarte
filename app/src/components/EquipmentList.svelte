@@ -181,8 +181,7 @@
       {/each}
     </ul>
     <p class="text-muted mt-2 mb-0" style="font-size:smaller">
-      Hilf mit und trage Spielgeräte auf
-      <a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a> ein.
+      {@html $_('equipment.mapcompleteHint', { values: { link: '<a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a>' } })}
     </p>
   {/if}
 {/if}

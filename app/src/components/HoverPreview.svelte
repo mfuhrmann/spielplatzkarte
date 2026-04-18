@@ -19,7 +19,7 @@
   $: area = attr?.area > 0 ? `${Math.round(attr.area / 10) * 10 || attr.area} m²` : null;
 
   $: surface = attr?.surface
-    ? ($_('details.surfaceValues.' + attr.surface, { default: attr.surface }) ?? attr.surface)
+    ? attr.surface.split(';').map(s => $_('details.surfaceValues.' + s.trim(), { default: s.trim() })).join(' / ')
     : null;
 
   $: ohOpen = (() => {

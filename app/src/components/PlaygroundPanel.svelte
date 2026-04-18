@@ -178,7 +178,7 @@
   })();
 
   $: surfaceLabel = attr?.surface
-    ? ($_('details.surfaceValues.' + attr.surface, { default: attr.surface }) ?? attr.surface)
+    ? attr.surface.split(';').map(s => $_('details.surfaceValues.' + s.trim(), { default: s.trim() })).join(' / ')
     : null;
 
   $: descriptionParts = (() => {
