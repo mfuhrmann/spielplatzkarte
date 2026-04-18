@@ -5,7 +5,8 @@
   import { X, Share2, Check, ChevronDown, ChevronRight, Pencil, Clock, ExternalLink, Image, Package, Navigation, Star } from 'lucide-svelte';
 
   import { selection } from '../stores/selection.js';
-  import { fetchPlaygroundEquipment, fetchNearbyPOIs } from '../lib/api.js';
+  import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees } from '../lib/api.js';
+  import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
   import { poiRadiusM } from '../lib/config.js';
   import { getPlaygroundTitle, getPlaygroundLocation } from '../lib/playgroundHelpers.js';
@@ -42,6 +43,7 @@
   } else {
     equipmentFeatures = [];
     pois = [];
+    overlayFeaturesStore.set({ equipment: [], trees: [] });
   }
 
   async function loadData(feat, url) {
@@ -60,14 +62,31 @@
     equipmentLoading = true;
     poisLoading = true;
 
+    let localEquipment = [];
+    let localTrees = [];
+
     try {
       const geojson = await fetchPlaygroundEquipment(ext, feat.get('osm_id'), url);
-      if (gen === loadGen) equipmentFeatures = geojson.features ?? [];
+      if (gen === loadGen) {
+        localEquipment = geojson.features ?? [];
+        equipmentFeatures = localEquipment;
+      }
     } catch (err) {
-      console.warn('Equipment load failed:', err);
+      console.warn('[panel] Equipment load failed:', err);
       if (gen === loadGen) equipmentFeatures = [];
     } finally {
       if (gen === loadGen) equipmentLoading = false;
+    }
+
+    try {
+      const treeGeojson = await fetchTrees(ext, url);
+      if (gen === loadGen) localTrees = treeGeojson.features ?? [];
+    } catch (err) {
+      // Trees silently ignored on error (e.g. Overpass/dev mode)
+    }
+
+    if (gen === loadGen) {
+      overlayFeaturesStore.set({ equipment: localEquipment, trees: localTrees });
     }
 
     try {

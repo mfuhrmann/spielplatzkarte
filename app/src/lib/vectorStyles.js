@@ -118,6 +118,57 @@ function hexToRgb(hex) {
     return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
+// ── Tree style ────────────────────────────────────────────────────────────────
+
+export const treeStyle = new Style({
+    image: new Circle({
+        radius: 4,
+        fill: new Fill({ color: 'rgba(34, 139, 34, 0.5)' }),
+        stroke: new Stroke({ color: '#155215', width: 1.5 })
+    })
+});
+
+/** Style function for the equipment overlay layer. Never uses icon image files. */
+export function equipmentLayerStyleFn(feature) {
+    const geomType = feature.getGeometry()?.getType();
+    const playground = feature.get('playground');
+    const leisure    = feature.get('leisure');
+
+    let color;
+    if (playground && playground !== 'yes' && playground in objDevices) {
+        const cat = objDevices[playground].category;
+        color = objColors[cat] ?? objColors.fallback;
+    } else if (leisure === 'fitness_station') {
+        color = objColors.activity;
+    } else if (leisure === 'pitch') {
+        color = '#4a7c3f';
+    } else {
+        color = objColors.stationary;
+    }
+
+    const [r, g, b] = hexToRgb(color);
+    const fillColor   = `rgba(${r},${g},${b},0.5)`;
+    const strokeColor = `rgba(${r},${g},${b},1)`;
+
+    const radius = (leisure === 'pitch') ? 8 : (leisure === 'fitness_station') ? 7 : 5;
+    if (geomType === 'Point' || geomType === 'MultiPoint') {
+        return new Style({
+            image: new Circle({
+                radius,
+                fill: new Fill({ color: fillColor }),
+                stroke: new Stroke({ color: strokeColor, width: 2 })
+            })
+        });
+    }
+    if (geomType === 'LineString' || geomType === 'MultiLineString') {
+        return new Style({ stroke: new Stroke({ color: strokeColor, width: 3 }) });
+    }
+    return new Style({
+        fill: new Fill({ color: fillColor }),
+        stroke: new Stroke({ color: strokeColor, width: 2 })
+    });
+}
+
 /** Style function for equipment vector features (points and polygons). */
 export function styleFunction(feature, mode, isPoint) {
     const playground = feature.get('playground');

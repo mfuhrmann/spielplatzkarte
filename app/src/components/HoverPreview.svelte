@@ -1,7 +1,8 @@
 <script>
+  import OpeningHours from 'opening_hours';
   import { cn } from '../lib/utils.js';
   import { getPlaygroundTitle } from '../lib/playgroundHelpers.js';
-  import { MapPin, Droplets, Baby, TreeDeciduous } from 'lucide-svelte';
+  import { MapPin, Droplets, Baby, TreeDeciduous, Accessibility, Clock } from 'lucide-svelte';
 
   /** @type {{ x: number, y: number } | null} */
   export let position = null;
@@ -13,23 +14,35 @@
   $: isWater = attr?.is_water;
   $: hasTrees = attr?.tree_count > 0;
   $: forBaby = attr?.for_baby;
+  $: isWheelchair = attr?.wheelchair === 'yes' || attr?.wheelchair === 'limited';
   $: area = attr?.area > 0 ? `${Math.round(attr.area / 10) * 10 || attr.area} m²` : null;
 
-  // Position the card above or below based on viewport
+  const surfaceLabels = {
+    sand: 'Sand', grass: 'Rasen', wood_chips: 'Holzschnitzel', bark_mulch: 'Rindenmulch',
+    rubber: 'Gummi', asphalt: 'Asphalt', concrete: 'Beton', gravel: 'Kies',
+    fine_gravel: 'Feinkies', dirt: 'Erde', compacted: 'verdichtet', tartan: 'Tartan',
+    artificial_turf: 'Kunstgras', paving_stones: 'Pflastersteine',
+  };
+  $: surface = attr?.surface ? (surfaceLabels[attr.surface] ?? attr.surface) : null;
+
+  $: ohOpen = (() => {
+    if (!attr?.opening_hours || attr.opening_hours === '24/7') return null;
+    try {
+      return new OpeningHours(attr.opening_hours, { address: { country_code: 'de' } }).getState(new Date());
+    } catch { return null; }
+  })();
+
   $: style = position ? `left: ${position.x}px; top: ${position.y}px;` : '';
 </script>
 
 {#if position && attr}
   <div
-    class={cn(
-      'fixed z-[60] pointer-events-none',
-      'animate-in fade-in-0 zoom-in-95 duration-150'
-    )}
+    class={cn('fixed z-[60] pointer-events-none', 'animate-in fade-in-0 zoom-in-95 duration-150')}
     style={style}
   >
     <div class="relative -translate-x-1/2 -translate-y-full -mt-3">
-      <!-- Card - always light theme -->
       <div class="hover-card rounded-lg shadow-lg border p-3 min-w-[180px] max-w-[240px]">
+
         <!-- Title -->
         <h4 class="font-semibold text-sm leading-tight mb-1.5 line-clamp-2" style="color: #1f2937;">
           {title}
@@ -39,31 +52,39 @@
         <div class="flex flex-wrap gap-1.5 mb-2">
           {#if isWater}
             <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-water/15 text-water">
-              <Droplets class="h-3 w-3" />
-              Wasser
+              <Droplets class="h-3 w-3" />Wasser
             </span>
           {/if}
           {#if forBaby}
             <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">
-              <Baby class="h-3 w-3" />
-              Baby
+              <Baby class="h-3 w-3" />Baby
             </span>
           {/if}
           {#if hasTrees}
             <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-nature/15 text-nature">
-              <TreeDeciduous class="h-3 w-3" />
-              Bäume
+              <TreeDeciduous class="h-3 w-3" />Bäume
+            </span>
+          {/if}
+          {#if isWheelchair}
+            <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full" style="background:rgba(99,102,241,.1);color:#6366f1;">
+              <Accessibility class="h-3 w-3" />Barrierefrei
             </span>
           {/if}
         </div>
 
         <!-- Meta row -->
-        <div class="flex items-center gap-2 text-xs" style="color: #6b7280;">
-          <MapPin class="h-3 w-3 shrink-0" />
-          {#if area}
-            <span>{area}</span>
-          {:else}
-            <span>Spielplatz</span>
+        <div class="flex flex-col gap-1 text-xs" style="color: #6b7280;">
+          <div class="flex items-center gap-1.5">
+            <MapPin class="h-3 w-3 shrink-0" />
+            <span>{area ?? 'Spielplatz'}{surface ? ` · ${surface}` : ''}</span>
+          </div>
+          {#if ohOpen !== null}
+            <div class="flex items-center gap-1.5">
+              <Clock class="h-3 w-3 shrink-0" />
+              <span style="color: {ohOpen ? '#16a34a' : '#dc2626'}">
+                {ohOpen ? 'Geöffnet' : 'Geschlossen'}
+              </span>
+            </div>
           {/if}
         </div>
       </div>
