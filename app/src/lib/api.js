@@ -40,13 +40,14 @@ export async function fetchNearbyPOIs(lat, lon, radiusM = 500, osmId = null, bas
     return [];
 }
 
-// Standalone pitches (not within any playground) within a bounding box.
+// Pitches, benches, shelters, picnic tables and fitness stations not within
+// any playground polygon, within a bounding box.
 // Returns an empty FeatureCollection silently when no backend is configured.
-export async function fetchStandalonePitches(extentEPSG3857, baseUrl = defaultApiBaseUrl) {
+export async function fetchStandaloneEquipment(extentEPSG3857, baseUrl = defaultApiBaseUrl) {
     if (!baseUrl) return { type: 'FeatureCollection', features: [] };
     const [minLon, minLat, maxLon, maxLat] = transformExtent(extentEPSG3857, 'EPSG:3857', 'EPSG:4326');
     const params = new URLSearchParams({ min_lon: minLon, min_lat: minLat, max_lon: maxLon, max_lat: maxLat });
-    const res = await fetch(`${baseUrl}/rpc/get_standalone_pitches?${params}`);
+    const res = await fetch(`${baseUrl}/rpc/get_standalone_equipment?${params}`);
     if (res.ok) return res.json();
     return { type: 'FeatureCollection', features: [] };
 }

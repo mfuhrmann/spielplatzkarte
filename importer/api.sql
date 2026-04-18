@@ -291,16 +291,16 @@ $$;
 GRANT EXECUTE ON FUNCTION api.get_equipment(float8, float8, float8, float8) TO web_anon;
 
 -- =========================================================================
--- 3. get_standalone_pitches(min_lon, min_lat, max_lon, max_lat)
---    Returns leisure=pitch features (nodes and polygon ways) that do NOT
---    lie within any leisure=playground polygon.  These are pitches that
---    exist independently of a playground and would otherwise be invisible
---    in the app.  The GeoJSON shape matches get_equipment so the same
---    frontend style and tooltip can be reused.
+-- 3. get_standalone_equipment(min_lon, min_lat, max_lon, max_lat)
+--    Returns pitches, benches, shelters, picnic tables and fitness stations
+--    (nodes and polygon ways) that do NOT lie within any
+--    leisure=playground polygon.  The GeoJSON shape matches get_equipment
+--    so the same frontend styles and tooltip can be reused.
 -- =========================================================================
 DROP FUNCTION IF EXISTS api.get_standalone_pitches(float8, float8, float8, float8);
+DROP FUNCTION IF EXISTS api.get_standalone_equipment(float8, float8, float8, float8);
 
-CREATE OR REPLACE FUNCTION api.get_standalone_pitches(
+CREATE OR REPLACE FUNCTION api.get_standalone_equipment(
   min_lon float8,
   min_lat float8,
   max_lon float8,
@@ -316,48 +316,57 @@ AS $$
       3857
     ) AS geom
   ),
-  -- Pitch nodes not contained within any playground polygon
-  pitch_nodes AS (
+  -- Nodes (pitches, benches, shelters, picnic tables, fitness stations)
+  -- not contained within any playground polygon
+  standalone_nodes AS (
     SELECT
       p.osm_id,
       'N'::text AS osm_type,
       p.name,
+      p.amenity,
       p.leisure,
       p.sport,
       p.tags,
       ST_Transform(p.way, 4326) AS geom
     FROM planet_osm_point p, bbox b
     WHERE p.way && b.geom
-      AND p.leisure = 'pitch'
+      AND (
+        p.amenity IN ('bench', 'shelter')
+        OR p.leisure IN ('picnic_table', 'pitch', 'fitness_station')
+      )
       AND NOT EXISTS (
         SELECT 1 FROM planet_osm_polygon pg
         WHERE pg.leisure = 'playground'
           AND ST_Within(p.way, pg.way)
       )
   ),
-  -- Pitch polygon ways not intersecting any playground polygon
-  pitch_ways AS (
+  -- Polygon ways not intersecting any playground polygon
+  standalone_ways AS (
     SELECT
       p.osm_id,
       'W'::text AS osm_type,
       p.name,
+      p.amenity,
       p.leisure,
       p.sport,
       p.tags,
       ST_Transform(p.way, 4326) AS geom
     FROM planet_osm_polygon p, bbox b
     WHERE p.way && b.geom
-      AND p.leisure = 'pitch'
+      AND (
+        p.amenity IN ('bench', 'shelter')
+        OR p.leisure IN ('picnic_table', 'pitch', 'fitness_station')
+      )
       AND NOT EXISTS (
         SELECT 1 FROM planet_osm_polygon pg
         WHERE pg.leisure = 'playground'
           AND ST_Intersects(p.way, pg.way)
       )
   ),
-  all_pitches AS (
-    SELECT * FROM pitch_nodes
+  all_features AS (
+    SELECT * FROM standalone_nodes
     UNION ALL
-    SELECT * FROM pitch_ways
+    SELECT * FROM standalone_ways
   )
   SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -371,6 +380,7 @@ AS $$
               'osm_id',   abs(osm_id),
               'osm_type', osm_type,
               'name',     name,
+              'amenity',  amenity,
               'leisure',  leisure,
               'sport',    sport
             ) || COALESCE(hstore_to_jsonb(tags), '{}'::jsonb)
@@ -380,10 +390,10 @@ AS $$
       '[]'::json
     )
   )
-  FROM all_pitches;
+  FROM all_features;
 $$;
 
-GRANT EXECUTE ON FUNCTION api.get_standalone_pitches(float8, float8, float8, float8) TO web_anon;
+GRANT EXECUTE ON FUNCTION api.get_standalone_equipment(float8, float8, float8, float8) TO web_anon;
 
 -- =========================================================================
 -- 4. get_pois(lat, lon, radius_m)

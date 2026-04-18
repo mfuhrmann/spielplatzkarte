@@ -10,7 +10,7 @@
   import { defaults as defaultInteractions } from 'ol/interaction/defaults';
 
   import { mapZoom, mapMinZoom, osmRelationId, apiBaseUrl } from '../lib/config.js';
-  import { fetchPlaygrounds, fetchStandalonePitches } from '../lib/api.js';
+  import { fetchPlaygrounds, fetchStandaloneEquipment } from '../lib/api.js';
   import { fetchRegionInfo } from '../lib/region.js';
   import { playgroundStyleFn, selectionStyle, equipmentLayerStyleFn, treeStyle } from '../lib/vectorStyles.js';
   import { selection } from '../stores/selection.js';
@@ -202,7 +202,7 @@
         const zoom = olMap.getView().getZoom();
         if (zoom < PITCH_MIN_ZOOM) { pitchSource.clear(); return; }
         const extent = olMap.getView().calculateExtent(olMap.getSize());
-        const geojson = await fetchStandalonePitches(extent);
+        const geojson = await fetchStandaloneEquipment(extent);
         const features = new GeoJSON().readFeatures(geojson, {
           dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857',
         });
