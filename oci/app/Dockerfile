@@ -12,6 +12,7 @@ RUN npm ci
 
 # Build the Svelte app
 COPY app/ ./
+COPY locales/ /locales/
 RUN npm run build
 
 # ── Stage 2: Serve ────────────────────────────────────────────────────────────
