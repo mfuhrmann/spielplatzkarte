@@ -1,7 +1,51 @@
 {
   "appTitle": "{regionName} Playground Map",
+  "locate": {
+    "title": "Show my location",
+    "denied": "Location access denied.",
+    "unavailable": "Location unavailable.",
+    "notSupported": "Geolocation not available."
+  },
+  "filter": {
+    "title": "Filter",
+    "clearAll": "Reset all",
+    "clearChips": "Clear all",
+    "removeChip": "Remove {label}",
+    "layers": "Layers",
+    "standalonePitches": "Sports pitches (outside playgrounds)",
+    "labels": {
+      "private":     "Public only",
+      "water":       "Water playground",
+      "baby":        "Baby-friendly",
+      "toddler":     "Toddler-friendly",
+      "wheelchair":  "Wheelchair accessible",
+      "bench":       "With bench",
+      "picnic":      "With picnic table",
+      "shelter":     "With shelter",
+      "tableTennis": "Table tennis table",
+      "soccer":      "With football pitch",
+      "basketball":  "Basketball court"
+    }
+  },
+  "hover": {
+    "tagWater":     "Water",
+    "tagBaby":      "Baby",
+    "tagTrees":     "Trees",
+    "tagAccessible":"Accessible",
+    "playground":   "Playground"
+  },
+  "zoom": {
+    "in":  "Zoom in",
+    "out": "Zoom out"
+  },
+  "panoramax": {
+    "noPhotos":  "No photos yet.",
+    "fullscreen":"Show fullscreen"
+  },
   "search": {
     "placeholder": "Search …",
+    "ariaLabel": "Location search",
+    "clearLabel": "Clear search",
     "found": "\"{query}\" in {location}",
     "foundGeneric": "\"{query}\" found",
     "notFound": "No results found!"
@@ -15,7 +59,8 @@
     "hint": "Tap a playground for details",
     "shareBtn": "Share playground",
     "osmBtn": "View on OpenStreetMap",
-    "closeBtn": "Close"
+    "closeBtn": "Close",
+    "copyLink": "Copy link"
   },
   "completeness": {
     "complete": "Photos, name & details available",
@@ -23,7 +68,8 @@
     "missing": "No data yet",
     "dotComplete": "Data complete",
     "dotPartial": "Partially mapped",
-    "dotMissing": "No data"
+    "dotMissing": "No data",
+    "badgeComplete": "Complete"
   },
   "accordion": {
     "photos": "Photos",
@@ -35,22 +81,48 @@
   },
   "location": {
     "btn": "My location",
-    "yourLocation": "your location"
+    "yourLocation": "your location",
+    "am": "near {name}",
+    "anDer": "near {name}",
+    "near": "near {name}"
   },
   "nearby": {
     "title": "Near {label}",
+    "header": "Nearby",
+    "loading": "Loading …",
+    "empty": "No playgrounds found.",
+    "unknownName": "Unknown playground",
     "defaultName": "Playground",
     "thisLocation": "this location"
   },
   "equipment": {
-    "deviceCount": "{count, plural, one {# piece of equipment}, other {# pieces of equipment}}",
-    "fitnessCount": "{count, plural, one {# fitness station}, other {# fitness stations}}",
-    "benches": "{count, plural, one {# bench}, other {# benches}}",
-    "shelters": "{count, plural, one {# shelter}, other {# shelters}}",
-    "picnic": "{count, plural, one {# picnic table}, other {# picnic tables}}",
+    "deviceCount": "{count, plural, one {# piece of equipment} other {# pieces of equipment}}",
+    "fitnessCount": "{count, plural, one {# fitness station} other {# fitness stations}}",
+    "benches": "{count, plural, one {# bench} other {# benches}}",
+    "shelters": "{count, plural, one {# shelter} other {# shelters}}",
+    "picnic": "{count, plural, one {# picnic table} other {# picnic tables}}",
+    "noDevices": "No equipment mapped.",
     "fitnessDefault": "Fitness station",
+    "pitchDefault": "Sports pitch",
     "addHint": "Equipment not yet mapped individually – help out! 👇",
     "addLink": "Add equipment",
+    "mapcompleteHint": "Help map equipment on {link}.",
+    "pitches": {
+      "soccer":      "Football pitch",
+      "basketball":  "Basketball court",
+      "table_tennis":"Table tennis table",
+      "volleyball":  "Volleyball court",
+      "tennis":      "Tennis court",
+      "handball":    "Handball court",
+      "badminton":   "Badminton court",
+      "boules":      "Boules court",
+      "petanque":    "Pétanque court",
+      "multi":       "Multi-use pitch",
+      "skateboard":  "Skate park",
+      "bmx":         "BMX track",
+      "climbing":    "Climbing area",
+      "fitness":     "Fitness area"
+    },
     "devices": {
       "slide": "Slide",
       "seesaw": "Seesaw",
@@ -183,7 +255,8 @@
     "none": "No photos for this playground yet.<br>Have you been there?",
     "addLink": "Add photo",
     "enlarge": "Click to enlarge",
-    "thumbnail": "Photo {n}"
+    "thumbnail": "Photo {n}",
+    "thumbnailTitle": "Photo {n} of {total}"
   },
   "poi": {
     "errorLoad": "Could not load surroundings data.",
@@ -195,6 +268,9 @@
     "openingHours": "Opening hours",
     "today": "Today",
     "tomorrow": "Tomorrow",
+    "noNearby": "No nearby facilities found within {radius} km.",
+    "openNavApp": "Open in navigation app",
+    "openInBrowser": "Navigate in browser",
     "categories": {
       "toilets": "Toilets",
       "busStops": "Bus stops",
@@ -218,7 +294,13 @@
     "streetPhoto": "Street photo",
     "prevPhoto": "Previous photo",
     "nextPhoto": "Next photo",
+    "ok": "OK",
     "addData": {
+      "introText": "The data on this map comes from {name}. You can edit it directly – no account needed for MapComplete.",
+      "equipTitle": "Equipment & details",
+      "mapcompleteText": "Add equipment, photos and further details with a click.",
+      "wikiTitle": "OSM wiki",
+      "wikiLinkText": "Mapping rules for playgrounds in this region",
       "osm": {
         "label": "OpenStreetMap",
         "text": "The data comes from {osmLink} — a free, collaborative world map built by millions of volunteers. Only what has been mapped will appear here.",
@@ -238,7 +320,9 @@
       "community": {
         "label": "Community",
         "text": "Questions or want to get involved? The local OSM community can be reached via {chatLink}.",
-        "chatLabel": "local OSM community chat"
+        "chatLabel": "local OSM community chat",
+        "simpleText": "Questions and discussion in the",
+        "simpleChatLabel": "local chat"
       }
     },
     "about": {
@@ -260,6 +344,17 @@
       }
     }
   },
+  "compass": {
+    "N": "N", "NE": "NE", "E": "E", "SE": "SE",
+    "S": "S", "SW": "SW", "W": "W", "NW": "NW"
+  },
+  "hub": {
+    "title": "Spielplatzkarte Hub",
+    "registryError": "Registry unreachable",
+    "loading": "Loading instances …",
+    "instanceError": "Unreachable",
+    "playgroundCount": "{count, plural, one {# playground} other {# playgrounds}}"
+  },
   "details": {
     "sizeLabel": "Size",
     "sizeUnknown": "unknown",
@@ -271,6 +366,8 @@
     "ageMin": "from {age} years",
     "ageMax": "up to {age} years",
     "operatorLabel": "Operator",
+    "phoneLabel": "Phone",
+    "emailLabel": "Email",
     "editMapComplete": "Edit on MapComplete",
     "loading": "Loading …",
     "access": {
@@ -334,15 +431,23 @@
   },
   "reviews": {
     "loading": "Loading …",
-    "count": "{count, plural, one {# review}, other {# reviews}}",
+    "loadError": "Reviews could not be loaded.",
+    "count": "{count, plural, one {# review} other {# reviews}}",
     "empty": "No reviews yet – be the first!",
+    "selectRating": "Select rating",
+    "starLabel": "{n, plural, one {# star} other {# stars}}",
     "opinionPlaceholder": "Your opinion (optional)",
     "submit": "Submit review",
     "submitting": "Submitting …",
     "submitted": "Thank you for your review!",
     "errorRetry": "Error submitting – please try again.",
     "error": "Error submitting.",
-    "privacyNote": "Reviews are anonymous and stored via {mangroveLink}."
+    "privacyNote": "Reviews are anonymous and stored via {mangroveLink}.",
+    "today": "today",
+    "daysAgo": "{count, plural, one {# day ago} other {# days ago}}",
+    "weeksAgo": "{count, plural, one {# week ago} other {# weeks ago}}",
+    "monthsAgo": "{count, plural, one {# month ago} other {# months ago}}",
+    "yearsAgo": "{count, plural, one {# year ago} other {# years ago}}"
   },
   "equipAttr": {
     "theme": "Theme",

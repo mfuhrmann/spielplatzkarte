@@ -1,24 +1,16 @@
 <script>
   import { filterStore, hasActiveFilters } from '../stores/filters.js';
+  import { _ } from 'svelte-i18n';
   import { X } from 'lucide-svelte';
 
-  const FILTER_LABELS = {
-    private:     'Nur öffentlich',
-    water:       'Wasserspielplatz',
-    baby:        'Baby-geeignet',
-    toddler:     'Kleinkind-geeignet',
-    wheelchair:  'Rollstuhlgerecht',
-    bench:       'Mit Sitzbank',
-    picnic:      'Mit Picknicktisch',
-    shelter:     'Mit Unterstand',
-    tableTennis: 'Tischtennisplatte',
-    soccer:      'Mit Bolzplatz',
-    basketball:  'Basketballfeld',
-  };
+  const FILTER_KEYS = new Set([
+    'private', 'water', 'baby', 'toddler', 'wheelchair',
+    'bench', 'picnic', 'shelter', 'tableTennis', 'soccer', 'basketball',
+  ]);
 
   $: activeFilters = Object.entries($filterStore)
-    .filter(([_, active]) => active)
-    .map(([key]) => ({ key, label: FILTER_LABELS[key] }));
+    .filter(([key, active]) => active && FILTER_KEYS.has(key))
+    .map(([key]) => ({ key, label: $_('filter.labels.' + key) }));
 
   $: hasFilters = hasActiveFilters($filterStore);
 
@@ -39,7 +31,7 @@
         <button
           class="chip-remove"
           onclick={() => removeFilter(filter.key)}
-          aria-label="{filter.label} entfernen"
+          aria-label={$_('filter.removeChip', { values: { label: filter.label } })}
         >
           <X class="h-3 w-3" />
         </button>
@@ -48,7 +40,7 @@
 
     {#if activeFilters.length > 1}
       <button class="clear-all" onclick={clearAll}>
-        Alle löschen
+        {$_('filter.clearChips')}
       </button>
     {/if}
   </div>

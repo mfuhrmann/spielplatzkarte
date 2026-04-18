@@ -4,7 +4,9 @@
     "placeholder": "検索 …",
     "found": "{{location}}で「{{query}}」",
     "foundGeneric": "「{{query}}」が見つかりました",
-    "notFound": "結果が見つかりませんでした！"
+    "notFound": "結果が見つかりませんでした！",
+    "ariaLabel": "Location search",
+    "clearLabel": "Clear search"
   },
   "nav": {
     "addData": "データを追加",
@@ -32,7 +34,10 @@
   },
   "location": {
     "btn": "現在地",
-    "yourLocation": "現在地"
+    "yourLocation": "現在地",
+    "am": "near {name}",
+    "anDer": "near {name}",
+    "near": "near {name}"
   },
   "nearby": {
     "title": "{{label}}の近く",
@@ -47,7 +52,8 @@
     "picnic_other": "ピクニックテーブル {{count}} 台",
     "fitnessDefault": "フィットネス器具",
     "addHint": "遊具はまだ個別にマッピングされていません – ご協力ください！ 👇",
-    "addLink": "遊具を追加"
+    "addLink": "遊具を追加",
+    "mapcompleteHint": "Help map equipment on {link}."
   },
   "photos": {
     "none": "この遊び場の写真はまだありません。<br>訪れたことがありますか？",

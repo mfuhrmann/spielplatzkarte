@@ -3,6 +3,7 @@
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
   import { X, Share2, Check, ChevronDown, ChevronRight, Pencil, Clock, ExternalLink, Image, Package, Navigation, Star } from 'lucide-svelte';
+  import { _ } from 'svelte-i18n';
 
   import { selection } from '../stores/selection.js';
   import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees } from '../lib/api.js';
@@ -115,64 +116,70 @@
   });
 
   // ── Completeness badge ────────────────────────────────────────────────────
-  const COMPLETENESS = {
-    complete: { variant: 'success', label: 'Vollständig' },
-    partial:  { variant: 'warning', label: 'Teilweise erfasst' },
-    missing:  { variant: 'destructive', label: 'Daten fehlen' },
+  const COMPLETENESS_VARIANT = {
+    complete: 'success',
+    partial:  'warning',
+    missing:  'destructive',
   };
-  $: completeness = attr ? COMPLETENESS[playgroundCompleteness(attr)] : null;
+  const COMPLETENESS_KEY = {
+    complete: 'completeness.badgeComplete',
+    partial:  'completeness.partial',
+    missing:  'completeness.dotMissing',
+  };
+  $: completenessLevel = attr ? playgroundCompleteness(attr) : null;
+  $: completeness = completenessLevel
+    ? { variant: COMPLETENESS_VARIANT[completenessLevel], key: COMPLETENESS_KEY[completenessLevel] }
+    : null;
 
   // ── Opening hours ─────────────────────────────────────────────────────────
-  // Returns { color, label, suffix, error } so the template can render without
-  // {@html}. label includes the ● bullet; suffix is trailing plain text (e.g.
-  // "· Öffnet morgen um 09:00") rendered outside the coloured span.
-  function openingHoursState(ohStr) {
-    const fmt = d => d.toLocaleTimeString('de', { hour: '2-digit', minute: '2-digit' });
+  function openingHoursState(ohStr, t) {
+    const fmt = d => d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
     const dayLabel = (d, now) => {
-      if (d.toDateString() === now.toDateString()) return 'heute';
+      if (d.toDateString() === now.toDateString()) return t('poi.today');
       const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
-      if (d.toDateString() === tomorrow.toDateString()) return 'morgen';
+      if (d.toDateString() === tomorrow.toDateString()) return t('poi.tomorrow');
       const diff = Math.round((d - now) / 86400000);
-      if (diff <= 6) return d.toLocaleDateString('de', { weekday: 'long' });
-      return d.toLocaleDateString('de', { weekday: 'short', day: '2-digit', month: '2-digit' });
+      if (diff <= 6) return d.toLocaleDateString(undefined, { weekday: 'long' });
+      return d.toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: '2-digit' });
     };
     try {
       const oh = new OpeningHours(ohStr, { address: { country_code: 'de' } });
       const now = new Date();
       const isOpen = oh.getState(now);
       const next = oh.getNextChange(now);
-      if (ohStr.trim() === '24/7') return { open: true, text: 'Immer geöffnet' };
+      if (ohStr.trim() === '24/7') return { open: true, text: t('poi.alwaysOpen') };
       if (isOpen) {
-        const label = next ? `Geöffnet bis ${fmt(next)}` : 'Geöffnet';
+        const label = next
+          ? t('poi.openUntil', { values: { time: fmt(next) } })
+          : t('poi.open');
         return { open: true, text: label };
       }
-      if (next) return { open: false, text: `Geschlossen · Öffnet ${dayLabel(next, now)} um ${fmt(next)}` };
-      return { open: false, text: 'Geschlossen' };
+      if (next) return {
+        open: false,
+        text: `${t('poi.closed')} · ${t('poi.opensAt', { values: { day: dayLabel(next, now), time: fmt(next) } })}`,
+      };
+      return { open: false, text: t('poi.closed') };
     } catch {
       return { open: null, text: ohStr };
     }
   }
 
-  // ── Attribute helpers ─────────────────────────────────────────────────────
-  const surfaceLabels = {
-    sand:'Sand', grass:'Rasen', wood_chips:'Holzschnitzel', bark_mulch:'Rindenmulch',
-    rubber:'Gummigranulat', asphalt:'Asphalt', concrete:'Beton',
-    paving_stones:'Pflastersteine', tartan:'Tartan', artificial_turf:'Kunstgras',
-    gravel:'Kies', fine_gravel:'Feinkies', dirt:'Erde', compacted:'verdichtet',
-  };
-  const accessDict = {
-    yes:'öffentlich', private:'privat', customers:'nur für Gäste',
-    no:'nicht zugänglich', permissive:'öffentlich geduldet',
-    destination:'nur für Anlieger', residents:'nur für Anwohnende',
-  };
-  const privateDict = {
-    residents:'nur für Anwohnende', students:'nur für Schule',
-    employees:'nur für Mitarbeitende',
-  };
+  $: openingHoursInfo = attr?.opening_hours ? openingHoursState(attr.opening_hours, $_) : null;
 
-  $: accessLabel = attr
-    ? (privateDict[attr.private] ?? accessDict[attr.access] ?? 'unbekannt')
-    : '';
+  // ── Attribute helpers ─────────────────────────────────────────────────────
+  $: accessLabel = (() => {
+    if (!attr) return '';
+    const privateVal = attr.private;
+    if (privateVal === 'residents') return $_('details.access.residents');
+    if (privateVal === 'students')  return $_('details.access.students');
+    if (privateVal === 'employees') return $_('details.access.employees');
+    const access = attr.access ?? 'unknown';
+    return $_('details.access.' + access, { default: $_('details.access.unknown') });
+  })();
+
+  $: surfaceLabel = attr?.surface
+    ? attr.surface.split(';').map(s => $_('details.surfaceValues.' + s.trim(), { default: s.trim() })).join(' / ')
+    : null;
 
   $: descriptionParts = (() => {
     if (!attr) return [];
@@ -209,8 +216,6 @@
     return uuids;
   })();
 
-  $: openingHoursInfo = attr?.opening_hours ? openingHoursState(attr.opening_hours) : null;
-
   // ── Share button ──────────────────────────────────────────────────────────
   let shareConfirmed = false;
   let shareTimeout;
@@ -220,7 +225,7 @@
     const url = `${window.location.origin}${window.location.pathname}#${attr.osm_type}${attr.osm_id}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: getPlaygroundTitle(attr), url });
+        await navigator.share({ title: getPlaygroundTitle(attr, $_), url });
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(url);
       } else {
@@ -253,23 +258,23 @@
     {#if !embedded}
       <div class="info-panel__header">
         <div class="flex-1 min-w-0">
-          <h2 class="panel-title">{getPlaygroundTitle(attr)}</h2>
-          {#if getPlaygroundLocation(attr)}
-            <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr)}</p>
+          <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
+          {#if getPlaygroundLocation(attr, $_)}
+            <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
           {/if}
           {#if completeness}
-            <Badge variant={completeness.variant} class="mt-2">{completeness.label}</Badge>
+            <Badge variant={completeness.variant} class="mt-2">{$_(completeness.key)}</Badge>
           {/if}
         </div>
         <div class="flex items-center gap-1 shrink-0">
-          <button class="panel-icon-btn" onclick={sharePlayground} aria-label="Link kopieren">
+          <button class="panel-icon-btn" onclick={sharePlayground} aria-label={$_('info.copyLink')}>
             {#if shareConfirmed}
               <Check class="h-5 w-5 text-green-600" />
             {:else}
               <Share2 class="h-5 w-5" />
             {/if}
           </button>
-          <button class="panel-icon-btn" onclick={() => selection.clear()} aria-label="Schließen">
+          <button class="panel-icon-btn" onclick={() => selection.clear()} aria-label={$_('info.closeBtn')}>
             <X class="h-5 w-5" />
           </button>
         </div>
@@ -278,15 +283,15 @@
       <!-- Embedded header (bottom sheet) -->
       <div class="flex items-start justify-between gap-2 mb-4">
         <div class="flex-1 min-w-0">
-          <h2 class="panel-title">{getPlaygroundTitle(attr)}</h2>
-          {#if getPlaygroundLocation(attr)}
-            <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr)}</p>
+          <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
+          {#if getPlaygroundLocation(attr, $_)}
+            <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
           {/if}
           {#if completeness}
-            <Badge variant={completeness.variant} class="mt-2">{completeness.label}</Badge>
+            <Badge variant={completeness.variant} class="mt-2">{$_(completeness.key)}</Badge>
           {/if}
         </div>
-        <button class="panel-icon-btn shrink-0" onclick={sharePlayground} aria-label="Link kopieren">
+        <button class="panel-icon-btn shrink-0" onclick={sharePlayground} aria-label={$_('info.copyLink')}>
           {#if shareConfirmed}
             <Check class="h-5 w-5 text-green-600" />
           {:else}
@@ -306,37 +311,37 @@
       <div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
         {#if attr.area > 0}
           <div class="fact-item">
-            <span class="info-label">Größe</span>
+            <span class="info-label">{$_('details.sizeLabel')}</span>
             <span class="fact-value">{Math.round(attr.area / 10) * 10 || attr.area} m²</span>
           </div>
         {/if}
 
         <div class="fact-item">
-          <span class="info-label">Zugänglichkeit</span>
+          <span class="info-label">{$_('details.accessLabel')}</span>
           <span class="fact-value">{accessLabel}</span>
         </div>
 
-        {#if attr.surface}
+        {#if surfaceLabel}
           <div class="fact-item">
-            <span class="info-label">Oberfläche</span>
-            <span class="fact-value">{surfaceLabels[attr.surface] ?? attr.surface}</span>
+            <span class="info-label">{$_('details.surfaceLabel')}</span>
+            <span class="fact-value">{surfaceLabel}</span>
           </div>
         {/if}
 
         {#if attr.tree_count > 0}
           <div class="fact-item">
-            <span class="info-label">Bäume</span>
+            <span class="info-label">{$_('hover.tagTrees')}</span>
             <span class="fact-value">{attr.tree_count}</span>
           </div>
         {/if}
 
         {#if attr.min_age || attr.max_age}
           <div class="fact-item col-span-2">
-            <span class="info-label">Alter</span>
+            <span class="info-label">{$_('details.ageLabel')}</span>
             <span class="fact-value">
-              {#if attr.min_age && attr.max_age}{attr.min_age}–{attr.max_age} Jahre
-              {:else if attr.min_age}ab {attr.min_age} Jahren
-              {:else}bis {attr.max_age} Jahre{/if}
+              {#if attr.min_age && attr.max_age}{$_('details.ageRange', { values: { min: attr.min_age, max: attr.max_age } })}
+              {:else if attr.min_age}{$_('details.ageMin', { values: { age: attr.min_age } })}
+              {:else}{$_('details.ageMax', { values: { age: attr.max_age } })}{/if}
             </span>
           </div>
         {/if}
@@ -355,7 +360,7 @@
         <div class="space-y-2 mb-4">
           {#if attr.operator}
             <div class="fact-item" data-testid="operator-value">
-              <span class="info-label">Betreiber</span>
+              <span class="info-label">{$_('details.operatorLabel')}</span>
               {#if attr['operator:wikidata']}
                 <a href="https://www.wikidata.org/wiki/{attr['operator:wikidata']}"
                    target="_blank" rel="noopener" class="fact-value text-primary hover:underline">{attr.operator}</a>
@@ -367,7 +372,7 @@
           {#if attr['contact:phone'] || attr.phone}
             {@const phone = attr['contact:phone'] || attr.phone}
             <div class="fact-item">
-              <span class="info-label">Telefon</span>
+              <span class="info-label">{$_('details.phoneLabel')}</span>
               {#if /^\+?\d/.test(phone.trim())}
                 <a href="tel:{phone}" class="fact-value text-primary hover:underline">{phone}</a>
               {:else}<span class="fact-value">{phone}</span>{/if}
@@ -376,7 +381,7 @@
           {#if attr['contact:email'] || attr.email}
             {@const email = attr['contact:email'] || attr.email}
             <div class="fact-item">
-              <span class="info-label">E-Mail</span>
+              <span class="info-label">{$_('details.emailLabel')}</span>
               {#if email.includes('@') && !/^javascript:/i.test(email.trim())}
                 <a href="mailto:{email}" class="fact-value text-primary hover:underline">{email}</a>
               {:else}<span class="fact-value">{email}</span>{/if}
@@ -388,7 +393,7 @@
       <!-- Edit Link -->
       <a href={mcUrl} target="_blank" rel="noopener" class="panel-edit-link">
         <Pencil class="h-3 w-3" />
-        Bei MapComplete bearbeiten
+        {$_('details.editMapComplete')}
         <ExternalLink class="h-3 w-3" />
       </a>
 
@@ -406,7 +411,7 @@
               <ChevronRight class="h-4 w-4 text-muted-foreground" />
             {/if}
             <Image class="h-4 w-4 text-muted-foreground" />
-            Bilder
+            {$_('accordion.photos')}
           </button>
           {#if openSections.has('photos')}
             <div class="pb-3">
@@ -427,12 +432,12 @@
               <ChevronRight class="h-4 w-4 text-muted-foreground" />
             {/if}
             <Package class="h-4 w-4 text-muted-foreground" />
-            Ausstattung
+            {$_('accordion.equipment')}
           </button>
           {#if openSections.has('equipment')}
             <div class="pb-3">
               {#if equipmentLoading}
-                <p class="text-sm text-muted-foreground italic py-2">Wird geladen...</p>
+                <p class="text-sm text-muted-foreground italic py-2">{$_('details.loading')}</p>
               {:else}
                 <EquipmentList features={equipmentFeatures} playgroundAttr={attr} />
               {/if}
@@ -452,12 +457,12 @@
               <ChevronRight class="h-4 w-4 text-muted-foreground" />
             {/if}
             <Navigation class="h-4 w-4 text-muted-foreground" />
-            Umfeld
+            {$_('accordion.surroundings')}
           </button>
           {#if openSections.has('pois')}
             <div class="pb-3">
               {#if poisLoading}
-                <p class="text-sm text-muted-foreground italic py-2">Wird geladen...</p>
+                <p class="text-sm text-muted-foreground italic py-2">{$_('details.loading')}</p>
               {:else}
                 <POIPanel {pois} {centerLat} {centerLon} />
               {/if}
@@ -477,7 +482,7 @@
               <ChevronRight class="h-4 w-4 text-muted-foreground" />
             {/if}
             <Star class="h-4 w-4 text-muted-foreground" />
-            Bewertungen
+            {$_('accordion.reviews')}
           </button>
           {#if openSections.has('reviews')}
             <div class="pb-3">
@@ -505,7 +510,7 @@
     flex-direction: column;
     border-right: 1px solid #e5e7eb;
     color-scheme: light;
-    
+
     /* Force light theme variables */
     --color-background: #ffffff;
     --color-foreground: #1f2937;

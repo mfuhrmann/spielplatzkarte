@@ -4,7 +4,9 @@
     "placeholder": "Пошук …",
     "found": "\"{{query}}\" у {{location}}",
     "foundGeneric": "\"{{query}}\" знайдено",
-    "notFound": "Результатів не знайдено!"
+    "notFound": "Результатів не знайдено!",
+    "ariaLabel": "Location search",
+    "clearLabel": "Clear search"
   },
   "nav": {
     "addData": "Додати дані",
@@ -32,7 +34,10 @@
   },
   "location": {
     "btn": "Моє місцезнаходження",
-    "yourLocation": "вашого місцезнаходження"
+    "yourLocation": "вашого місцезнаходження",
+    "am": "near {name}",
+    "anDer": "near {name}",
+    "near": "near {name}"
   },
   "nearby": {
     "title": "Поблизу {{label}}",
@@ -62,7 +67,8 @@
     "picnic_other": "{{count}} пікнічного столу",
     "fitnessDefault": "Тренажер",
     "addHint": "Обладнання ще не нанесено індивідуально – допоможіть! 👇",
-    "addLink": "Додати обладнання"
+    "addLink": "Додати обладнання",
+    "mapcompleteHint": "Help map equipment on {link}."
   },
   "photos": {
     "none": "Ще немає фотографій для цього майданчика.<br>Ви вже там були?",

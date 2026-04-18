@@ -1,20 +1,27 @@
 // Pure helper functions for playground display logic.
 // Ported from js/selectPlayground.js.
 
-/** Build a display title from OSM name tags. */
-export function getPlaygroundTitle(attr) {
+/**
+ * Build a display title from OSM name tags.
+ * @param {Object} attr - feature properties
+ * @param {Function} t - svelte-i18n translate function (optional)
+ */
+export function getPlaygroundTitle(attr, t) {
     const parts = [attr.name, attr.alt_name, attr.loc_name, attr.official_name, attr.old_name, attr.short_name]
         .filter(Boolean);
-    if (!parts.length) return 'Spielplatz';
+    if (!parts.length) return t ? t('nearby.defaultName') : 'Spielplatz';
     if (parts.length === 1) return parts[0];
     return `${parts[0]} (${parts.slice(1).join(', ')})`;
 }
 
 /** Build a human-readable location hint from nearest_highway or in_site tags. */
-export function getPlaygroundLocation(attr) {
+export function getPlaygroundLocation(attr, t) {
     if (attr.in_site) return attr.in_site;
     const highway = attr.nearest_highway;
     if (!highway) return '';
+
+    const values = { values: { name: highway } };
+    if (!t) return `in der Nähe von ${highway}`;
 
     const am = ['weg', 'platz', 'damm', 'ring', 'ufer', 'steg', 'steig', 'pfad',
                  'gestell', 'park', 'garten', 'bogen'];
@@ -23,10 +30,10 @@ export function getPlaygroundLocation(attr) {
     const h = highway.toLowerCase();
 
     if (am.some(s => h.endsWith(s) || h.startsWith(s)) && !highway.startsWith('Am '))
-        return `am ${highway}`;
+        return t('location.am', values);
     if (an_der.some(s => h.endsWith(s) || h.startsWith(s)) && !highway.startsWith('An der '))
-        return `an der ${highway}`;
-    return `in der Nähe von ${highway}`;
+        return t('location.anDer', values);
+    return t('location.near', values);
 }
 
 /** Haversine distance in metres between two WGS84 points. */
@@ -38,10 +45,10 @@ export function haversineDistance(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/** Format a distance in metres for display. */
+/** Format a distance in metres for display, using browser locale. */
 export function formatDistance(m) {
     if (m < 1000) return `~${Math.round(m / 10) * 10} m`;
-    return `~${(m / 1000).toLocaleString('de', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`;
+    return `~${(m / 1000).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`;
 }
 
 /** Bearing in degrees (0 = N, 90 = E) between two points. */
@@ -53,6 +60,7 @@ export function bearingDeg(lat1, lon1, lat2, lon2) {
     return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
 }
 
+/** Returns a compass direction key suitable for $_('compass.KEY'). */
 export function bearingToDir(deg) {
-    return ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'][Math.round(deg / 45) % 8];
+    return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(deg / 45) % 8];
 }
