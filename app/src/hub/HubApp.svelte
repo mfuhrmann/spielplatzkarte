@@ -70,14 +70,18 @@
 
 <style>
   /* Reserve room for the 240px-wide InstancePanel in the top-right corner
-     until #147 redesigns it. Scoped to hub-root so standalone is unaffected. */
+     until #147 redesigns it. Scoped to hub-root so standalone is unaffected.
+     `!important` is required because AppShell's scoped `.controls-top-right`
+     rule has the same specificity (0,2,0) — source order would otherwise
+     decide the cascade. Remove this block when #147 moves the panel to
+     bottom-left and the collision disappears. */
   :global(.hub-root .controls-top-right) {
-    right: calc(240px + 1.5rem);
+    right: calc(240px + 1.5rem) !important;
   }
 
   @media (max-width: 1023px) {
     :global(.hub-root .controls-top-right) {
-      right: calc(240px + 1rem);
+      right: calc(240px + 1rem) !important;
     }
   }
 </style>
