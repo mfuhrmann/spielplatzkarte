@@ -177,6 +177,7 @@
     });
 
     mapContainer.addEventListener('pointerleave', () => {
+      debouncedHover.cancel();
       if (lastEquipHoverFeature) {
         lastEquipHoverFeature = null;
         if (onclearequipmenthover) onclearequipmenthover();
