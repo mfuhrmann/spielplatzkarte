@@ -2,28 +2,12 @@
   import { objDevices, objFitnessStation } from '../lib/objPlaygroundEquipment.js';
   import { objColors } from '../lib/vectorStyles.js';
   import { getEquipmentAttributesFromProps } from '../lib/equipmentAttributes.js';
+  import { _ } from 'svelte-i18n';
 
   /** @type {Array} GeoJSON features from fetchPlaygroundEquipment */
   export let features = [];
   /** @type {Object} Playground polygon properties (for playground:<key> fallback) */
   export let playgroundAttr = {};
-
-  const pitchLabels = {
-    soccer:          ['Bolzplatz',          'Bolzplätze'],
-    basketball:      ['Basketballfeld',     'Basketballfelder'],
-    table_tennis:    ['Tischtennisplatte',  'Tischtennisplatten'],
-    volleyball:      ['Volleyballfeld',     'Volleyballfelder'],
-    tennis:          ['Tennisfeld',         'Tennisfelder'],
-    handball:        ['Handballfeld',       'Handballfelder'],
-    badminton:       ['Badmintonfeld',      'Badmintonfelder'],
-    boules:          ['Boulesbahn',         'Boulesanlagen'],
-    petanque:        ['Pétanquebahn',       'Pétanqueanlagen'],
-    multi:           ['Mehrzweckspielfeld', 'Mehrzweckspielfelder'],
-    skateboard:      ['Skatepark',          'Skateparks'],
-    bmx:             ['BMX-Bahn',           'BMX-Bahnen'],
-    climbing:        ['Kletteranlage',      'Kletteranlagen'],
-    fitness:         ['Fitnessbereich',     'Fitnessbereiche'],
-  };
 
   $: deviceFeatures  = features.filter(f => f.properties.playground && f.properties.playground !== 'yes');
   $: fitnessFeatures = features.filter(f => f.properties.leisure === 'fitness_station');
@@ -63,7 +47,7 @@
 </script>
 
 {#if features.length === 0 && Object.keys(fallbackCounts).length === 0}
-  <ul><li><small class="text-muted">Keine Spielgeräte erfasst.</small></li></ul>
+  <ul><li><small class="text-muted">{$_('equipment.noDevices')}</small></li></ul>
   <p class="text-muted mt-2 mb-0" style="font-size:smaller">
     Hilf mit und trage Spielgeräte auf
     <a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a> ein.
@@ -72,19 +56,19 @@
   <!-- Summary counts -->
   <ul class="summary-list">
     {#if deviceFeatures.length}
-      <li>{deviceFeatures.length} Spielgerät{deviceFeatures.length !== 1 ? 'e' : ''}</li>
+      <li>{$_('equipment.deviceCount', { values: { count: deviceFeatures.length } })}</li>
     {/if}
     {#if fitnessFeatures.length}
-      <li>{fitnessFeatures.length} Fitnessgerät{fitnessFeatures.length !== 1 ? 'e' : ''}</li>
+      <li>{$_('equipment.fitnessCount', { values: { count: fitnessFeatures.length } })}</li>
     {/if}
     {#if benchCount}
-      <li>{benchCount} {benchCount !== 1 ? 'Sitzbänke' : 'Sitzbank'}</li>
+      <li>{$_('equipment.benches', { values: { count: benchCount } })}</li>
     {/if}
     {#if shelterCount}
-      <li>{shelterCount} Unterstand{shelterCount !== 1 ? 'e' : ''}</li>
+      <li>{$_('equipment.shelters', { values: { count: shelterCount } })}</li>
     {/if}
     {#if picnicCount}
-      <li>{picnicCount} Picknicktisch{picnicCount !== 1 ? 'e' : ''}</li>
+      <li>{$_('equipment.picnic', { values: { count: picnicCount } })}</li>
     {/if}
   </ul>
 
@@ -93,7 +77,7 @@
     <ul class="mb-0 device-list">
       {#each deviceFeatures as f (f.properties.osm_id)}
         {@const key = f.properties.playground}
-        {@const name = objDevices[key]?.name_de ?? key}
+        {@const name = $_('equipment.devices.' + key, { default: objDevices[key]?.name_de ?? key })}
         {@const cat = objDevices[key]?.category ?? 'fallback'}
         {@const color = objColors[cat] ?? objColors['fallback']}
         {@const detail = getEquipmentAttributesFromProps(f.properties)}
@@ -107,9 +91,9 @@
             {#if openItems.has(id)}
               <div class="device-detail">
                 {#if detail.panoramaxUuid}
-                  <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title="Foto vergrößern">
-                    <img src={thumbUrl(detail.panoramaxUuid)} alt="Straßenfoto" class="photo-thumb" />
-                    <span class="photo-label"><span class="bi bi-camera"></span> Foto dieses Geräts</span>
+                  <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
+                    <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="photo-thumb" />
+                    <span class="photo-label"><span class="bi bi-camera"></span> {$_('popup.devicePhoto')}</span>
                   </button>
                 {/if}
                 {@html detail.html}
@@ -123,7 +107,9 @@
 
       {#each fitnessFeatures as f (f.properties.osm_id)}
         {@const fsType = f.properties.fitness_station}
-        {@const name = (fsType && objFitnessStation[fsType]) ? objFitnessStation[fsType] : 'Fitnessgerät'}
+        {@const name = fsType
+          ? $_('equipment.fitness.' + fsType, { default: objFitnessStation[fsType] ?? $_('equipment.fitnessDefault') })
+          : $_('equipment.fitnessDefault')}
         {@const color = objColors['activity'] ?? objColors['fallback']}
         {@const detail = getEquipmentAttributesFromProps(f.properties)}
         {@const id = uid(f)}
@@ -136,9 +122,9 @@
             {#if openItems.has(id)}
               <div class="device-detail">
                 {#if detail.panoramaxUuid}
-                  <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title="Foto vergrößern">
-                    <img src={thumbUrl(detail.panoramaxUuid)} alt="Straßenfoto" class="photo-thumb" />
-                    <span class="photo-label"><span class="bi bi-camera"></span> Foto dieses Geräts</span>
+                  <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
+                    <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="photo-thumb" />
+                    <span class="photo-label"><span class="bi bi-camera"></span> {$_('popup.devicePhoto')}</span>
                   </button>
                 {/if}
                 {@html detail.html}
@@ -152,7 +138,9 @@
 
       {#each pitchFeatures as f (f.properties.osm_id)}
         {@const sport = f.properties.sport ?? ''}
-        {@const label = (pitchLabels[sport]?.[0]) ?? (sport ? `Sportfeld (${sport})` : 'Sportfeld')}
+        {@const label = sport
+          ? $_('equipment.pitches.' + sport, { default: `${$_('equipment.pitchDefault')} (${sport})` })
+          : $_('equipment.pitchDefault')}
         {@const color = objColors['fallback']}
         {@const detail = getEquipmentAttributesFromProps(f.properties)}
         {@const id = uid(f)}
@@ -165,9 +153,9 @@
             {#if openItems.has(id)}
               <div class="device-detail">
                 {#if detail.panoramaxUuid}
-                  <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title="Foto vergrößern">
-                    <img src={thumbUrl(detail.panoramaxUuid)} alt="Straßenfoto" class="photo-thumb" />
-                    <span class="photo-label"><span class="bi bi-camera"></span> Foto dieses Geräts</span>
+                  <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
+                    <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="photo-thumb" />
+                    <span class="photo-label"><span class="bi bi-camera"></span> {$_('popup.devicePhoto')}</span>
                   </button>
                 {/if}
                 {@html detail.html}
@@ -184,7 +172,7 @@
   {:else if Object.keys(fallbackCounts).length}
     <ul class="mb-0">
       {#each Object.entries(fallbackCounts) as [key, count]}
-        {@const name = objDevices[key]?.name_de ?? key}
+        {@const name = $_('equipment.devices.' + key, { default: objDevices[key]?.name_de ?? key })}
         {@const cat  = objDevices[key]?.category ?? 'fallback'}
         {@const color = objColors[cat] ?? objColors['fallback']}
         <li>
@@ -205,15 +193,15 @@
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="photo-modal-backdrop" onclick={() => modalUuid = null}>
     <div class="photo-modal" onclick={e => e.stopPropagation()}
-         role="dialog" aria-modal="true" aria-label="Gerätefoto" tabindex="-1">
+         role="dialog" aria-modal="true" aria-label={$_('popup.devicePhoto')} tabindex="-1">
       <div class="photo-modal-header">
-        <span class="photo-modal-title">Foto dieses Geräts</span>
-        <button type="button" class="btn-close" onclick={() => modalUuid = null} aria-label="Schließen"></button>
+        <span class="photo-modal-title">{$_('popup.devicePhoto')}</span>
+        <button type="button" class="btn-close" onclick={() => modalUuid = null} aria-label={$_('info.closeBtn')}></button>
       </div>
       <iframe
         src={viewerUrl(modalUuid)}
         style="width:100%; flex:1; border:none;"
-        title="Gerätefoto"
+        title={$_('popup.devicePhoto')}
         allowfullscreen
       ></iframe>
     </div>

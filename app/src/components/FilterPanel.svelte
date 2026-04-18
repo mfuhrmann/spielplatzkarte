@@ -1,5 +1,6 @@
 <script>
   import { filterStore, hasActiveFilters } from '../stores/filters.js';
+  import { _ } from 'svelte-i18n';
   import { Filter, Droplets, Baby, Accessibility, Armchair, UtensilsCrossed, Home, RectangleHorizontal, Goal, CircleDot, Lock, Layers } from 'lucide-svelte';
 
   let open = false;
@@ -9,19 +10,25 @@
     if (open && wrap && !wrap.contains(e.target)) open = false;
   }
 
-  const FILTERS = [
-    { key: 'private',     label: 'Nur öffentlich',       icon: Lock },
-    { key: 'water',       label: 'Wasserspielplatz',     icon: Droplets },
-    { key: 'baby',        label: 'Baby-geeignet',        icon: Baby },
-    { key: 'toddler',     label: 'Kleinkind-geeignet',   icon: Baby },
-    { key: 'wheelchair',  label: 'Rollstuhlgerecht',     icon: Accessibility },
-    { key: 'bench',       label: 'Mit Sitzbank',         icon: Armchair },
-    { key: 'picnic',      label: 'Mit Picknicktisch',    icon: UtensilsCrossed },
-    { key: 'shelter',     label: 'Mit Unterstand',       icon: Home },
-    { key: 'tableTennis', label: 'Tischtennisplatte',    icon: RectangleHorizontal },
-    { key: 'soccer',      label: 'Mit Bolzplatz',        icon: Goal },
-    { key: 'basketball',  label: 'Basketballfeld',       icon: CircleDot },
-  ];
+  const FILTER_ICONS = {
+    private:     Lock,
+    water:       Droplets,
+    baby:        Baby,
+    toddler:     Baby,
+    wheelchair:  Accessibility,
+    bench:       Armchair,
+    picnic:      UtensilsCrossed,
+    shelter:     Home,
+    tableTennis: RectangleHorizontal,
+    soccer:      Goal,
+    basketball:  CircleDot,
+  };
+
+  $: FILTERS = Object.entries(FILTER_ICONS).map(([key, icon]) => ({
+    key,
+    label: $_('filter.labels.' + key),
+    icon,
+  }));
 
   $: active = hasActiveFilters($filterStore);
   $: activeCount = Object.values($filterStore).filter(Boolean).length;
@@ -42,8 +49,8 @@
     class="control-btn"
     class:active
     onclick={() => open = !open}
-    title="Filter"
-    aria-label="Filter"
+    title={$_('filter.title')}
+    aria-label={$_('filter.title')}
     aria-expanded={open}
   >
     <Filter class="h-5 w-5" />
@@ -55,10 +62,10 @@
   {#if open}
     <div class="filter-dropdown">
       <div class="dropdown-header">
-        <span class="dropdown-title">Filter</span>
+        <span class="dropdown-title">{$_('filter.title')}</span>
         {#if active}
           <button class="clear-btn" onclick={clearAll}>
-            Alle zurücksetzen
+            {$_('filter.clearAll')}
           </button>
         {/if}
       </div>
@@ -78,7 +85,7 @@
       </div>
 
       <div class="layer-section">
-        <span class="layer-title"><Layers class="h-3 w-3" /> Ebenen</span>
+        <span class="layer-title"><Layers class="h-3 w-3" /> {$_('filter.layers')}</span>
         <label class="filter-item" class:checked={$filterStore.standalonePitches}>
           <input
             type="checkbox"
@@ -86,7 +93,7 @@
             onchange={() => toggle('standalonePitches')}
           />
           <Goal class="h-4 w-4" />
-          <span>Sportflächen (außerhalb Spielplätze)</span>
+          <span>{$_('filter.standalonePitches')}</span>
         </label>
       </div>
     </div>

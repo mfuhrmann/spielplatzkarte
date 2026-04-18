@@ -2,6 +2,7 @@
   import { fromLonLat } from 'ol/proj';
   import { mapStore } from '../stores/map.js';
   import { Navigation2, Loader2 } from 'lucide-svelte';
+  import { _ } from 'svelte-i18n';
 
   /** Called with (lat, lon) after a GPS fix is obtained. */
   export let onlocation = null;
@@ -11,7 +12,7 @@
 
   function locate() {
     if (!navigator.geolocation) {
-      error = 'Geolocation nicht verfügbar.';
+      error = $_('locate.notSupported');
       return;
     }
     locating = true;
@@ -26,7 +27,7 @@
       },
       err => {
         locating = false;
-        error = err.code === 1 ? 'Standortzugriff verweigert.' : 'Standort nicht verfügbar.';
+        error = err.code === 1 ? $_('locate.denied') : $_('locate.unavailable');
       },
       { timeout: 10000, maximumAge: 60000 }
     );
@@ -38,8 +39,8 @@
   class:error={!!error}
   onclick={locate}
   disabled={locating}
-  title={error || 'Meinen Standort anzeigen'}
-  aria-label="Meinen Standort anzeigen"
+  title={error || $_('locate.title')}
+  aria-label={$_('locate.title')}
 >
   {#if locating}
     <Loader2 class="h-5 w-5 animate-spin" />

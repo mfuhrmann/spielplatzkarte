@@ -1,5 +1,47 @@
 {
   "appTitle": "{regionName} Playground Map",
+  "locate": {
+    "title": "Show my location",
+    "denied": "Location access denied.",
+    "unavailable": "Location unavailable.",
+    "notSupported": "Geolocation not available."
+  },
+  "filter": {
+    "title": "Filter",
+    "clearAll": "Reset all",
+    "clearChips": "Clear all",
+    "removeChip": "Remove {label}",
+    "layers": "Layers",
+    "standalonePitches": "Sports pitches (outside playgrounds)",
+    "labels": {
+      "private":     "Public only",
+      "water":       "Water playground",
+      "baby":        "Baby-friendly",
+      "toddler":     "Toddler-friendly",
+      "wheelchair":  "Wheelchair accessible",
+      "bench":       "With bench",
+      "picnic":      "With picnic table",
+      "shelter":     "With shelter",
+      "tableTennis": "Table tennis table",
+      "soccer":      "With football pitch",
+      "basketball":  "Basketball court"
+    }
+  },
+  "hover": {
+    "tagWater":     "Water",
+    "tagBaby":      "Baby",
+    "tagTrees":     "Trees",
+    "tagAccessible":"Accessible",
+    "playground":   "Playground"
+  },
+  "zoom": {
+    "in":  "Zoom in",
+    "out": "Zoom out"
+  },
+  "panoramax": {
+    "noPhotos":  "No photos yet.",
+    "fullscreen":"Show fullscreen"
+  },
   "search": {
     "placeholder": "Search …",
     "found": "\"{query}\" in {location}",
@@ -39,6 +81,10 @@
   },
   "nearby": {
     "title": "Near {label}",
+    "header": "Nearby",
+    "loading": "Loading …",
+    "empty": "No playgrounds found.",
+    "unknownName": "Unknown playground",
     "defaultName": "Playground",
     "thisLocation": "this location"
   },
@@ -48,9 +94,27 @@
     "benches": "{count, plural, one {# bench}, other {# benches}}",
     "shelters": "{count, plural, one {# shelter}, other {# shelters}}",
     "picnic": "{count, plural, one {# picnic table}, other {# picnic tables}}",
+    "noDevices": "No equipment mapped.",
     "fitnessDefault": "Fitness station",
+    "pitchDefault": "Sports pitch",
     "addHint": "Equipment not yet mapped individually – help out! 👇",
     "addLink": "Add equipment",
+    "pitches": {
+      "soccer":      "Football pitch",
+      "basketball":  "Basketball court",
+      "table_tennis":"Table tennis table",
+      "volleyball":  "Volleyball court",
+      "tennis":      "Tennis court",
+      "handball":    "Handball court",
+      "badminton":   "Badminton court",
+      "boules":      "Boules court",
+      "petanque":    "Pétanque court",
+      "multi":       "Multi-use pitch",
+      "skateboard":  "Skate park",
+      "bmx":         "BMX track",
+      "climbing":    "Climbing area",
+      "fitness":     "Fitness area"
+    },
     "devices": {
       "slide": "Slide",
       "seesaw": "Seesaw",
@@ -183,7 +247,8 @@
     "none": "No photos for this playground yet.<br>Have you been there?",
     "addLink": "Add photo",
     "enlarge": "Click to enlarge",
-    "thumbnail": "Photo {n}"
+    "thumbnail": "Photo {n}",
+    "thumbnailTitle": "Photo {n} of {total}"
   },
   "poi": {
     "errorLoad": "Could not load surroundings data.",

@@ -6,6 +6,7 @@
   import { fetchNearestPlaygrounds } from '../lib/api.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
   import { apiBaseUrl } from '../lib/config.js';
+  import { _ } from 'svelte-i18n';
 
   export let lat;
   export let lon;
@@ -87,18 +88,18 @@
 </script>
 
 <div class="nearby-card">
-  <div class="nearby-header">In der Nähe</div>
+  <div class="nearby-header">{$_('nearby.header')}</div>
   {#if loading}
-    <div class="nearby-loading">Wird geladen …</div>
+    <div class="nearby-loading">{$_('nearby.loading')}</div>
   {:else if items.length === 0}
-    <div class="nearby-loading">Keine Spielplätze gefunden.</div>
+    <div class="nearby-loading">{$_('nearby.empty')}</div>
   {:else}
     <ul class="nearby-list">
       {#each items as item}
         <li>
           <button class="nearby-item" onclick={() => selectSuggestion(item)}>
             <span class="dot {completenessClass(item.tags)}"></span>
-            <span class="nearby-name">{item.name || 'Unbekannter Spielplatz'}</span>
+            <span class="nearby-name">{item.name || $_('nearby.unknownName')}</span>
             <span class="nearby-dist">{formatDistance(item.distance_m)}</span>
           </button>
         </li>

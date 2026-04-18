@@ -1,6 +1,7 @@
 <script>
   import { cn } from '../lib/utils.js';
   import { X, GripHorizontal } from 'lucide-svelte';
+  import { _ } from 'svelte-i18n';
 
   export let open = false;
   export let title = '';
@@ -124,7 +125,7 @@
       onkeydown={e => e.key === 'Enter' && close()}
       role="button"
       tabindex="-1"
-      aria-label="Schließen"
+      aria-label={$_('info.closeBtn')}
     ></div>
   {/if}
 
@@ -159,7 +160,7 @@
           class="p-1 rounded-md transition-colors"
           style="color: #6b7280;"
           onclick={close}
-          aria-label="Schließen"
+          aria-label={$_('info.closeBtn')}
         >
           <X class="h-5 w-5" />
         </button>

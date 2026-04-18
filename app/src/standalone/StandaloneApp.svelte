@@ -12,6 +12,7 @@
   import DataContributionModal from '../components/DataContributionModal.svelte';
   import { onDestroy } from 'svelte';
   import { Pencil, Plus, Minus } from 'lucide-svelte';
+  import { _ } from 'svelte-i18n';
   import { apiBaseUrl } from '../lib/config.js';
   import { mapStore } from '../stores/map.js';
   import { selection, hasSelection } from '../stores/selection.js';
@@ -171,8 +172,8 @@
       <button
         class="control-btn"
         onclick={() => dataModalOpen = true}
-        title="Daten ergänzen"
-        aria-label="Daten ergänzen"
+        title={$_('nav.addData')}
+        aria-label={$_('nav.addData')}
       >
         <Pencil class="h-5 w-5" />
       </button>
@@ -185,16 +186,16 @@
         <button
           class="zoom-btn zoom-in"
           onclick={zoomIn}
-          title="Vergrößern"
-          aria-label="Vergrößern"
+          title={$_('zoom.in')}
+          aria-label={$_('zoom.in')}
         >
           <Plus class="h-4 w-4" />
         </button>
         <button
           class="zoom-btn zoom-out"
           onclick={zoomOut}
-          title="Verkleinern"
-          aria-label="Verkleinern"
+          title={$_('zoom.out')}
+          aria-label={$_('zoom.out')}
         >
           <Minus class="h-4 w-4" />
         </button>

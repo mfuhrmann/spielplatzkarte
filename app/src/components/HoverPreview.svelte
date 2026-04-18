@@ -3,6 +3,7 @@
   import { cn } from '../lib/utils.js';
   import { getPlaygroundTitle } from '../lib/playgroundHelpers.js';
   import { MapPin, Droplets, Baby, TreeDeciduous, Accessibility, Clock } from 'lucide-svelte';
+  import { _ } from 'svelte-i18n';
 
   /** @type {{ x: number, y: number } | null} */
   export let position = null;
@@ -17,13 +18,9 @@
   $: isWheelchair = attr?.wheelchair === 'yes' || attr?.wheelchair === 'limited';
   $: area = attr?.area > 0 ? `${Math.round(attr.area / 10) * 10 || attr.area} m²` : null;
 
-  const surfaceLabels = {
-    sand: 'Sand', grass: 'Rasen', wood_chips: 'Holzschnitzel', bark_mulch: 'Rindenmulch',
-    rubber: 'Gummi', asphalt: 'Asphalt', concrete: 'Beton', gravel: 'Kies',
-    fine_gravel: 'Feinkies', dirt: 'Erde', compacted: 'verdichtet', tartan: 'Tartan',
-    artificial_turf: 'Kunstgras', paving_stones: 'Pflastersteine',
-  };
-  $: surface = attr?.surface ? (surfaceLabels[attr.surface] ?? attr.surface) : null;
+  $: surface = attr?.surface
+    ? ($_('details.surfaceValues.' + attr.surface, { default: attr.surface }) ?? attr.surface)
+    : null;
 
   $: ohOpen = (() => {
     if (!attr?.opening_hours || attr.opening_hours === '24/7') return null;
@@ -52,22 +49,22 @@
         <div class="flex flex-wrap gap-1.5 mb-2">
           {#if isWater}
             <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-water/15 text-water">
-              <Droplets class="h-3 w-3" />Wasser
+              <Droplets class="h-3 w-3" />{$_('hover.tagWater')}
             </span>
           {/if}
           {#if forBaby}
             <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">
-              <Baby class="h-3 w-3" />Baby
+              <Baby class="h-3 w-3" />{$_('hover.tagBaby')}
             </span>
           {/if}
           {#if hasTrees}
             <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-nature/15 text-nature">
-              <TreeDeciduous class="h-3 w-3" />Bäume
+              <TreeDeciduous class="h-3 w-3" />{$_('hover.tagTrees')}
             </span>
           {/if}
           {#if isWheelchair}
             <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full" style="background:rgba(99,102,241,.1);color:#6366f1;">
-              <Accessibility class="h-3 w-3" />Barrierefrei
+              <Accessibility class="h-3 w-3" />{$_('hover.tagAccessible')}
             </span>
           {/if}
         </div>
@@ -76,13 +73,13 @@
         <div class="flex flex-col gap-1 text-xs" style="color: #6b7280;">
           <div class="flex items-center gap-1.5">
             <MapPin class="h-3 w-3 shrink-0" />
-            <span>{area ?? 'Spielplatz'}{surface ? ` · ${surface}` : ''}</span>
+            <span>{area ?? $_('hover.playground')}{surface ? ` · ${surface}` : ''}</span>
           </div>
           {#if ohOpen !== null}
             <div class="flex items-center gap-1.5">
               <Clock class="h-3 w-3 shrink-0" />
               <span style="color: {ohOpen ? '#16a34a' : '#dc2626'}">
-                {ohOpen ? 'Geöffnet' : 'Geschlossen'}
+                {ohOpen ? $_('poi.open') : $_('poi.closed')}
               </span>
             </div>
           {/if}
@@ -104,13 +101,13 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  
+
   /* Force light theme for hover preview card */
   .hover-card {
     background: #ffffff;
     border-color: #e5e7eb;
     color-scheme: light;
-    
+
     /* Override CSS variables for light theme */
     --color-background: #ffffff;
     --color-foreground: #1f2937;
