@@ -39,10 +39,12 @@ export function escapeHtml(str) {
  */
 export function debounce(fn, ms = 300) {
     let timeoutId;
-    return function (...args) {
+    const debounced = function (...args) {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => fn.apply(this, args), ms);
     };
+    debounced.cancel = () => clearTimeout(timeoutId);
+    return debounced;
 }
 
 /**
