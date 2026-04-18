@@ -112,10 +112,12 @@ LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public, api
 AS $$
   WITH region AS (
-    -- osm2pgsql stores relation IDs as negative numbers
-    SELECT way FROM planet_osm_polygon
+    -- osm2pgsql stores relation IDs as negative numbers. Union all matching
+    -- rows: assembly can emit multiple polygon rows per relation when member
+    -- ways are clipped (e.g. by a narrow PBF extract), and picking one at
+    -- random yields inconsistent results.
+    SELECT ST_Union(way) AS way FROM planet_osm_polygon
     WHERE osm_id = -relation_id
-    LIMIT 1
   ),
   playgrounds AS (
     SELECT
@@ -442,7 +444,11 @@ LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public, api
 AS $$
   WITH region AS (
-    SELECT name, way FROM planet_osm_polygon WHERE osm_id = -relation_id LIMIT 1
+    -- See get_playgrounds for why ST_Union is needed. Name is identical
+    -- across fragments of the same relation, so max() picks any non-null.
+    SELECT max(name) AS name, ST_Union(way) AS way
+    FROM planet_osm_polygon
+    WHERE osm_id = -relation_id
   ),
   bbox AS (
     SELECT ST_Transform(way, 4326) AS geom FROM region
