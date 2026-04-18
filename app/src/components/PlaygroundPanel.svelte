@@ -198,8 +198,19 @@
     try {
       if (navigator.share) {
         await navigator.share({ title: getPlaygroundTitle(attr), url });
-      } else {
+      } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(url);
+      } else {
+        // fallback for non-secure contexts
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
       }
       shareConfirmed = true;
       clearTimeout(shareTimeout);
@@ -228,28 +239,37 @@
           {/if}
         </div>
         <div class="flex items-center gap-1 shrink-0">
-          <Button variant="ghost" size="icon" onclick={sharePlayground} aria-label="Link kopieren">
+          <button class="panel-icon-btn" onclick={sharePlayground} aria-label="Link kopieren">
             {#if shareConfirmed}
               <Check class="h-5 w-5 text-green-600" />
             {:else}
               <Share2 class="h-5 w-5" />
             {/if}
-          </Button>
-          <Button variant="ghost" size="icon" onclick={() => selection.clear()} aria-label="Schließen">
+          </button>
+          <button class="panel-icon-btn" onclick={() => selection.clear()} aria-label="Schließen">
             <X class="h-5 w-5" />
-          </Button>
+          </button>
         </div>
       </div>
     {:else}
-      <!-- Embedded header (simpler, for bottom sheet) -->
-      <div class="mb-4">
-        <h2 class="text-lg font-semibold text-foreground leading-tight">{getPlaygroundTitle(attr)}</h2>
-        {#if getPlaygroundLocation(attr)}
-          <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr)}</p>
-        {/if}
-        {#if completeness}
-          <Badge variant={completeness.variant} class="mt-2">{completeness.label}</Badge>
-        {/if}
+      <!-- Embedded header (bottom sheet) -->
+      <div class="flex items-start justify-between gap-2 mb-4">
+        <div class="flex-1 min-w-0">
+          <h2 class="text-lg font-semibold text-foreground leading-tight">{getPlaygroundTitle(attr)}</h2>
+          {#if getPlaygroundLocation(attr)}
+            <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr)}</p>
+          {/if}
+          {#if completeness}
+            <Badge variant={completeness.variant} class="mt-2">{completeness.label}</Badge>
+          {/if}
+        </div>
+        <button class="panel-icon-btn shrink-0" onclick={sharePlayground} aria-label="Link kopieren">
+          {#if shareConfirmed}
+            <Check class="h-5 w-5 text-green-600" />
+          {:else}
+            <Share2 class="h-5 w-5" />
+          {/if}
+        </button>
       </div>
     {/if}
 
@@ -502,5 +522,24 @@
     .info-panel {
       display: none !important;
     }
+  }
+
+  .panel-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: none;
+    background: transparent;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    color: #6b7280;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .panel-icon-btn:hover {
+    background: #f3f4f6;
+    color: #1f2937;
   }
 </style>
