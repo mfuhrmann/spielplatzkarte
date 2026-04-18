@@ -4,148 +4,133 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-Spielplatzkarte is an interactive web map for exploring playgrounds based on OpenStreetMap data. It is deployable per-region (e.g. Berlin, Fulda) by setting environment variables. The UI language is German throughout — there is no i18n layer, German strings are hardcoded.
+Spielplatzkarte is an interactive web map for exploring playgrounds based on OpenStreetMap data. It is deployable per-region (e.g. Fulda) by setting environment variables. UI strings are currently hardcoded German — i18n re-integration with svelte-i18n is tracked in epic #157.
 
 ## Git workflow
 
 - **Never push directly to `main`.** All changes go through a feature branch and a pull request.
-- **Never create branches or push to `upstream`** (`SupaplexOSM/spielplatzkarte`). Always work on `origin` (the fork: `mfuhrmann/spielplatzkarte`).
-- **Never create pull requests or issues on `upstream`** (`SupaplexOSM/spielplatzkarte`). All PRs and issues must be created on the fork (`mfuhrmann/spielplatzkarte`).
-- Branch naming: `<type>/<short-description>` (e.g. `feat/add-filter-panel`, `fix/popup-scroll`).
-- Use **Conventional Commits** for all commit messages: `<type>[optional scope]: <description>`. Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`, `build`, `revert`. Breaking changes: append `!` after type/scope or add a `BREAKING CHANGE:` footer.
-- Releases are cut from version tags (e.g. `v0.2.3`). The tag drives both the app version (read from `package.json` at build time) and the container image tag — keep all three in sync when releasing.
-- **`main` always carries an `-rc` version.** The `version` field in `package.json` on `main` must always be one patch increment above the latest release tag and carry an `-rc` suffix (e.g. after releasing `v0.1.4` the branch version becomes `0.1.5-rc`). This version is what gets embedded in the `:rc` container image on every merge.
+- **Never create branches, PRs, or issues on `upstream`** (`SupaplexOSM/spielplatzkarte`). Always work on `origin` (`mfuhrmann/spielplatzkarte`).
+- Branch naming: `<type>/<issue-number>-<short-description>` (e.g. `feat/130-equipment-map-layer`).
+- Use **Conventional Commits**: `<type>[optional scope]: <description>`. Types: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`, `ci`, `build`, `revert`.
+- Always create a GitHub issue first, then a branch, then make code changes.
+- **`main` always carries an `-rc` version** in `package.json` (e.g. `0.1.7-rc`).
 
 ### Release procedure
 
-1. **Bump version on `main`**: update `package.json` → remove `-rc`, e.g. `0.1.5-rc` → `0.1.5`. Commit: `chore: release v0.1.5`.
-2. **Tag**: `git tag v0.1.5 && git push origin v0.1.5`. The `build.yml` workflow publishes `:latest`, `:0.1.5`, and `:0.1` container images automatically.
-3. **Advance `main` to the next `-rc`**: update `package.json` → `0.1.6-rc`. Commit: `chore: bump version to 0.1.6-rc`.
+1. Bump `package.json` version: remove `-rc` (e.g. `0.1.7-rc` → `0.1.7`). Commit: `chore: release v0.1.7`.
+2. Tag: `git tag v0.1.7 && git push origin v0.1.7`. CI publishes `:latest`, `:0.1.7`, `:0.1` images.
+3. Advance `main`: bump to next `-rc` (e.g. `0.1.8-rc`). Commit: `chore: bump version to 0.1.8-rc`.
 
 ## Development commands
 
-All common operations are available via `make`. Run `make help` to list targets.
+All common operations are via `make`. Run `make help` to list all targets.
 
 ```bash
-make install      # npm ci (root) + npm --prefix app ci — installs all deps
-make dev          # Vite dev server at http://localhost:5173 (hot-reload)
-make build        # Production build → app/dist/
-make serve        # Preview production build locally
-make test         # Run Playwright E2E tests
+make install      # install all deps (root + app/)
+make dev          # Vite dev server at http://localhost:5173 (hot-reload, Overpass fallback)
+make build        # production build → app/dist/
+make test         # Playwright E2E tests
+make lan-url      # print LAN IP for mobile testing
 ```
 
 ## Docker Compose stack
 
+The user tests on port 8080 (Docker). Always run `make docker-build` after frontend changes.
+
 ```bash
-cp .env.example .env   # configure OSM_RELATION_ID and PBF_URL
-make up                # start db + PostgREST + nginx/app; runs import + db-apply automatically on first launch
-make import            # download PBF and import OSM data (manual refresh only — first-time import runs via make up)
-make docker-build      # rebuild and restart only the nginx/app container
-make db-apply          # apply importer/api.sql to the running DB and reload PostgREST
-make db-shell          # open a psql shell in the running DB container
+cp .env.example .env   # set OSM_RELATION_ID and PBF_URL
+make up                # start db + PostgREST + nginx/app
+make import            # download PBF and import OSM data (required once before app has data)
+make docker-build      # rebuild and restart only the app container — required to see changes
+make db-apply          # apply importer/api.sql to running DB and reload PostgREST
+make seed-load         # load 4-playground fixture (Fulda) for dev without a full import
+make db-shell          # psql shell in the running DB container
 make down              # stop all containers
 ```
 
-The importer is not started by `make up`. Run `make import` once before the app has any data.
-
-## Automated weekly import (systemd)
-
-Ready-to-use systemd unit files live in `deploy/`. They run `docker compose run --rm importer` automatically once a week and catch missed runs on the next boot.
-
-**Prerequisites**
-
-- systemd must be available on the host (standard on most Linux servers)
-- The service user must be a member of the `docker` group
-
-**Install**
-
-```bash
-# 1. Copy the unit files
-sudo cp deploy/spielplatzkarte-import.service /etc/systemd/system/
-sudo cp deploy/spielplatzkarte-import.timer   /etc/systemd/system/
-
-# 2. Edit the service unit — set WorkingDirectory and EnvironmentFile to the
-#    actual deployment path, and uncomment + set User= to the deployment user
-sudo editor /etc/systemd/system/spielplatzkarte-import.service
-
-# 3. Reload and enable
-sudo systemctl daemon-reload
-sudo systemctl enable --now spielplatzkarte-import.timer
-
-# 4. Verify
-systemctl status spielplatzkarte-import.timer
-```
-
-The timer fires every Sunday at 00:00 local time. To use a different time, create a drop-in override:
-
-```bash
-sudo systemctl edit spielplatzkarte-import.timer
-# Add: [Timer]\nOnCalendar=Sun 03:00
-```
-
-**Disable / rollback**
-
-```bash
-sudo systemctl disable --now spielplatzkarte-import.timer
-sudo rm /etc/systemd/system/spielplatzkarte-import.{service,timer}
-sudo systemctl daemon-reload
-```
-
-## Testing on mobile / LAN access
-
-To test the app on a phone (or any device on the same WiFi), run:
-
-```bash
-make lan-url
-```
-
-This prints your machine's LAN IP and the ready-to-use URLs:
-
-```
-  LAN IP:            192.168.1.42
-  Vite dev server:   http://192.168.1.42:5173
-  Docker stack:      http://192.168.1.42:8080
-```
-
-**Vite dev server** (`make dev`): binds to all interfaces automatically — open the printed Network URL on the phone. If the page doesn't load, check that port 5173 is not blocked by a firewall on the host.
-
-**Docker stack** (`make up`): already binds to `0.0.0.0` by default, so `http://<LAN-IP>:8080` (or `$APP_PORT`) works immediately without any extra config.
+**Local dev note**: When `apiBaseUrl` is empty in `app/public/config.js`, the frontend falls back to Overpass — no database required for basic frontend dev.
 
 ## Architecture
 
 ```
-Browser ──► nginx ──► Vite-built static assets
-                  └──► /api/ (proxy) ──► PostgREST ──► PostgreSQL/PostGIS
+Browser ──► nginx ──► Vite-built static assets (app/dist/)
+                  └──► /api/ ──► PostgREST ──► PostgreSQL/PostGIS
 ```
 
-- **Frontend** (`js/`, `css/`, `index.html`): Plain JavaScript ES Modules, OpenLayers for the map, Bootstrap 5 for UI components.
-- **PostgREST**: Auto-generates a REST API from the `api` schema in PostgreSQL. All DB functions called by the frontend are in that schema.
-- **nginx** (`nginx.conf`, `Dockerfile`): Serves the Vite build, proxies `/api/` to PostgREST, and writes `public/config.js` at startup from env vars.
+- **Frontend**: Svelte 5 + Vite 6, OpenLayers for the map, Tailwind/shadcn for UI
+- **PostgREST**: auto-generates REST API from the `api` schema. All DB functions are in `importer/api.sql`.
+- **nginx** (`oci/app/`): serves the build, proxies `/api/`, writes `app/public/config.js` at startup from env vars
+- **osm2pgsql**: imports OSM PBF data using rules in `processing/`; schema in `db/init.sql`
+
+## App modes
+
+`app/src/main.js` mounts either `StandaloneApp` or `HubApp` based on `appMode` in config:
+
+- **`standalone`** (default): single-region map. Fetches playgrounds for a configured OSM relation.
+- **`hub`**: federation mode — loads a `registry.json` listing multiple PostgREST backends, merges their playgrounds onto one shared map, shows an `InstancePanel` with backend status.
+
+To test Hub mode locally: set `appMode: 'hub'` in `app/public/config.js`, run `make docker-build`. A local `registry.json` at `app/public/registry.json` points to `/api` for testing.
 
 ## Runtime configuration
 
-`public/config.js` is the config bridge. In Docker, `docker-entrypoint.sh` overwrites it from environment variables. In local dev, it holds default fallback values. `js/config.js` reads `window.APP_CONFIG` (set by `public/config.js`) and exports named constants used throughout the JS modules.
+`app/public/config.js` is the config bridge — sets `window.APP_CONFIG`. In Docker, `oci/app/docker-entrypoint.app.sh` overwrites it from env vars at startup. `app/src/lib/config.js` reads `window.APP_CONFIG` and exports named constants.
 
-**Local dev note**: When `apiBaseUrl` is empty (the default in `public/config.js`), the frontend falls back to Overpass for playground data rather than PostgREST — this means a running database is not required for basic frontend development.
+## Key frontend architecture
 
-## Key JS modules
+### Stores (`app/src/stores/`)
 
-| Module | Role |
+| Store | Role |
 |---|---|
-| `js/map.js` | OpenLayers map setup, layer management, region fit |
-| `js/api.js` | All PostgREST fetch calls (`get_playgrounds`, `get_equipment`, `get_trees`, `get_pois`) |
-| `js/selectPlayground.js` | Playground selection state, URL hash, info panel display |
-| `js/completeness.js` | Calculates and renders the data-completeness indicator per playground |
-| `js/config.js` | Exports all runtime config values from `window.APP_CONFIG` |
-| `js/panoramax.js` | Street-level photo integration (Panoramax API) |
-| `js/reviews.js` | Community review integration (Mangrove API) |
-| `js/search.js` | Location search via Nominatim |
-| `js/shadow.js` | Sun position / shadow simulation |
+| `selection.js` | Currently selected playground feature + backend URL |
+| `filters.js` | Active filter state (playground filters + `standalonePitches` layer toggle) |
+| `overlayLayer.js` | Bridge between PlaygroundPanel and Map — carries `{ equipment[], trees[] }` |
+| `map.js` | OL map instance reference |
+| `playgroundSource.js` | Shared OL VectorSource reference (used by completeness indicator) |
 
-## Database
+### Components (`app/src/components/`)
 
-Schema lives in `db/init.sql`. OSM data is imported via osm2pgsql using rules in `processing/`. The `api` schema exposes stored functions that PostgREST serves as RPC endpoints. To apply schema changes without a full re-import, connect directly with psql:
+| Component | Role |
+|---|---|
+| `Map.svelte` | OL map, all layers, click/hover handlers, standalone pitch layer (moveend) |
+| `PlaygroundPanel.svelte` | Fetches and displays equipment/trees/POIs for selected playground; writes to `overlayFeaturesStore` |
+| `StandaloneApp.svelte` | Full app layout: search bar, filter controls, zoom/locate buttons, mobile bottom sheet, desktop side panel |
+| `EquipmentList.svelte` | Renders device/fitness/pitch/bench lists inside PlaygroundPanel |
+| `HoverPreview.svelte` | Floating card on playground hover (desktop only) |
+| `EquipmentTooltip.svelte` | Tooltip on equipment/pitch hover |
+| `FilterPanel.svelte` | Filter dropdown; also contains "Ebenen" section for layer toggles |
+| `SearchBar.svelte` | Nominatim location search |
 
-```bash
-docker compose exec db psql -U osm -d osm
-```
+### Layers in Map.svelte
+
+The map manages four OL layers beyond the basemap:
+
+1. **playgroundLayer** (zIndex 10) — playground polygons, styled by `playgroundStyleFn`, filtered by `filterStore`
+2. **treeLayer** (zIndex 15) — natural=tree dots, shown when a playground is selected
+3. **equipmentLayer** (zIndex 20) — playground devices/pitches/benches, shown when a playground is selected
+4. **pitchLayer** (zIndex 9) — standalone pitches outside any playground, loaded on `moveend` at zoom ≥ 12, visibility controlled by `filterStore.standalonePitches`
+
+Equipment and tree layers are driven by `overlayFeaturesStore` (written by PlaygroundPanel, read by Map).
+
+### API (`app/src/lib/api.js`)
+
+All PostgREST calls. Key functions:
+- `fetchPlaygrounds(baseUrl)` — all playgrounds in the region
+- `fetchPlaygroundEquipment(extentEPSG3857, osmId, baseUrl)` — equipment within a playground's bbox
+- `fetchStandaloneEquipment(extentEPSG3857, baseUrl)` — pitches + equipment NOT within any playground
+- `fetchTrees`, `fetchNearbyPOIs`, `fetchNearestPlaygrounds`, `fetchMeta`
+
+### Database API (`importer/api.sql`)
+
+All PostgREST-exposed functions live in the `api` schema:
+- `get_playgrounds(relation_id)` — playground polygons for a region
+- `get_equipment(bbox)` — equipment within a bounding box (used per selected playground)
+- `get_standalone_equipment(bbox)` — pitches + equipment outside any playground polygon
+- `get_trees(bbox)`, `get_pois(lat, lon, radius_m)`, `get_nearest_playgrounds(lat, lon)`, `get_meta()`
+
+Run `make db-apply` after modifying `api.sql` to apply changes without a full re-import.
+
+### Styles (`app/src/lib/vectorStyles.js`)
+
+- `playgroundStyleFn` — playground polygon fill/stroke, colour-coded by completeness
+- `equipmentLayerStyleFn` — equipment points/polygons (green for pitches, teal for fitness, grey for devices)
+- `treeStyle` — small green dot for trees
