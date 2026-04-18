@@ -57,7 +57,8 @@
     "hint": "Spielplatz antippen für Details",
     "shareBtn": "Spielplatz teilen",
     "osmBtn": "Bei OpenStreetMap anzeigen",
-    "closeBtn": "Schließen"
+    "closeBtn": "Schließen",
+    "copyLink": "Link kopieren"
   },
   "completeness": {
     "complete": "Fotos, Name & Details vorhanden",
@@ -65,7 +66,8 @@
     "missing": "Noch keine Daten",
     "dotComplete": "Daten vollständig",
     "dotPartial": "Teilweise erfasst",
-    "dotMissing": "Daten fehlen"
+    "dotMissing": "Daten fehlen",
+    "badgeComplete": "Vollständig"
   },
   "accordion": {
     "photos": "Bilder",
@@ -336,6 +338,8 @@
     "ageMin": "ab {age} Jahren",
     "ageMax": "bis {age} Jahre",
     "operatorLabel": "Betreiber",
+    "phoneLabel": "Telefon",
+    "emailLabel": "E-Mail",
     "editMapComplete": "Bei MapComplete bearbeiten",
     "loading": "Wird geladen …",
     "access": {
