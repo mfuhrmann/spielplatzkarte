@@ -3,6 +3,7 @@
   import { mapStore } from '../stores/map.js';
   import { Search, Loader2, X } from 'lucide-svelte';
   import { cn } from '../lib/utils.js';
+  import { _ } from 'svelte-i18n';
 
   /** Bounding box [minLon, minLat, maxLon, maxLat] to restrict Nominatim search. */
   export let regionExtent = null;
@@ -102,16 +103,16 @@
       bind:this={inputEl}
       type="text"
       class="search-input"
-      placeholder="Ort suchen..."
+      placeholder={$_('search.placeholder')}
       bind:value={query}
       onkeydown={onKeydown}
       oninput={onInput}
       onfocus={onFocus}
       onblur={onBlur}
-      aria-label="Ortssuche"
+      aria-label={$_('search.ariaLabel')}
     />
     {#if query}
-      <button class="clear-btn" onclick={clearSearch} aria-label="Suche leeren">
+      <button class="clear-btn" onclick={clearSearch} aria-label={$_('search.clearLabel')}>
         <X class="h-4 w-4 text-gray-400" />
       </button>
     {/if}

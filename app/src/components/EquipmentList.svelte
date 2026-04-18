@@ -49,8 +49,7 @@
 {#if features.length === 0 && Object.keys(fallbackCounts).length === 0}
   <ul><li><small class="text-muted">{$_('equipment.noDevices')}</small></li></ul>
   <p class="text-muted mt-2 mb-0" style="font-size:smaller">
-    Hilf mit und trage Spielgeräte auf
-    <a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a> ein.
+    {@html $_('equipment.mapcompleteHint', { values: { link: '<a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a>' } })}
   </p>
 {:else}
   <!-- Summary counts -->

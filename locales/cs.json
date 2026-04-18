@@ -4,7 +4,9 @@
     "placeholder": "Hledat …",
     "found": "\"{{query}}\" v {{location}}",
     "foundGeneric": "\"{{query}}\" nalezeno",
-    "notFound": "Žádné výsledky nenalezeny!"
+    "notFound": "Žádné výsledky nenalezeny!",
+    "ariaLabel": "Location search",
+    "clearLabel": "Clear search"
   },
   "nav": {
     "addData": "Přidat data",
@@ -60,7 +62,8 @@
     "picnic_other": "{{count}} piknikových stolů",
     "fitnessDefault": "Fitness zařízení",
     "addHint": "Vybavení zatím není individuálně zmapováno – pomozte! 👇",
-    "addLink": "Přidat vybavení"
+    "addLink": "Přidat vybavení",
+    "mapcompleteHint": "Help map equipment on {link}."
   },
   "photos": {
     "none": "Pro toto hřiště zatím nejsou žádné fotografie.<br>Byli jste tam?",

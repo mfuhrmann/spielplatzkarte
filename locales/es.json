@@ -4,7 +4,9 @@
     "placeholder": "Buscar …",
     "found": "\"{{query}}\" en {{location}}",
     "foundGeneric": "\"{{query}}\" encontrado",
-    "notFound": "¡No se encontraron resultados!"
+    "notFound": "¡No se encontraron resultados!",
+    "ariaLabel": "Location search",
+    "clearLabel": "Clear search"
   },
   "nav": {
     "addData": "Contribuir",
@@ -55,7 +57,8 @@
     "picnic_other": "{{count}} mesas de pícnic",
     "fitnessDefault": "Aparato de fitness",
     "addHint": "Equipos aún no mapeados individualmente – ¡ayuda! 👇",
-    "addLink": "Añadir equipo"
+    "addLink": "Añadir equipo",
+    "mapcompleteHint": "Help map equipment on {link}."
   },
   "photos": {
     "none": "Aún no hay fotos de este parque.<br>¿Has estado allí?",

@@ -44,6 +44,8 @@
   },
   "search": {
     "placeholder": "Suchen …",
+    "ariaLabel": "Ortssuche",
+    "clearLabel": "Suche leeren",
     "found": "\"{query}\" in {location}",
     "foundGeneric": "\"{query}\" gefunden",
     "notFound": "Kein Suchergebnis gefunden!"
@@ -104,6 +106,7 @@
     "pitchDefault": "Sportfeld",
     "addHint": "Spielgeräte noch nicht einzeln kartiert – hilf mit! 👇",
     "addLink": "Spielgerät hinzufügen",
+    "mapcompleteHint": "Hilf mit und trage Spielgeräte auf {link} ein.",
     "pitches": {
       "soccer":      "Bolzplatz",
       "basketball":  "Basketballfeld",
@@ -428,15 +431,23 @@
   },
   "reviews": {
     "loading": "Wird geladen …",
+    "loadError": "Bewertungen konnten nicht geladen werden.",
     "count": "{count, plural, one {# Bewertung}, other {# Bewertungen}}",
     "empty": "Noch keine Bewertungen – sei die Erste!",
+    "selectRating": "Bewertung auswählen",
+    "starLabel": "{n, plural, one {# Stern}, other {# Sterne}}",
     "opinionPlaceholder": "Deine Meinung (optional)",
     "submit": "Bewertung abgeben",
     "submitting": "Wird übermittelt …",
     "submitted": "Danke für deine Bewertung!",
     "errorRetry": "Fehler beim Übermitteln – bitte versuche es erneut.",
     "error": "Fehler beim Übermitteln.",
-    "privacyNote": "Bewertungen sind anonym und werden über {mangroveLink} gespeichert."
+    "privacyNote": "Bewertungen sind anonym und werden über {mangroveLink} gespeichert.",
+    "today": "heute",
+    "daysAgo": "vor {count, plural, one {# Tag}, other {# Tagen}}",
+    "weeksAgo": "vor {count, plural, one {# Woche}, other {# Wochen}}",
+    "monthsAgo": "vor {count, plural, one {# Monat}, other {# Monaten}}",
+    "yearsAgo": "vor {count, plural, one {# Jahr}, other {# Jahren}}"
   },
   "equipAttr": {
     "theme": "Motiv",
