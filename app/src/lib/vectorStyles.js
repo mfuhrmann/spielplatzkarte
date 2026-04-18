@@ -150,10 +150,11 @@ export function equipmentLayerStyleFn(feature) {
     const fillColor   = `rgba(${r},${g},${b},0.5)`;
     const strokeColor = `rgba(${r},${g},${b},1)`;
 
+    const radius = (leisure === 'pitch') ? 8 : (leisure === 'fitness_station') ? 7 : 5;
     if (geomType === 'Point' || geomType === 'MultiPoint') {
         return new Style({
             image: new Circle({
-                radius: 5,
+                radius,
                 fill: new Fill({ color: fillColor }),
                 stroke: new Stroke({ color: strokeColor, width: 2 })
             })

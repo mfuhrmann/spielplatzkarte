@@ -72,7 +72,7 @@
         equipmentFeatures = localEquipment;
       }
     } catch (err) {
-      console.warn('Equipment load failed:', err);
+      console.warn('[panel] Equipment load failed:', err);
       if (gen === loadGen) equipmentFeatures = [];
     } finally {
       if (gen === loadGen) equipmentLoading = false;

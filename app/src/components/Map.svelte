@@ -92,10 +92,11 @@
 
       if (equipment.length > 0) {
         const src = new VectorSource();
-        src.addFeatures(new GeoJSON().readFeatures(
+        const olFeatures = new GeoJSON().readFeatures(
           { type: 'FeatureCollection', features: equipment },
           { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' }
-        ));
+        );
+        src.addFeatures(olFeatures);
         equipmentLayer = new VectorLayer({ source: src, zIndex: 20, style: equipmentLayerStyleFn });
         olMap.addLayer(equipmentLayer);
       }
