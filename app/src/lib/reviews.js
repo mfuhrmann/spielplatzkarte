@@ -103,15 +103,26 @@ export function starsHtml(rating100, color = '#f59e0b') {
         + `<span style="color:#d1d5db">${'☆'.repeat(5 - n)}</span>`;
 }
 
-export function relativeDate(iat) {
+export function relativeDate(iat, t) {
     const diff = Math.floor(Date.now() / 1000 - iat);
-    if (diff < 86400) return 'heute';
+    if (!t) {
+        if (diff < 86400) return 'heute';
+        const days = Math.floor(diff / 86400);
+        if (days < 7)    return `vor ${days} Tag${days === 1 ? '' : 'en'}`;
+        const weeks = Math.floor(days / 7);
+        if (weeks < 5)   return `vor ${weeks} Woche${weeks === 1 ? '' : 'n'}`;
+        const months = Math.floor(days / 30);
+        if (months < 12) return `vor ${months} Monat${months === 1 ? '' : 'en'}`;
+        const years = Math.floor(days / 365);
+        return `vor ${years} Jahr${years === 1 ? '' : 'en'}`;
+    }
+    if (diff < 86400) return t('reviews.today');
     const days = Math.floor(diff / 86400);
-    if (days < 7)    return `vor ${days} Tag${days === 1 ? '' : 'en'}`;
+    if (days < 7)    return t('reviews.daysAgo', { values: { count: days } });
     const weeks = Math.floor(days / 7);
-    if (weeks < 5)   return `vor ${weeks} Woche${weeks === 1 ? '' : 'n'}`;
+    if (weeks < 5)   return t('reviews.weeksAgo', { values: { count: weeks } });
     const months = Math.floor(days / 30);
-    if (months < 12) return `vor ${months} Monat${months === 1 ? '' : 'en'}`;
+    if (months < 12) return t('reviews.monthsAgo', { values: { count: months } });
     const years = Math.floor(days / 365);
-    return `vor ${years} Jahr${years === 1 ? '' : 'en'}`;
+    return t('reviews.yearsAgo', { values: { count: years } });
 }

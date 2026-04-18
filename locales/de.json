@@ -1,7 +1,51 @@
 {
   "appTitle": "{regionName}er Spielplatzkarte",
+  "locate": {
+    "title": "Meinen Standort anzeigen",
+    "denied": "Standortzugriff verweigert.",
+    "unavailable": "Standort nicht verfügbar.",
+    "notSupported": "Geolocation nicht verfügbar."
+  },
+  "filter": {
+    "title": "Filter",
+    "clearAll": "Alle zurücksetzen",
+    "clearChips": "Alle löschen",
+    "removeChip": "{label} entfernen",
+    "layers": "Ebenen",
+    "standalonePitches": "Sportflächen (außerhalb Spielplätze)",
+    "labels": {
+      "private":     "Nur öffentlich",
+      "water":       "Wasserspielplatz",
+      "baby":        "Baby-geeignet",
+      "toddler":     "Kleinkind-geeignet",
+      "wheelchair":  "Rollstuhlgerecht",
+      "bench":       "Mit Sitzbank",
+      "picnic":      "Mit Picknicktisch",
+      "shelter":     "Mit Unterstand",
+      "tableTennis": "Tischtennisplatte",
+      "soccer":      "Mit Bolzplatz",
+      "basketball":  "Basketballfeld"
+    }
+  },
+  "hover": {
+    "tagWater":     "Wasser",
+    "tagBaby":      "Baby",
+    "tagTrees":     "Bäume",
+    "tagAccessible":"Barrierefrei",
+    "playground":   "Spielplatz"
+  },
+  "zoom": {
+    "in":  "Vergrößern",
+    "out": "Verkleinern"
+  },
+  "panoramax": {
+    "noPhotos":  "Noch keine Fotos vorhanden.",
+    "fullscreen":"Vollbild anzeigen"
+  },
   "search": {
     "placeholder": "Suchen …",
+    "ariaLabel": "Ortssuche",
+    "clearLabel": "Suche leeren",
     "found": "\"{query}\" in {location}",
     "foundGeneric": "\"{query}\" gefunden",
     "notFound": "Kein Suchergebnis gefunden!"
@@ -15,7 +59,8 @@
     "hint": "Spielplatz antippen für Details",
     "shareBtn": "Spielplatz teilen",
     "osmBtn": "Bei OpenStreetMap anzeigen",
-    "closeBtn": "Schließen"
+    "closeBtn": "Schließen",
+    "copyLink": "Link kopieren"
   },
   "completeness": {
     "complete": "Fotos, Name & Details vorhanden",
@@ -23,7 +68,8 @@
     "missing": "Noch keine Daten",
     "dotComplete": "Daten vollständig",
     "dotPartial": "Teilweise erfasst",
-    "dotMissing": "Daten fehlen"
+    "dotMissing": "Daten fehlen",
+    "badgeComplete": "Vollständig"
   },
   "accordion": {
     "photos": "Bilder",
@@ -35,22 +81,48 @@
   },
   "location": {
     "btn": "Standort verfolgen",
-    "yourLocation": "deinem Standort"
+    "yourLocation": "deinem Standort",
+    "am": "am {name}",
+    "anDer": "an der {name}",
+    "near": "in der Nähe von {name}"
   },
   "nearby": {
     "title": "In der Nähe von {label}",
+    "header": "In der Nähe",
+    "loading": "Wird geladen …",
+    "empty": "Keine Spielplätze gefunden.",
+    "unknownName": "Unbekannter Spielplatz",
     "defaultName": "Spielplatz",
     "thisLocation": "diesem Ort"
   },
   "equipment": {
-    "deviceCount": "{count, plural, one {# Spielgerät}, other {# Spielgeräte}}",
-    "fitnessCount": "{count, plural, one {# Fitnessgerät}, other {# Fitnessgeräte}}",
-    "benches": "{count, plural, one {# Sitzbank}, other {# Sitzbänke}}",
-    "shelters": "{count, plural, one {# Unterstand}, other {# Unterstände}}",
-    "picnic": "{count, plural, one {# Picknicktisch}, other {# Picknicktische}}",
+    "deviceCount": "{count, plural, one {# Spielgerät} other {# Spielgeräte}}",
+    "fitnessCount": "{count, plural, one {# Fitnessgerät} other {# Fitnessgeräte}}",
+    "benches": "{count, plural, one {# Sitzbank} other {# Sitzbänke}}",
+    "shelters": "{count, plural, one {# Unterstand} other {# Unterstände}}",
+    "picnic": "{count, plural, one {# Picknicktisch} other {# Picknicktische}}",
+    "noDevices": "Keine Spielgeräte erfasst.",
     "fitnessDefault": "Fitnessgerät",
+    "pitchDefault": "Sportfeld",
     "addHint": "Spielgeräte noch nicht einzeln kartiert – hilf mit! 👇",
     "addLink": "Spielgerät hinzufügen",
+    "mapcompleteHint": "Hilf mit und trage Spielgeräte auf {link} ein.",
+    "pitches": {
+      "soccer":      "Bolzplatz",
+      "basketball":  "Basketballfeld",
+      "table_tennis":"Tischtennisplatte",
+      "volleyball":  "Volleyballfeld",
+      "tennis":      "Tennisfeld",
+      "handball":    "Handballfeld",
+      "badminton":   "Badmintonfeld",
+      "boules":      "Boulesbahn",
+      "petanque":    "Pétanquebahn",
+      "multi":       "Mehrzweckspielfeld",
+      "skateboard":  "Skatepark",
+      "bmx":         "BMX-Bahn",
+      "climbing":    "Kletteranlage",
+      "fitness":     "Fitnessbereich"
+    },
     "devices": {
       "slide": "Rutsche",
       "seesaw": "Wippe",
@@ -183,7 +255,8 @@
     "none": "Noch keine Fotos für diesen Spielplatz.<br>Warst du schon dort?",
     "addLink": "Foto hinzufügen",
     "enlarge": "Klicken zum Vergrößern",
-    "thumbnail": "Foto {n}"
+    "thumbnail": "Foto {n}",
+    "thumbnailTitle": "Foto {n} von {total}"
   },
   "poi": {
     "errorLoad": "Umfeld-Daten konnten nicht geladen werden.",
@@ -195,6 +268,9 @@
     "openingHours": "Öffnungszeiten",
     "today": "Heute",
     "tomorrow": "Morgen",
+    "noNearby": "Keine nahegelegenen Einrichtungen im Umkreis von {radius} km gefunden.",
+    "openNavApp": "In Navigations-App öffnen",
+    "openInBrowser": "Im Browser navigieren",
     "categories": {
       "toilets": "Toiletten",
       "busStops": "Bushaltestellen",
@@ -218,7 +294,13 @@
     "streetPhoto": "Straßenfoto",
     "prevPhoto": "Vorheriges Foto",
     "nextPhoto": "Nächstes Foto",
+    "ok": "OK",
     "addData": {
+      "introText": "Die Daten dieser Karte stammen aus {name}. Du kannst sie direkt bearbeiten – kein Account nötig bei MapComplete.",
+      "equipTitle": "Spielgeräte & Details ergänzen",
+      "mapcompleteText": "Spielgeräte, Fotos und weitere Details einfach per Klick eintragen.",
+      "wikiTitle": "OSM-Wiki",
+      "wikiLinkText": "Erfassungsregeln für Spielplätze in dieser Region",
       "osm": {
         "label": "OpenStreetMap",
         "text": "Die Daten stammen aus {osmLink} — einer freien, kollaborativen Weltkarte von Millionen Freiwilligen. Nur was eingetragen wurde, erscheint auch hier.",
@@ -238,7 +320,9 @@
       "community": {
         "label": "Community",
         "text": "Fragen oder mitmachen? Die lokale OSM-Community ist erreichbar über den {chatLink}.",
-        "chatLabel": "lokalen OSM-Community-Chat"
+        "chatLabel": "lokalen OSM-Community-Chat",
+        "simpleText": "Fragen und Austausch im",
+        "simpleChatLabel": "regionalen Chat"
       }
     },
     "about": {
@@ -260,6 +344,17 @@
       }
     }
   },
+  "compass": {
+    "N": "N", "NE": "NO", "E": "O", "SE": "SO",
+    "S": "S", "SW": "SW", "W": "W", "NW": "NW"
+  },
+  "hub": {
+    "title": "Spielplatzkarte Hub",
+    "registryError": "Registry nicht erreichbar",
+    "loading": "Instanzen werden geladen …",
+    "instanceError": "Nicht erreichbar",
+    "playgroundCount": "{count, plural, one {# Spielplatz} other {# Spielplätze}}"
+  },
   "details": {
     "sizeLabel": "Größe",
     "sizeUnknown": "unbekannt",
@@ -271,6 +366,8 @@
     "ageMin": "ab {age} Jahren",
     "ageMax": "bis {age} Jahre",
     "operatorLabel": "Betreiber",
+    "phoneLabel": "Telefon",
+    "emailLabel": "E-Mail",
     "editMapComplete": "Bei MapComplete bearbeiten",
     "loading": "Wird geladen …",
     "access": {
@@ -334,15 +431,23 @@
   },
   "reviews": {
     "loading": "Wird geladen …",
-    "count": "{count, plural, one {# Bewertung}, other {# Bewertungen}}",
+    "loadError": "Bewertungen konnten nicht geladen werden.",
+    "count": "{count, plural, one {# Bewertung} other {# Bewertungen}}",
     "empty": "Noch keine Bewertungen – sei die Erste!",
+    "selectRating": "Bewertung auswählen",
+    "starLabel": "{n, plural, one {# Stern} other {# Sterne}}",
     "opinionPlaceholder": "Deine Meinung (optional)",
     "submit": "Bewertung abgeben",
     "submitting": "Wird übermittelt …",
     "submitted": "Danke für deine Bewertung!",
     "errorRetry": "Fehler beim Übermitteln – bitte versuche es erneut.",
     "error": "Fehler beim Übermitteln.",
-    "privacyNote": "Bewertungen sind anonym und werden über {mangroveLink} gespeichert."
+    "privacyNote": "Bewertungen sind anonym und werden über {mangroveLink} gespeichert.",
+    "today": "heute",
+    "daysAgo": "vor {count, plural, one {# Tag} other {# Tagen}}",
+    "weeksAgo": "vor {count, plural, one {# Woche} other {# Wochen}}",
+    "monthsAgo": "vor {count, plural, one {# Monat} other {# Monaten}}",
+    "yearsAgo": "vor {count, plural, one {# Jahr} other {# Jahren}}"
   },
   "equipAttr": {
     "theme": "Motiv",

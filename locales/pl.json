@@ -4,7 +4,9 @@
     "placeholder": "Szukaj …",
     "found": "\"{{query}}\" w {{location}}",
     "foundGeneric": "\"{{query}}\" znaleziono",
-    "notFound": "Nie znaleziono wyników!"
+    "notFound": "Nie znaleziono wyników!",
+    "ariaLabel": "Location search",
+    "clearLabel": "Clear search"
   },
   "nav": {
     "addData": "Dodaj dane",
@@ -32,7 +34,10 @@
   },
   "location": {
     "btn": "Moja lokalizacja",
-    "yourLocation": "twojej lokalizacji"
+    "yourLocation": "twojej lokalizacji",
+    "am": "near {name}",
+    "anDer": "near {name}",
+    "near": "near {name}"
   },
   "nearby": {
     "title": "W pobliżu {{label}}",
@@ -62,7 +67,8 @@
     "picnic_other": "{{count}} stołów piknikowych",
     "fitnessDefault": "Urządzenie fitness",
     "addHint": "Wyposażenie jeszcze nie zmapowane indywidualnie – pomóż! 👇",
-    "addLink": "Dodaj wyposażenie"
+    "addLink": "Dodaj wyposażenie",
+    "mapcompleteHint": "Help map equipment on {link}."
   },
   "photos": {
     "none": "Brak zdjęć dla tego placu zabaw.<br>Byłeś tam?",

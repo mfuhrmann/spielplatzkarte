@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { _ } from 'svelte-i18n';
 
   /** @type {{ uuids?: string[], mcUrl?: string }} */
   let { uuids = [], mcUrl = '' } = $props();
@@ -53,9 +54,9 @@
 {#if uuids.length === 0}
   <div class="text-center py-2">
     <span class="bi bi-camera" style="font-size:1.8rem; color:#d1d5db;"></span>
-    <p class="text-muted mt-1 mb-2" style="font-size:smaller;">Noch keine Fotos vorhanden.</p>
+    <p class="text-muted mt-1 mb-2" style="font-size:smaller;">{$_('panoramax.noPhotos')}</p>
     <a href={mcUrl} target="_blank" rel="noopener" class="mc-add-link small">
-      <span class="bi bi-camera-fill"></span> Foto hinzufügen
+      <span class="bi bi-camera-fill"></span> {$_('popup.addPhoto')}
     </a>
   </div>
 {:else}
@@ -63,12 +64,12 @@
   <div class="panoramax-preview" role="button" tabindex="0"
        onclick={() => openModal(selectedIndex)}
        onkeydown={e => e.key === 'Enter' && openModal(selectedIndex)}
-       title="Vollbild anzeigen"
+       title={$_('panoramax.fullscreen')}
   >
     <iframe
       src={viewerUrl(uuids[selectedIndex])}
       style="width:100%; height:240px; border:none; border-radius:4px; pointer-events:none;"
-      title="Straßenfoto"
+      title={$_('modal.streetPhoto')}
       allowfullscreen
     ></iframe>
     <div class="panoramax-overlay">
@@ -82,8 +83,8 @@
       {#each uuids as uuid, i}
         <button type="button" class="thumb-btn {i === selectedIndex ? 'thumb-active' : ''}"
                 onclick={() => selectedIndex = i}
-                title="Foto {i + 1} von {uuids.length}">
-          <img src={thumbUrl(uuid)} alt="Foto {i + 1}"
+                title={$_('photos.thumbnailTitle', { values: { n: i + 1, total: uuids.length } })}>
+          <img src={thumbUrl(uuid)} alt={$_('photos.thumbnail', { values: { n: i + 1 } })}
                style="width:52px; height:36px; object-fit:cover; border-radius:3px;" />
         </button>
       {/each}
@@ -92,7 +93,7 @@
 
   <p class="mt-1 mb-0">
     <a href={mcUrl} target="_blank" rel="noopener" class="mc-add-link small">
-      <span class="bi bi-camera-fill"></span> Foto hinzufügen
+      <span class="bi bi-camera-fill"></span> {$_('popup.addPhoto')}
     </a>
   </p>
 
@@ -104,28 +105,28 @@
 {#if fullscreen}
   <div use:portal class="panoramax-modal-backdrop" onclick={closeModal}>
     <div class="panoramax-modal" onclick={e => e.stopPropagation()}
-         role="dialog" aria-modal="true" aria-label="Straßenfoto" tabindex="-1">
+         role="dialog" aria-modal="true" aria-label={$_('modal.streetPhoto')} tabindex="-1">
       <div class="panoramax-modal-header">
         <div class="panoramax-nav">
           <button type="button" class="nav-btn"
-                  onclick={prev} disabled={uuids.length < 2} title="Vorheriges Foto">
+                  onclick={prev} disabled={uuids.length < 2} title={$_('modal.prevPhoto')}>
             &#8249;
           </button>
           <button type="button" class="nav-btn"
-                  onclick={next} disabled={uuids.length < 2} title="Nächstes Foto">
+                  onclick={next} disabled={uuids.length < 2} title={$_('modal.nextPhoto')}>
             &#8250;
           </button>
           <span class="photo-counter">{modalIndex + 1} / {uuids.length}</span>
-          <span class="photo-title">Straßenfoto</span>
+          <span class="photo-title">{$_('modal.streetPhoto')}</span>
         </div>
-        <button type="button" class="close-btn" onclick={closeModal} aria-label="Schließen">
+        <button type="button" class="close-btn" onclick={closeModal} aria-label={$_('modal.closeBtn')}>
           &#10005;
         </button>
       </div>
       <iframe
         src={viewerUrl(uuids[modalIndex])}
         style="width:100%; flex:1; border:none;"
-        title="Straßenfoto {modalIndex + 1}"
+        title={$_('photos.thumbnailTitle', { values: { n: modalIndex + 1, total: uuids.length } })}
         allowfullscreen
       ></iframe>
     </div>
