@@ -222,8 +222,8 @@
     </BottomSheet>
   {/if}
 
-  <!-- Hover preview card (desktop only) -->
-  <HoverPreview position={hoverPosition} feature={hoverFeature} />
+  <!-- Hover preview card (desktop only, hidden when playground is selected) -->
+  <HoverPreview position={$hasSelection ? null : hoverPosition} feature={$hasSelection ? null : hoverFeature} />
 
   <!-- Equipment hover tooltip (desktop only) -->
   <EquipmentTooltip position={equipHoverPosition} feature={equipHoverFeature} />
