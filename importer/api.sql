@@ -291,7 +291,102 @@ $$;
 GRANT EXECUTE ON FUNCTION api.get_equipment(float8, float8, float8, float8) TO web_anon;
 
 -- =========================================================================
--- 3. get_pois(lat, lon, radius_m)
+-- 3. get_standalone_pitches(min_lon, min_lat, max_lon, max_lat)
+--    Returns leisure=pitch features (nodes and polygon ways) that do NOT
+--    lie within any leisure=playground polygon.  These are pitches that
+--    exist independently of a playground and would otherwise be invisible
+--    in the app.  The GeoJSON shape matches get_equipment so the same
+--    frontend style and tooltip can be reused.
+-- =========================================================================
+DROP FUNCTION IF EXISTS api.get_standalone_pitches(float8, float8, float8, float8);
+
+CREATE OR REPLACE FUNCTION api.get_standalone_pitches(
+  min_lon float8,
+  min_lat float8,
+  max_lon float8,
+  max_lat float8
+)
+RETURNS json
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public, api
+AS $$
+  WITH bbox AS (
+    SELECT ST_Transform(
+      ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326),
+      3857
+    ) AS geom
+  ),
+  -- Pitch nodes not contained within any playground polygon
+  pitch_nodes AS (
+    SELECT
+      p.osm_id,
+      'N'::text AS osm_type,
+      p.name,
+      p.leisure,
+      p.sport,
+      p.tags,
+      ST_Transform(p.way, 4326) AS geom
+    FROM planet_osm_point p, bbox b
+    WHERE p.way && b.geom
+      AND p.leisure = 'pitch'
+      AND NOT EXISTS (
+        SELECT 1 FROM planet_osm_polygon pg
+        WHERE pg.leisure = 'playground'
+          AND ST_Within(p.way, pg.way)
+      )
+  ),
+  -- Pitch polygon ways not intersecting any playground polygon
+  pitch_ways AS (
+    SELECT
+      p.osm_id,
+      'W'::text AS osm_type,
+      p.name,
+      p.leisure,
+      p.sport,
+      p.tags,
+      ST_Transform(p.way, 4326) AS geom
+    FROM planet_osm_polygon p, bbox b
+    WHERE p.way && b.geom
+      AND p.leisure = 'pitch'
+      AND NOT EXISTS (
+        SELECT 1 FROM planet_osm_polygon pg
+        WHERE pg.leisure = 'playground'
+          AND ST_Intersects(p.way, pg.way)
+      )
+  ),
+  all_pitches AS (
+    SELECT * FROM pitch_nodes
+    UNION ALL
+    SELECT * FROM pitch_ways
+  )
+  SELECT json_build_object(
+    'type', 'FeatureCollection',
+    'features', COALESCE(
+      json_agg(
+        json_build_object(
+          'type', 'Feature',
+          'geometry', ST_AsGeoJSON(geom)::json,
+          'properties', (
+            jsonb_build_object(
+              'osm_id',   abs(osm_id),
+              'osm_type', osm_type,
+              'name',     name,
+              'leisure',  leisure,
+              'sport',    sport
+            ) || COALESCE(hstore_to_jsonb(tags), '{}'::jsonb)
+          )
+        )
+      ),
+      '[]'::json
+    )
+  )
+  FROM all_pitches;
+$$;
+
+GRANT EXECUTE ON FUNCTION api.get_standalone_pitches(float8, float8, float8, float8) TO web_anon;
+
+-- =========================================================================
+-- 4. get_pois(lat, lon, radius_m)
 --    Returns nearby POIs within radius_m metres of the given point.
 --    Return shape matches the existing frontend: array of
 --      { lat, lon, osm_id, tags: { … } }

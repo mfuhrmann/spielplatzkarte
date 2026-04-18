@@ -40,6 +40,17 @@ export async function fetchNearbyPOIs(lat, lon, radiusM = 500, osmId = null, bas
     return [];
 }
 
+// Standalone pitches (not within any playground) within a bounding box.
+// Returns an empty FeatureCollection silently when no backend is configured.
+export async function fetchStandalonePitches(extentEPSG3857, baseUrl = defaultApiBaseUrl) {
+    if (!baseUrl) return { type: 'FeatureCollection', features: [] };
+    const [minLon, minLat, maxLon, maxLat] = transformExtent(extentEPSG3857, 'EPSG:3857', 'EPSG:4326');
+    const params = new URLSearchParams({ min_lon: minLon, min_lat: minLat, max_lon: maxLon, max_lat: maxLat });
+    const res = await fetch(`${baseUrl}/rpc/get_standalone_pitches?${params}`);
+    if (res.ok) return res.json();
+    return { type: 'FeatureCollection', features: [] };
+}
+
 // Nearest playgrounds to a given WGS84 point, ordered by distance.
 // Returns [] when apiBaseUrl is empty (Overpass / local dev mode).
 export async function fetchNearestPlaygrounds(lat, lon, baseUrl = defaultApiBaseUrl) {
