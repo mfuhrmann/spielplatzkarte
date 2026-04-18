@@ -12,11 +12,12 @@
   import { mapZoom, mapMinZoom, osmRelationId, apiBaseUrl } from '../lib/config.js';
   import { fetchPlaygrounds } from '../lib/api.js';
   import { fetchRegionInfo } from '../lib/region.js';
-  import { playgroundStyleFn, selectionStyle } from '../lib/vectorStyles.js';
+  import { playgroundStyleFn, selectionStyle, equipmentLayerStyleFn, treeStyle } from '../lib/vectorStyles.js';
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { filterStore, matchesFilters } from '../stores/filters.js';
+  import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { debounce } from '../lib/utils.js';
 
   // Props: optional overrides for hub mode (multiple backends feed into one shared source)
@@ -29,11 +30,18 @@
   export let onhover = null;
   /** Clear hover callback: () => void */
   export let onclearhover = null;
+  /** Equipment hover callback: (feature, pixel) => void */
+  export let onequipmenthover = null;
+  /** Clear equipment hover callback: () => void */
+  export let onclearequipmenthover = null;
 
   let mapContainer;
   let olMap = null;
   let ownSource = null;       // only set when we own the source (standalone mode)
   let playgroundLayer = null; // exposed for filter reactivity
+  let equipmentLayer = null;  // overlay: equipment points/polygons
+  let treeLayer = null;       // overlay: tree dots
+  let overlayUnsubscribe = null;
 
   onMount(async () => {
     // Use provided source (hub) or create our own (standalone)
@@ -77,6 +85,32 @@
 
     mapStore.set(olMap);
 
+    // Subscribe to overlay features store — rebuild equipment/tree layers on each change
+    overlayUnsubscribe = overlayFeaturesStore.subscribe(({ equipment, trees }) => {
+      if (equipmentLayer) { olMap.removeLayer(equipmentLayer); equipmentLayer = null; }
+      if (treeLayer)      { olMap.removeLayer(treeLayer);      treeLayer      = null; }
+
+      if (equipment.length > 0) {
+        const src = new VectorSource();
+        src.addFeatures(new GeoJSON().readFeatures(
+          { type: 'FeatureCollection', features: equipment },
+          { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' }
+        ));
+        equipmentLayer = new VectorLayer({ source: src, zIndex: 20, style: equipmentLayerStyleFn });
+        olMap.addLayer(equipmentLayer);
+      }
+
+      if (trees.length > 0) {
+        const src = new VectorSource();
+        src.addFeatures(new GeoJSON().readFeatures(
+          { type: 'FeatureCollection', features: trees },
+          { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' }
+        ));
+        treeLayer = new VectorLayer({ source: src, zIndex: 15, style: () => treeStyle });
+        olMap.addLayer(treeLayer);
+      }
+    });
+
     // Click handler: select playground on click
     olMap.on('click', (evt) => {
       const hit = olMap.forEachFeatureAtPixel(evt.pixel, (feature) => feature, {
@@ -97,27 +131,49 @@
 
     // Pointer cursor on hover + hover preview callback
     let lastHoverFeature = null;
+    let lastEquipHoverFeature = null;
     const debouncedHover = debounce((feature, pixel) => {
       if (onhover) onhover(feature, pixel);
     }, 100);
 
     olMap.on('pointermove', (evt) => {
-      const hit = olMap.forEachFeatureAtPixel(evt.pixel, (feature) => feature, {
-        layerFilter: (l) => l === playgroundLayer,
+      const equipHit = equipmentLayer
+        ? olMap.forEachFeatureAtPixel(evt.pixel, f => f, { layerFilter: l => l === equipmentLayer })
+        : null;
+      const playHit = olMap.forEachFeatureAtPixel(evt.pixel, f => f, {
+        layerFilter: l => l === playgroundLayer,
       });
-      
-      mapContainer.style.cursor = hit ? 'pointer' : '';
-      
-      if (hit && hit !== lastHoverFeature) {
-        lastHoverFeature = hit;
-        debouncedHover(hit, evt.pixel);
-      } else if (!hit && lastHoverFeature) {
-        lastHoverFeature = null;
-        if (onclearhover) onclearhover();
+
+      mapContainer.style.cursor = (equipHit || playHit) ? 'pointer' : '';
+
+      // Equipment hover takes priority
+      if (equipHit !== lastEquipHoverFeature) {
+        lastEquipHoverFeature = equipHit;
+        if (equipHit) {
+          if (onequipmenthover) onequipmenthover(equipHit, evt.pixel);
+          if (lastHoverFeature) { lastHoverFeature = null; if (onclearhover) onclearhover(); }
+        } else {
+          if (onclearequipmenthover) onclearequipmenthover();
+        }
+      }
+
+      // Playground hover (only when not hovering equipment)
+      if (!equipHit) {
+        if (playHit && playHit !== lastHoverFeature) {
+          lastHoverFeature = playHit;
+          debouncedHover(playHit, evt.pixel);
+        } else if (!playHit && lastHoverFeature) {
+          lastHoverFeature = null;
+          if (onclearhover) onclearhover();
+        }
       }
     });
 
     mapContainer.addEventListener('pointerleave', () => {
+      if (lastEquipHoverFeature) {
+        lastEquipHoverFeature = null;
+        if (onclearequipmenthover) onclearequipmenthover();
+      }
       if (lastHoverFeature) {
         lastHoverFeature = null;
         mapContainer.style.cursor = '';
@@ -145,6 +201,7 @@
   });
 
   onDestroy(() => {
+    if (overlayUnsubscribe) overlayUnsubscribe();
     if (olMap) {
       olMap.setTarget(undefined);
       mapStore.set(null);

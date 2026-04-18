@@ -7,6 +7,7 @@
   import FilterChips from '../components/FilterChips.svelte';
   import BottomSheet from '../components/BottomSheet.svelte';
   import HoverPreview from '../components/HoverPreview.svelte';
+  import EquipmentTooltip from '../components/EquipmentTooltip.svelte';
   import NearbyPlaygrounds from '../components/NearbyPlaygrounds.svelte';
   import DataContributionModal from '../components/DataContributionModal.svelte';
   import { onDestroy } from 'svelte';
@@ -111,6 +112,21 @@
     hoverPosition = null;
   }
 
+  // Equipment hover tooltip state
+  let equipHoverFeature = null;
+  let equipHoverPosition = null;
+
+  function handleEquipHover(feature, pixel) {
+    if (isMobile) return;
+    equipHoverFeature = feature;
+    equipHoverPosition = pixel ? { x: pixel[0], y: pixel[1] } : null;
+  }
+
+  function clearEquipHover() {
+    equipHoverFeature = null;
+    equipHoverPosition = null;
+  }
+
   // Zoom controls
   function zoomIn() {
     if ($mapStore) {
@@ -131,10 +147,12 @@
 
 <div class="app-root">
   <!-- Full-screen map -->
-  <Map 
-    defaultBackendUrl={apiBaseUrl} 
+  <Map
+    defaultBackendUrl={apiBaseUrl}
     onhover={handleHover}
     onclearhover={clearHover}
+    onequipmenthover={handleEquipHover}
+    onclearequipmenthover={clearEquipHover}
   />
 
   {#if !(isMobile && bottomSheetSnap === 'full')}
@@ -206,6 +224,9 @@
 
   <!-- Hover preview card (desktop only) -->
   <HoverPreview position={hoverPosition} feature={hoverFeature} />
+
+  <!-- Equipment hover tooltip (desktop only) -->
+  <EquipmentTooltip position={equipHoverPosition} feature={equipHoverFeature} />
 
   <!-- Data contribution modal -->
   <DataContributionModal bind:open={dataModalOpen} />

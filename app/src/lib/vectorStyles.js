@@ -118,6 +118,23 @@ function hexToRgb(hex) {
     return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
+// ── Tree style ────────────────────────────────────────────────────────────────
+
+export const treeStyle = new Style({
+    image: new Circle({
+        radius: 4,
+        fill: new Fill({ color: 'rgba(34, 139, 34, 0.5)' }),
+        stroke: new Stroke({ color: '#155215', width: 1.5 })
+    })
+});
+
+/** Style function for the equipment overlay layer (auto-detects point vs polygon). */
+export function equipmentLayerStyleFn(feature) {
+    const geomType = feature.getGeometry()?.getType();
+    const isPoint = geomType === 'Point' || geomType === 'MultiPoint';
+    return styleFunction(feature, 'normal', isPoint);
+}
+
 /** Style function for equipment vector features (points and polygons). */
 export function styleFunction(feature, mode, isPoint) {
     const playground = feature.get('playground');
