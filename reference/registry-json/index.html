@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://mfuhrmann.github.io/spielplatzkarte/reference/federation/">
+        <link rel="canonical" href="https://mfuhrmann.github.io/spielplatzkarte/reference/registry-json/">
       
       
-        <link rel="prev" href="../tech-stack/">
+        <link rel="prev" href="../federation/">
       
       
-        <link rel="next" href="../registry-json/">
+        <link rel="next" href="../glossary/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>Federation - Spielplatzkarte</title>
+        <title>registry.json - Spielplatzkarte</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#federation" class="md-skip">
+        <a href="#registryjson-reference" class="md-skip">
           Skip to content
         </a>
       
@@ -108,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Federation
+              registry.json
             
           </span>
         </div>
@@ -703,6 +703,27 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../federation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Federation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -719,7 +740,7 @@
           
   
   <span class="md-ellipsis">
-    Federation
+    registry.json
   </span>
   
 
@@ -730,7 +751,7 @@
         
   
   <span class="md-ellipsis">
-    Federation
+    registry.json
   </span>
   
 
@@ -752,27 +773,93 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#federation-endpoints" class="md-nav__link">
+  <a href="#location" class="md-nav__link">
     <span class="md-ellipsis">
-      Federation endpoints
+      Location
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#registry" class="md-nav__link">
+  <a href="#schema" class="md-nav__link">
     <span class="md-ellipsis">
-      Registry
+      Schema
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#hub-ui" class="md-nav__link">
+  <a href="#entry-fields" class="md-nav__link">
     <span class="md-ellipsis">
-      Hub UI
+      Entry fields
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Entry fields">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#slug-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Slug validation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#derived-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      Derived capabilities
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Derived capabilities">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aggregated-bounding-box" class="md-nav__link">
+    <span class="md-ellipsis">
+      Aggregated bounding box
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-backend-nearest-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-backend nearest search
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deep-link-behaviour" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deep-link behaviour
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See also
     </span>
   </a>
   
@@ -782,27 +869,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../registry-json/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    registry.json
-  </span>
-  
-
-      </a>
     </li>
   
 
@@ -863,27 +929,93 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#federation-endpoints" class="md-nav__link">
+  <a href="#location" class="md-nav__link">
     <span class="md-ellipsis">
-      Federation endpoints
+      Location
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#registry" class="md-nav__link">
+  <a href="#schema" class="md-nav__link">
     <span class="md-ellipsis">
-      Registry
+      Schema
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#hub-ui" class="md-nav__link">
+  <a href="#entry-fields" class="md-nav__link">
     <span class="md-ellipsis">
-      Hub UI
+      Entry fields
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Entry fields">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#slug-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Slug validation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#derived-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      Derived capabilities
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Derived capabilities">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aggregated-bounding-box" class="md-nav__link">
+    <span class="md-ellipsis">
+      Aggregated bounding box
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-backend-nearest-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-backend nearest search
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deep-link-behaviour" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deep-link behaviour
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See also
     </span>
   </a>
   
@@ -904,7 +1036,7 @@
                   
 
   
-    <a href="https://github.com/mfuhrmann/spielplatzkarte/edit/main/docs/reference/federation.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/mfuhrmann/spielplatzkarte/edit/main/docs/reference/registry-json.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -912,56 +1044,109 @@
   
 
 
-<h1 id="federation">Federation<a class="headerlink" href="#federation" title="Permanent link">&para;</a></h1>
-<p>Multiple regional instances can be aggregated into a single global map using the <strong>Hub mode</strong> built into this codebase. The Hub is not a separate repository — it is the same app deployed with <code>APP_MODE=hub</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>APP_MODE=standalone   →  regional map (one city / Kreis / Bundesland)
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>APP_MODE=hub          →  aggregation map that fetches from all registered instances
+<h1 id="registryjson-reference"><code>registry.json</code> Reference<a class="headerlink" href="#registryjson-reference" title="Permanent link">&para;</a></h1>
+<p>The Hub reads a <code>registry.json</code> file at startup and on a short poll interval (<code>HUB_POLL_INTERVAL</code>, default 5 min). Each entry points to one regional PostgREST backend. The Hub fetches <code>get_playgrounds</code> and <code>get_meta</code> from each backend, merges them onto a shared map, and tags every feature with its source backend so deep-links round-trip.</p>
+<h2 id="location">Location<a class="headerlink" href="#location" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Served from</strong>: the nginx container under <code>/registry.json</code> (path configurable via <code>HUB_REGISTRY_URL</code>).</li>
+<li><strong>Source file</strong>: <code>app/public/registry.json</code> in the repo. In production, replace or bind-mount with your own registry.</li>
+<li><strong>Served as</strong>: <code>application/json</code>. CORS is not needed — the Hub fetches from its own origin.</li>
+</ul>
+<h2 id="schema">Schema<a class="headerlink" href="#schema" title="Permanent link">&para;</a></h2>
+<p>Two top-level shapes are accepted:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Object form (recommended)</label><label for="__tabbed_1_2">Bare array form (legacy)</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;instances&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">      </span><span class="nt">&quot;slug&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fulda&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">      </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;https://spielplatz.fulda.de/api&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Fulda&quot;</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="nt">&quot;slug&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;berlin&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;https://spielplatz.berlin.de/api&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Berlin&quot;</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="p">}</span>
 </code></pre></div>
-<p>To run the Hub, use the same <code>compose.yml</code> and set <code>APP_MODE=hub</code>. The Hub reads a <code>registry.json</code> file listing the regional instances to aggregate.</p>
-<h2 id="federation-endpoints">Federation endpoints<a class="headerlink" href="#federation-endpoints" title="Permanent link">&para;</a></h2>
-<p>Each regional instance exposes two endpoints (available since v0.2.1):</p>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">[</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;slug&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fulda&quot;</span><span class="p">,</span><span class="w">  </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://spielplatz.fulda.de/api&quot;</span><span class="p">,</span><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Fulda&quot;</span><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;slug&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;berlin&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://spielplatz.berlin.de/api&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Berlin&quot;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">]</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>Both forms are supported indefinitely. New registries should prefer the object form so future top-level metadata (e.g. a registry version) can be added without a breaking change.</p>
+<h2 id="entry-fields">Entry fields<a class="headerlink" href="#entry-fields" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Endpoint</th>
+<th>Field</th>
+<th>Required</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>GET /api/rpc/get_playgrounds</code></td>
-<td>Full GeoJSON FeatureCollection of all playgrounds in the region</td>
+<td><code>url</code></td>
+<td>yes</td>
+<td>Base URL of the backend's PostgREST <code>/api</code> (no trailing slash). The Hub appends <code>/rpc/get_playgrounds</code>, <code>/rpc/get_meta</code>, and <code>/rpc/get_nearest_playgrounds</code>.</td>
 </tr>
 <tr>
-<td><code>GET /api/rpc/get_meta</code></td>
-<td>Instance metadata: OSM relation name, playground count, bounding box</td>
+<td><code>name</code></td>
+<td>yes</td>
+<td>Human-readable label. Shown in the instance drawer and — until <code>get_meta</code> returns — used as the backend's displayed region name. Falls back to <code>url</code> if omitted.</td>
+</tr>
+<tr>
+<td><code>slug</code></td>
+<td>no</td>
+<td>Short stable identifier used in deep-links (<code>#&lt;slug&gt;/W&lt;osm_id&gt;</code>). If present, features from this backend round-trip their slug back into the URL hash on selection. See <a href="#slug-validation">validation rules</a> below.</td>
 </tr>
 </tbody>
 </table>
-<p>CORS is enabled on <code>/api/</code> so the Hub can query instances cross-origin from the browser.</p>
-<h2 id="registry">Registry<a class="headerlink" href="#registry" title="Permanent link">&para;</a></h2>
-<p>The Hub discovers instances from a <code>registry.json</code> file — see the <a href="../registry-json/"><code>registry.json</code> reference</a> for schema, slug rules, and the derived aggregate behaviours (aggregated bounding box, multi-backend nearest search).</p>
-<h2 id="hub-ui">Hub UI<a class="headerlink" href="#hub-ui" title="Permanent link">&para;</a></h2>
-<p>The Hub renders the same layout as a standalone regional map, with two additions:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>┌────────────────────────────────────────────────────────────┐
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>│  [search]   [filters]               [filter]  [contribute] │
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>│                                                            │
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│                                                            │
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>│                      ( map canvas )                        │
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│                                                            │
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>│                                               [locate]     │
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>│                                               [zoom +/−]   │
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>│                                                            │
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>│  [🌐 2 Regionen · 413 Spielplätze]                         │
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>│   └ scale-line                                             │
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>└────────────────────────────────────────────────────────────┘
-</code></pre></div>
+<h3 id="slug-validation">Slug validation<a class="headerlink" href="#slug-validation" title="Permanent link">&para;</a></h3>
+<p>Slugs must match <code>^[a-z0-9-]+$</code> — lowercase ASCII letters, digits, and hyphens only. Invalid slugs are logged as a console warning and treated as <em>absent</em> — the entry still works (playgrounds still load from that backend), but deep-links won't be slug-scoped and selections on features from that backend will fall back to the bare <code>#W&lt;osm_id&gt;</code> form.</p>
+<p>Slugs should be <strong>stable</strong> — they are persisted in URLs shared by users. Rename with care; there's no redirect mechanism.</p>
+<h2 id="derived-capabilities">Derived capabilities<a class="headerlink" href="#derived-capabilities" title="Permanent link">&para;</a></h2>
+<p>Once the registry is loaded, the Hub derives two aggregate behaviours:</p>
+<h3 id="aggregated-bounding-box">Aggregated bounding box<a class="headerlink" href="#aggregated-bounding-box" title="Permanent link">&para;</a></h3>
+<p>The Hub unions every backend's <code>get_meta().bbox</code> into a single extent and uses it to fit the initial map view. Backends that haven't yet reported (still loading, failed, or running a version older than v0.2.1) are ignored. Until at least one backend reports a bbox, the map stays on its default Germany-wide view.</p>
+<h3 id="multi-backend-nearest-search">Multi-backend nearest search<a class="headerlink" href="#multi-backend-nearest-search" title="Permanent link">&para;</a></h3>
+<p>The "nearby playgrounds" panel fans <code>get_nearest_playgrounds</code> out to every registered backend in parallel with a 3 s per-backend timeout. Results are merged, deduplicated by <code>osm_id</code> (keeping the closest distance), sorted by distance, and truncated to the top 10. A slow or unreachable backend contributes zero results but never stalls the response.</p>
+<h2 id="deep-link-behaviour">Deep-link behaviour<a class="headerlink" href="#deep-link-behaviour" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>URL hash</th>
+<th>Hub behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>#&lt;slug&gt;/W&lt;osm_id&gt;</code></td>
+<td>Resolves slug → backend URL, waits for that backend's features, selects the matching <code>osm_id</code>. Unknown slug: logs once and retries as more backends load.</td>
+</tr>
+<tr>
+<td><code>#W&lt;osm_id&gt;</code></td>
+<td>Broadcast search across every loaded backend. First match wins; duplicate <code>osm_id</code> across backends triggers a console warning.</td>
+</tr>
+<tr>
+<td><code>#&lt;anything&gt;/W&lt;osm_id&gt;</code></td>
+<td>Standalone mode ignores the slug prefix and selects the <code>osm_id</code> from its sole configured backend.</td>
+</tr>
+</tbody>
+</table>
+<p>When a user selects a playground, the Hub rewrites the hash to its canonical slug-scoped form if the backend has a slug, otherwise to the bare <code>W&lt;osm_id&gt;</code> form.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Instance pill</strong> (bottom-left): collapsed view shows a globe icon plus aggregated <code>&lt;N&gt; Regionen · &lt;M&gt; Spielplätze</code>. While the registry is loading the pill shows a spinner; if the registry can't be fetched the pill turns red and reads "Registry nicht erreichbar".</li>
-<li><strong>Instance drawer</strong>: clicking the pill slides up a drawer listing each backend with its name, version badge (from <code>get_meta</code>), and individual playground count. ESC, outside-click, or re-clicking the pill collapses it.</li>
-<li><strong>Deep-link scheme</strong>: see the <a href="../registry-json/#deep-link-behaviour">deep-link behaviour table</a> in the registry reference.</li>
+<li><a href="../federation/">Federation</a> — Hub deployment and the <code>APP_MODE=hub</code> switch.</li>
 </ul>
-<p>The scale-line sits just below the pill in the same bottom-left corner. All other controls (search, filters, locate, zoom, contribute) are shared with standalone mode and behave identically.</p>
 
 
 
