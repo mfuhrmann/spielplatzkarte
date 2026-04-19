@@ -1050,7 +1050,7 @@
 <ul>
 <li><strong>Served from</strong>: the nginx container under <code>/registry.json</code> (path configurable via <code>HUB_REGISTRY_URL</code>).</li>
 <li><strong>Source file</strong>: <code>app/public/registry.json</code> in the repo. In production, replace or bind-mount with your own registry.</li>
-<li><strong>Served as</strong>: <code>application/json</code>. CORS is not needed — the Hub fetches from its own origin.</li>
+<li><strong>Served as</strong>: <code>application/json</code>. CORS is not needed for the registry file itself — the Hub fetches it from its own origin. The <em>backends</em> the registry points at are typically cross-origin and must enable CORS on <code>/api/</code> (covered in <a href="../federation/#federation-endpoints">Federation endpoints</a>).</li>
 </ul>
 <h2 id="schema">Schema<a class="headerlink" href="#schema" title="Permanent link">&para;</a></h2>
 <p>Two top-level shapes are accepted:</p>
