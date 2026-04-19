@@ -1,5 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
+  import AgeChip from './AgeChip.svelte';
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
   import { X, Share2, Check, ChevronDown, ChevronRight, Pencil, Clock, ExternalLink, Image, Package, Navigation, Star } from 'lucide-svelte';
@@ -267,17 +268,42 @@
           {/if}
         </div>
         <div class="flex items-center gap-1 shrink-0">
-          <button class="panel-icon-btn" onclick={sharePlayground} aria-label={$_('info.copyLink')}>
-            {#if shareConfirmed}
-              <Check class="h-5 w-5 text-green-600" />
-            {:else}
-              <Share2 class="h-5 w-5" />
-            {/if}
-          </button>
           <button class="panel-icon-btn" onclick={() => selection.clear()} aria-label={$_('info.closeBtn')}>
             <X class="h-5 w-5" />
           </button>
         </div>
+      </div>
+      <!-- Action row: Navigate · Share · Edit -->
+      <div class="action-row">
+        <a
+          href="geo:{centerLat},{centerLon}?q={centerLat},{centerLon}({encodeURIComponent(getPlaygroundTitle(attr, $_))})"
+          class="action-btn action-btn--primary"
+          aria-label={$_('info.navigate')}
+        >
+          <Navigation class="h-4 w-4" />
+          {$_('info.navigate')}
+        </a>
+        <button
+          class="action-btn action-btn--icon"
+          onclick={sharePlayground}
+          aria-label={$_('info.copyLink')}
+        >
+          {#if shareConfirmed}
+            <Check class="h-4 w-4 text-green-600" />
+          {:else}
+            <Share2 class="h-4 w-4" />
+          {/if}
+        </button>
+        <a
+          href={mcUrl}
+          target="_blank"
+          rel="noopener"
+          class="action-btn action-btn--icon"
+          aria-label={$_('details.editMapComplete')}
+          title={$_('details.editMapComplete')}
+        >
+          <Pencil class="h-4 w-4" />
+        </a>
       </div>
     {:else}
       <!-- Embedded header (bottom sheet) -->
@@ -348,10 +374,18 @@
       </div>
 
       <!-- Opening Hours -->
-      {#if openingHoursInfo}
-        <div class="flex items-center gap-2 text-sm mb-4 p-2 rounded-lg bg-muted/50">
-          <Clock class="h-4 w-4 shrink-0 {openingHoursInfo.open ? 'text-success' : 'text-destructive'}" />
-          <span class={openingHoursInfo.open ? 'text-success' : 'text-destructive'}>{openingHoursInfo.text}</span>
+      {#if openingHoursInfo || attr.min_age || attr.max_age}
+        <div class="status-row mb-4">
+          {#if openingHoursInfo}
+            <div class="status-pill" class:status-pill--open={openingHoursInfo.open} class:status-pill--closed={!openingHoursInfo.open}>
+              <span class="status-dot" class:status-dot--open={openingHoursInfo.open} class:status-dot--closed={!openingHoursInfo.open}></span>
+              <Clock class="h-3.5 w-3.5 shrink-0" />
+              <span>{openingHoursInfo.text}</span>
+            </div>
+          {/if}
+          {#if attr.min_age || attr.max_age}
+            <AgeChip minAge={attr.min_age ? Number(attr.min_age) : null} maxAge={attr.max_age ? Number(attr.max_age) : null} />
+          {/if}
         </div>
       {/if}
 
@@ -389,13 +423,6 @@
           {/if}
         </div>
       {/if}
-
-      <!-- Edit Link -->
-      <a href={mcUrl} target="_blank" rel="noopener" class="panel-edit-link">
-        <Pencil class="h-3 w-3" />
-        {$_('details.editMapComplete')}
-        <ExternalLink class="h-3 w-3" />
-      </a>
 
       <!-- Accordion Sections -->
       <div class="border-t border-border">
@@ -496,6 +523,73 @@
 {/if}
 
 <style>
+  /* ── Action row ─────────────────────────────────────── */
+  .action-row {
+    display: flex;
+    gap: 8px;
+    padding: 10px 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, opacity 0.15s;
+  }
+
+  .action-btn--primary {
+    flex: 1;
+    padding: 10px 0;
+    background: #10b981;
+    color: #fff;
+  }
+  .action-btn--primary:hover { background: #059669; }
+
+  .action-btn--icon {
+    width: 44px;
+    height: 44px;
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+  }
+  .action-btn--icon:hover { background: #e5e7eb; color: #1f2937; }
+
+  /* ── Status row (opening hours + age chip) ──────────── */
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    flex: 1;
+  }
+  .status-pill--open  { background: #ecfdf5; color: #065f46; }
+  .status-pill--closed { background: #fef2f2; color: #b91c1c; }
+
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  }
+  .status-dot--open   { background: #10b981; }
+  .status-dot--closed { background: #ef4444; }
+
   .info-panel {
     position: absolute;
     top: 0;
