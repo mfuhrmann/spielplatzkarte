@@ -119,7 +119,7 @@ long-term value, leaves working-memory unshared.
 
 ## Implementation plan
 
-Tracked in issue [#192]. Summary:
+Tracked in issue [#193]. Summary:
 
 1. `.gitignore`: replace the `openspec/` line with the pattern in
    "Decision" above.
@@ -137,4 +137,4 @@ Tracked in issue [#192]. Summary:
 
 - [OpenSpec](https://github.com/tbwiss/openspec)
 - Issue [#190] — handoff workaround that motivated this ADR
-- Issue [#192] — implementation
+- Issue [#193] — implementation
