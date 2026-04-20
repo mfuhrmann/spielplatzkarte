@@ -2,46 +2,50 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://mfuhrmann.github.io/spielplatzkarte/</loc>
-         <lastmod>2026-04-19</lastmod>
+         <lastmod>2026-04-20</lastmod>
+    </url>
+    <url>
+         <loc>https://mfuhrmann.github.io/spielplatzkarte/adr/0001-openspec-sharing-policy/</loc>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spielplatzkarte/contributing/add-device/</loc>
-         <lastmod>2026-04-19</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spielplatzkarte/getting-started/quick-start/</loc>
-         <lastmod>2026-04-19</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spielplatzkarte/ops/configuration/</loc>
-         <lastmod>2026-04-19</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spielplatzkarte/ops/manual-deploy/</loc>
-         <lastmod>2026-04-19</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spielplatzkarte/ops/troubleshooting/</loc>
-         <lastmod>2026-04-19</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spielplatzkarte/reference/architecture/</loc>
-         <lastmod>2026-04-19</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spielplatzkarte/reference/federation/</loc>
-         <lastmod>2026-04-19</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spielplatzkarte/reference/glossary/</loc>
-         <lastmod>2026-04-19</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spielplatzkarte/reference/registry-json/</loc>
-         <lastmod>2026-04-19</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://mfuhrmann.github.io/spielplatzkarte/reference/tech-stack/</loc>
-         <lastmod>2026-04-19</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
 </urlset>
