@@ -9,7 +9,9 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `DEPLOY_MODE` | — | — | Deployment mode: `data-node`, `ui`, or `data-node-ui`. Written by the installer. |
 | `APP_MODE` | `standalone` | both | App mode: `standalone` (regional map) or `hub` (aggregation map) |
 | `OSM_RELATION_ID` | `62700` | data-node, data-node-ui | OSM relation ID of the region to display |
+| `OSM_RELATION_ID2` | `454881` | dev only | OSM relation ID for the second local backend (`db2`); used by `make import2` / `make seed-load2` |
 | `PBF_URL` | Hessen extract | data-node, data-node-ui | Geofabrik `.osm.pbf` download URL |
+| `REGISTRY_URL` | `/registry.json` | hub | URL of the registry JSON listing backends (hub mode only) |
 | `API_BASE_URL` | `/api` | ui, data-node-ui | Base URL of the PostgREST API. Set to the remote URL for `ui` mode (e.g. `https://data.example.com/api`). |
 | `REGION_PLAYGROUND_WIKI_URL` | Generic OSM wiki | ui, data-node-ui | Wiki page linked in the "Contribute" modal |
 | `REGION_CHAT_URL` | *(hidden)* | ui, data-node-ui | Community chat link; leave empty to hide the button |

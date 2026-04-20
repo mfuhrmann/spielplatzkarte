@@ -8,19 +8,25 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 
 ---
 
-## Architecture
+## Modes
+
+**Standalone** — a single-region map backed by its own database:
 
 ```
-                  ┌─────────────────────────────────────────────────────┐
-                  │                   Production                        │
-                  │                                                     │
-  Browser ──────► nginx ──────► PostgREST ──────► PostgreSQL/PostGIS   │
-  (your phone      (serves        (turns SQL          (holds all the    │
-   or laptop)      the app,       functions into      OSM playground    │
-                   proxies API    HTTP endpoints)     data)             │
-                   requests)                                            │
-                  └─────────────────────────────────────────────────────┘
+Browser ──► nginx ──► PostgREST ──► PostgreSQL/PostGIS
+             │
+             └── serves the app, proxies /api/ to PostgREST
 ```
+
+**Hub** — aggregates multiple standalone instances onto one shared map. No own database; the Hub fetches data from registered backends over HTTP:
+
+```
+                  ┌─ backend A ──► PostgREST ──► PostgreSQL (region A) ─┐
+Browser ──► nginx ─┤                                                     │
+  (Hub UI)         └─ backend B ──► PostgREST ──► PostgreSQL (region B) ─┘
+```
+
+Set `APP_MODE=standalone` (default) or `APP_MODE=hub` in `.env`.
 
 ---
 
@@ -63,8 +69,11 @@ Key variables (full reference at [docs/ops/configuration](https://mfuhrmann.gith
 
 | Variable | Default | Description |
 |---|---|---|
-| `OSM_RELATION_ID` | `62700` | OSM relation ID of the region to display |
+| `APP_MODE` | `standalone` | `standalone` for a single region; `hub` to aggregate multiple backends |
+| `OSM_RELATION_ID` | `454863` | OSM relation ID for backend 1 (standalone + hub) |
+| `OSM_RELATION_ID2` | `454881` | OSM relation ID for backend 2 (hub dev testing only) |
 | `PBF_URL` | Hessen extract | Geofabrik `.osm.pbf` download URL |
+| `REGISTRY_URL` | `/registry.json` | URL of the registry JSON listing backends (hub mode only) |
 | `APP_PORT` | `8080` | Host port the app is exposed on |
 | `MAP_ZOOM` | `12` | Initial map zoom level |
 | `POSTGRES_PASSWORD` | `change-me` | Database password — **change in production** |
@@ -75,11 +84,34 @@ Key variables (full reference at [docs/ops/configuration](https://mfuhrmann.gith
 
 **Requirements:** Node.js v18+, Docker with Docker Compose
 
+### Standalone mode
+
 ```bash
 make install      # install Node dependencies (once)
 make up           # start db + PostgREST + nginx
+make import       # download Hessen PBF and import Fulda Stadt (454863) — ~300 MB, run once
 make dev          # Vite dev server with hot-reload at http://localhost:5173
 ```
+
+For quick testing without a full import, load the bundled fixture (4 Fulda playgrounds):
+
+```bash
+make seed-load
+```
+
+### Hub mode
+
+The stack includes a second backend (`db2` / `postgrest2`) pre-wired at `/api2/`. Both backends use the Hessen PBF — the importer caches it by filename, so the second import reuses the download.
+
+```bash
+# In .env: set APP_MODE=hub (and optionally OSM_RELATION_ID / OSM_RELATION_ID2)
+make docker-build
+make up
+make import       # imports Fulda Stadt (454863) into db  — downloads Hessen PBF (~300 MB)
+make import2      # imports Neuhof (454881) into db2 — reuses cached PBF
+```
+
+`registry.json` lists both backends (`/api` = Fulda, `/api2` = Neuhof). Open `http://localhost:8080` to see the Hub with two real regions.
 
 Run `make help` to list all available targets.
 
@@ -93,9 +125,20 @@ New to OSM concepts like relation IDs or PBF files? See the [glossary](https://m
 
 ---
 
-## Federation
+## Federation (Hub mode)
 
-Multiple regional instances can be aggregated into a Hub by deploying with `APP_MODE=hub`. Each regional instance exposes `/api/rpc/get_playgrounds` and `/api/rpc/get_meta` for cross-origin federation. See [docs/reference/federation](https://mfuhrmann.github.io/spielplatzkarte/reference/federation/).
+Multiple regional instances can be aggregated into a single Hub map by deploying with `APP_MODE=hub` and pointing `REGISTRY_URL` at a JSON file that lists the backends:
+
+```json
+{
+  "instances": [
+    { "slug": "fulda",      "url": "https://fulda.example.com",      "name": "Fulda" },
+    { "slug": "vogelsberg", "url": "https://vogelsberg.example.com", "name": "Vogelsberg" }
+  ]
+}
+```
+
+The Hub fetches playground data from every listed backend and renders them on a shared map. Each regional instance exposes `/api/rpc/get_playgrounds` and `/api/rpc/get_meta` for cross-origin federation. See [docs/reference/federation](https://mfuhrmann.github.io/spielplatzkarte/reference/federation/).
 
 ---
 
