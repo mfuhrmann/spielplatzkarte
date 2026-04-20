@@ -770,6 +770,24 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#production-hub-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Production hub setup
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-hub-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      Local hub development
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#federation-endpoints" class="md-nav__link">
     <span class="md-ellipsis">
       Federation endpoints
@@ -949,6 +967,24 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#production-hub-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Production hub setup
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-hub-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      Local hub development
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#federation-endpoints" class="md-nav__link">
     <span class="md-ellipsis">
       Federation endpoints
@@ -1003,7 +1039,35 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>APP_MODE=standalone   →  regional map (one city / Kreis / Bundesland)
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>APP_MODE=hub          →  aggregation map that fetches from all registered instances
 </code></pre></div>
-<p>To run the Hub, use the same <code>compose.yml</code> and set <code>APP_MODE=hub</code>. The Hub reads a <code>registry.json</code> file listing the regional instances to aggregate.</p>
+<h2 id="production-hub-setup">Production hub setup<a class="headerlink" href="#production-hub-setup" title="Permanent link">&para;</a></h2>
+<p>To run the Hub, use the same <code>compose.yml</code> and set <code>APP_MODE=hub</code>. The Hub reads a <code>registry.json</code> file listing the regional instances to aggregate:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;instances&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;slug&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fulda&quot;</span><span class="p">,</span><span class="w">      </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://fulda.example.com&quot;</span><span class="p">,</span><span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Fulda&quot;</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;slug&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;vogelsberg&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://vogelsberg.example.com&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Vogelsberg&quot;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">}</span>
+</code></pre></div>
+<p>Point <code>REGISTRY_URL</code> in <code>.env</code> at the URL of this file (default: <code>/registry.json</code>, served from the app container).</p>
+<h2 id="local-hub-development">Local hub development<a class="headerlink" href="#local-hub-development" title="Permanent link">&para;</a></h2>
+<p>The compose file ships with a second backend (<code>db2</code> / <code>postgrest2</code>) pre-wired at <code>/api2/</code>. This lets you test hub mode locally with two real regions without any extra configuration.</p>
+<p><strong>With full OSM import (~300 MB PBF, run once):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># In .env: set APP_MODE=hub</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>make<span class="w"> </span>up
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>make<span class="w"> </span>import<span class="w">    </span><span class="c1"># Fulda Stadt (454863) → db</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>make<span class="w"> </span>import2<span class="w">   </span><span class="c1"># Neuhof (454881)      → db2 (reuses cached PBF)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>make<span class="w"> </span>docker-build
+</code></pre></div>
+<p><strong>With the bundled seed fixtures (fast, no download):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># In .env: set APP_MODE=hub</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>make<span class="w"> </span>up
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>make<span class="w"> </span>seed-load<span class="w">   </span><span class="c1"># 4 Fulda playgrounds  → db</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>make<span class="w"> </span>seed-load2<span class="w">  </span><span class="c1"># 5 Neuhof playgrounds → db2</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>make<span class="w"> </span>docker-build
+</code></pre></div>
+<p>Open <code>http://localhost:8080</code> — the Hub shows both regions on a shared map.</p>
+<p>The local <code>registry.json</code> (<code>app/public/registry.json</code>) points to <code>/api</code> (Fulda) and <code>/api2</code> (Neuhof). nginx proxies both to their respective PostgREST instances.</p>
+<p>The second backend uses <code>OSM_RELATION_ID2</code> from <code>.env</code> (default: <code>454881</code> = Neuhof). To test a different second region, set <code>OSM_RELATION_ID2</code> and re-run <code>make import2</code>.</p>
 <h2 id="federation-endpoints">Federation endpoints<a class="headerlink" href="#federation-endpoints" title="Permanent link">&para;</a></h2>
 <p>Each regional instance exposes two endpoints (available since v0.2.1):</p>
 <table>
@@ -1029,18 +1093,18 @@
 <p>The Hub discovers instances from a <code>registry.json</code> file — see the <a href="../registry-json/"><code>registry.json</code> reference</a> for schema, slug rules, and the derived aggregate behaviours (aggregated bounding box, multi-backend nearest search).</p>
 <h2 id="hub-ui">Hub UI<a class="headerlink" href="#hub-ui" title="Permanent link">&para;</a></h2>
 <p>The Hub renders the same layout as a standalone regional map, with two additions:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>┌────────────────────────────────────────────────────────────┐
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>│  [search]   [filters]               [filter]  [contribute] │
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>│                                                            │
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│                                                            │
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>│                      ( map canvas )                        │
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│                                                            │
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>│                                               [locate]     │
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>│                                               [zoom +/−]   │
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>│                                                            │
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>│  [🌐 2 Regionen · 413 Spielplätze]                         │
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>│   └ scale-line                                             │
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>└────────────────────────────────────────────────────────────┘
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>┌────────────────────────────────────────────────────────────┐
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>│  [search]   [filters]               [filter]  [contribute] │
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>│                                                            │
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>│                                                            │
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>│                      ( map canvas )                        │
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>│                                                            │
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>│                                               [locate]     │
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>│                                               [zoom +/−]   │
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>│                                                            │
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>│  [🌐 2 Regionen · 413 Spielplätze]                         │
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>│   └ scale-line                                             │
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>└────────────────────────────────────────────────────────────┘
 </code></pre></div>
 <ul>
 <li><strong>Instance pill</strong> (bottom-left): collapsed view shows a globe icon plus aggregated <code>&lt;N&gt; Regionen · &lt;M&gt; Spielplätze</code>. While the registry is loading the pill shows a spinner; once the registry is known but backends are still fetching their data, the pill shows <code>&lt;completed&gt;/&lt;total&gt; Regionen</code> with a spinner until every backend has settled (success or error) — the fraction only appears on the first load, not on subsequent 5-min refresh polls. If the registry can't be fetched the pill turns red and reads "Registry nicht erreichbar".</li>
