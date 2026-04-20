@@ -1,6 +1,6 @@
 .PHONY: install dev build serve test \
         up down import docker-build db-apply db-shell \
-        seed-load seed-extract import2 \
+        seed-load seed-load2 seed-extract seed-extract2 import2 \
         require-npm require-docker installer lan-url \
         docs-install docs-serve docs-build docs-clean \
         help
@@ -77,8 +77,16 @@ seed-load: require-docker ## Load dev fixture DB (4 sample Fulda playgrounds) �
 import2: require-docker ## Import Hessen PBF into second backend (Neuhof, relation 454881)
 	docker compose run --rm --build importer2
 
+seed-load2: require-docker ## Load dev fixture DB2 (5 sample Neuhof playgrounds) — skips full OSM import
+	docker compose up -d --wait db2
+	docker compose exec -T db2 psql -U osm -d osm < dev/seed/seed2.sql
+	docker compose exec db2 psql -U osm -d osm -c "NOTIFY pgrst, 'reload schema';" 2>/dev/null || true
+
 seed-extract: require-docker ## Regenerate dev/seed/seed.sql from the running DB (maintainers only)
 	bash dev/seed/extract.sh
+
+seed-extract2: require-docker ## Regenerate dev/seed/seed2.sql from the running DB2 (maintainers only)
+	bash dev/seed/extract2.sh
 
 ## ── Production install ────────────────────────────────────────────────────────
 

@@ -1,6 +1,8 @@
 # Architecture
 
-## Production stack
+## Standalone mode (default)
+
+One region, one database. `APP_MODE=standalone` (the default).
 
 ```
                   ┌─────────────────────────────────────────────────────┐
@@ -15,6 +17,18 @@
 ```
 
 Your browser loads the app from nginx. When it needs playground data, it calls `/api/`, which nginx forwards to PostgREST. PostgREST runs a SQL function in PostgreSQL and returns the results as JSON — no custom server code needed. The database was pre-loaded with OpenStreetMap data by the osm2pgsql importer (a one-time step you re-run whenever you want fresh data).
+
+## Hub mode
+
+Multiple regional instances aggregated onto one shared map. `APP_MODE=hub`.
+
+```
+                  ┌─ PostgREST A ──► PostgreSQL (region A) ─┐
+  Browser ──► nginx                                          │ merged in browser
+                  └─ PostgREST B ──► PostgreSQL (region B) ─┘
+```
+
+The Hub fetches playground data from every backend listed in `registry.json` and renders them on a shared map. The compose file ships a second backend (`db2` / `postgrest2`) at `/api2/` for local development. See [Federation](federation.md) for setup instructions.
 
 ## Local development
 
@@ -31,6 +45,8 @@ Your browser loads the app from nginx. When it needs playground data, it calls `
 ```
 
 During local development, the Vite dev server serves the JavaScript with instant hot-reload. By default (`apiBaseUrl` empty in `public/config.js`), the frontend fetches playground data directly from Overpass — no local database required. To test against the full PostgREST backend, start `make up` and set `apiBaseUrl` in `public/config.js`.
+
+To test hub mode locally, see [Federation — Local hub development](federation.md#local-hub-development).
 
 ## Deployment modes
 
