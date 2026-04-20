@@ -15,7 +15,7 @@
 set -e
 
 PBF_URL="${PBF_URL:-https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf}"
-PBF_FILE="/data/region.pbf"
+PBF_FILE="/data/$(basename "$PBF_URL")"
 
 POSTGRES_HOST="${POSTGRES_HOST:-db}"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
@@ -35,11 +35,15 @@ done
 echo "[importer] PostgreSQL is ready."
 
 # --------------------------------------------------------------------------- #
-# Download PBF
+# Download PBF (skipped if already cached under the same filename)
 # --------------------------------------------------------------------------- #
-echo "[importer] Downloading $PBF_URL ..."
-wget --progress=dot:giga -O "$PBF_FILE" "$PBF_URL"
-echo "[importer] Download complete: $(du -sh "$PBF_FILE" | cut -f1)"
+if [ -f "$PBF_FILE" ]; then
+    echo "[importer] Using cached $PBF_FILE ($(du -sh "$PBF_FILE" | cut -f1)) — delete volume to force re-download"
+else
+    echo "[importer] Downloading $PBF_URL ..."
+    wget --progress=dot:giga -O "$PBF_FILE" "$PBF_URL"
+    echo "[importer] Download complete: $(du -sh "$PBF_FILE" | cut -f1)"
+fi
 
 # --------------------------------------------------------------------------- #
 # Import with osm2pgsql
