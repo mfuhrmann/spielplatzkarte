@@ -443,6 +443,7 @@
     bottom: 4rem;
     left: 1rem;
     z-index: 100;
+    pointer-events: none;
   }
 
   @media (max-width: 1023px) {
