@@ -1,6 +1,6 @@
 .PHONY: install dev build serve test \
         up down import docker-build db-apply db-shell \
-        seed-load seed-extract \
+        seed-load seed-extract import2 \
         require-npm require-docker installer lan-url \
         docs-install docs-serve docs-build docs-clean \
         help
@@ -55,7 +55,7 @@ down: require-docker      ## Stop and remove containers
 	docker compose down
 
 import: require-docker    ## Download PBF and import OSM data into PostGIS (run once or to refresh)
-	docker compose --profile data-node run --rm importer
+	docker compose --profile data-node run --rm --build importer
 
 docker-build: require-docker  ## Rebuild and restart the Svelte app container (Dockerfile.app)
 	docker compose up -d --build app
@@ -73,6 +73,9 @@ seed-load: require-docker ## Load dev fixture DB (4 sample Fulda playgrounds) â€
 	docker compose up -d --wait db
 	docker compose exec -T db psql -U osm -d osm < dev/seed/seed.sql
 	docker compose exec db psql -U osm -d osm -c "NOTIFY pgrst, 'reload schema';" 2>/dev/null || true
+
+import2: require-docker ## Import Hessen PBF into second backend (Neuhof, relation 454881)
+	docker compose run --rm --build importer2
 
 seed-extract: require-docker ## Regenerate dev/seed/seed.sql from the running DB (maintainers only)
 	bash dev/seed/extract.sh
