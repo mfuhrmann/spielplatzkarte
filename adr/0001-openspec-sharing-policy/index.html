@@ -952,6 +952,30 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#revision-2026-04-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      Revision 2026-04-20
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Revision 2026-04-20">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trigger" class="md-nav__link">
+    <span class="md-ellipsis">
+      Trigger
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1048,6 +1072,30 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#revision-2026-04-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      Revision 2026-04-20
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Revision 2026-04-20">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trigger" class="md-nav__link">
+    <span class="md-ellipsis">
+      Trigger
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1073,7 +1121,7 @@
 
 <h1 id="adr-0001-share-openspec-specs-and-archive-in-git">ADR-0001: Share OpenSpec specs and archive in git<a class="headerlink" href="#adr-0001-share-openspec-specs-and-archive-in-git" title="Permanent link">&para;</a></h1>
 <ul>
-<li><strong>Status:</strong> Accepted</li>
+<li><strong>Status:</strong> Revised (see ## Revision 2026-04-20 below)</li>
 <li><strong>Date:</strong> 2026-04-19</li>
 <li><strong>Deciders:</strong> @mfuhrmann</li>
 </ul>
@@ -1240,6 +1288,108 @@ long-term value, leaves working-memory unshared.</p>
 <li>Issue [#190] — handoff workaround that motivated this ADR</li>
 <li>Issue [#193] — implementation</li>
 </ul>
+<h2 id="revision-2026-04-20">Revision 2026-04-20<a class="headerlink" href="#revision-2026-04-20" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Status:</strong> Accepted (supersedes the original Decision above)</li>
+<li><strong>Deciders:</strong> @mfuhrmann, @ronnytrommer</li>
+</ul>
+<h3 id="trigger">Trigger<a class="headerlink" href="#trigger" title="Permanent link">&para;</a></h3>
+<p>The "real friction" scenario anticipated in <strong>Negative / to manage</strong>
+above has fired sooner than expected. During a collaborative <code>/opsx:explore</code>
+session, @ronnytrommer drafted two multi-file change proposals
+(<code>add-tiered-playground-delivery</code>, <code>add-federated-playground-clustering</code>)
+that each span four files: <code>proposal.md</code>, <code>design.md</code>, <code>tasks.md</code>, and a
+nested <code>specs/&lt;capability&gt;/spec.md</code>. The original ADR's prescribed
+handoff — paste the proposal inline into a GitHub issue (pattern from</p>
+<h1 id="190-does-not-scale-to-multi-file-proposals-eight-files-pasted-into">190) — does not scale to multi-file proposals: eight files pasted into<a class="headerlink" href="#190-does-not-scale-to-multi-file-proposals-eight-files-pasted-into" title="Permanent link">&para;</a></h1>
+<p>one issue body is unreadable, and round-tripping edits between issue
+comments and local <code>openspec/changes/</code> diverges almost immediately.</p>
+<p>Waiting to see whether this pattern recurs before revisiting would
+create the same single-laptop-knowledge problem the original ADR was
+written to fix, just one level down.</p>
+<h3 id="revised-decision">Revised decision<a class="headerlink" href="#revised-decision" title="Permanent link">&para;</a></h3>
+<p>Track the whole <code>openspec/</code> tree in git, including active
+<code>openspec/changes/&lt;name&gt;/</code> directories. Replace the selective pattern
+with a simple removal of the <code>openspec/</code> line from <code>.gitignore</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Tracked?</th>
+<th>Change from original</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>openspec/specs/**</code></td>
+<td>yes</td>
+<td>unchanged</td>
+</tr>
+<tr>
+<td><code>openspec/changes/archive/**</code></td>
+<td>yes</td>
+<td>unchanged</td>
+</tr>
+<tr>
+<td><code>openspec/changes/&lt;active&gt;/**</code></td>
+<td><strong>yes</strong></td>
+<td><strong>new</strong> — was excluded</td>
+</tr>
+<tr>
+<td><code>openspec/config.yaml</code>, <code>openspec/AGENTS.md</code>, top-level</td>
+<td>yes</td>
+<td>unchanged</td>
+</tr>
+</tbody>
+</table>
+<h3 id="consequences-of-the-revision">Consequences of the revision<a class="headerlink" href="#consequences-of-the-revision" title="Permanent link">&para;</a></h3>
+<p><strong>Positive (additive to the original Consequences):</strong></p>
+<ul>
+<li>Multi-file proposals can be handed off via ordinary branch + PR
+  workflow, not issue-paste.</li>
+<li>Every commit that touches a proposal surfaces in normal code-review
+  tooling.</li>
+<li>Claude Code agents on any account read the same active-proposal set
+  on a fresh clone.</li>
+</ul>
+<p><strong>Accepted costs:</strong></p>
+<ul>
+<li><em>Noisy diffs on every exploration session.</em> Mitigated by branch
+  discipline: exploratory thinking stays on an unpushed local branch
+  until it is "worth showing." Only merge to <code>main</code> when a proposal is
+  ready for collaboration or ready to implement.</li>
+<li><em>"Is my WIP ready for a teammate?" as a constant judgment call.</em>
+  Resolved by the same branch discipline. Local branch = private
+  thinking; pushed branch / draft PR = ready for collaboration;
+  <code>main</code> = shared baseline.</li>
+<li><em>Active-change churn in <code>main</code> history.</em> Accepted. Use draft PRs for
+  in-progress proposals so the history of the proposal is legible
+  (one PR per proposal is the default; multiple commits within the PR
+  are fine).</li>
+</ul>
+<h3 id="coordination-for-the-baseline-commit">Coordination for the baseline commit<a class="headerlink" href="#coordination-for-the-baseline-commit" title="Permanent link">&para;</a></h3>
+<p>Both contributors already have local <code>openspec/</code> directories that
+diverge (see original <strong>Negative / to manage</strong>). The original ADR
+proposed Option A (one contributor lands the baseline, the other
+rebases) with @mfuhrmann as the default baseliner.</p>
+<p>Under this revision the baseline includes active proposals too, which
+amplifies the divergence risk. We switch to a coordinated baseline:</p>
+<ol>
+<li>@ronnytrommer opens a PR containing: (a) this ADR revision,
+   (b) the <code>.gitignore</code> change, (c) his local <code>openspec/</code> tree.</li>
+<li>@mfuhrmann reviews the PR, resolves any conflict with his own local
+   tree in review (if his active proposals differ from what @ronnytrommer
+   has captured, he commits the authoritative versions onto the PR
+   branch before merge).</li>
+<li>On merge, both contributors hard-reset their local <code>openspec/</code> to
+   the committed tree, then cherry-pick any diverged local commits back
+   on top.</li>
+</ol>
+<h3 id="when-to-revert">When to revert<a class="headerlink" href="#when-to-revert" title="Permanent link">&para;</a></h3>
+<p>If the branch-discipline cost outlives the collaboration benefit,
+revert by restoring the <code>.gitignore</code> pattern from the original Decision
+and going back to issue-paste handoff. The original Decision remains
+available verbatim above this revision block.</p>
 
 
 
