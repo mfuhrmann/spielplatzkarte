@@ -9,10 +9,10 @@
   export let snapPoint = 'half';
 
   let sheetEl;
-  let isDragging = false;
+  export let isDragging = false;
   let startY = 0;
   let startHeight = 0;
-  let currentHeight = 0;
+  export let currentHeight = 0;
 
   const snapHeights = {
     peek: 140,

@@ -158,13 +158,14 @@
   // Bottom sheet state for mobile
   let bottomSheetOpen = false;
   let bottomSheetSnap = 'half';
+  let sheetHeight = 0;
+  let sheetDragging = false;
 
-  // Keep bottom-right controls above the sheet at each snap height
+  // Keep controls above the sheet — follows live height during drag, animates on snap
   $: controlsBottomStyle = (() => {
-    if (!isMobile || !bottomSheetOpen) return '';
-    if (bottomSheetSnap === 'peek') return 'bottom: calc(140px + 1rem)';
-    if (bottomSheetSnap === 'half') return 'bottom: calc(50vh + 1rem)';
-    return '';
+    if (!isMobile || !bottomSheetOpen || sheetHeight === 0) return '';
+    const noTransition = sheetDragging ? 'transition: none; ' : '';
+    return `${noTransition}bottom: calc(${sheetHeight}px + 1rem)`;
   })();
 
   // Sync bottom sheet with selection on mobile
@@ -293,7 +294,7 @@
     </div>
 
     {#if instancePanel}
-      <div class="instance-slot">
+      <div class="instance-slot" style={controlsBottomStyle}>
         {@render instancePanel()}
       </div>
     {/if}
@@ -310,6 +311,8 @@
     <BottomSheet
       bind:open={bottomSheetOpen}
       bind:snapPoint={bottomSheetSnap}
+      bind:currentHeight={sheetHeight}
+      bind:isDragging={sheetDragging}
       title=""
     >
       {#if $hasSelection}
@@ -365,7 +368,6 @@
     flex-direction: column;
     gap: 0.75rem;
     align-items: center;
-    transition: bottom 0.3s ease-out;
   }
 
   .control-btn {
