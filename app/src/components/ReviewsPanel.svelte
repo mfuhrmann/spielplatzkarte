@@ -190,14 +190,6 @@
     color: #6b7280;
     margin-bottom: 8px;
   }
-  .review-item {
-    margin-bottom: 0.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #f3f4f6;
-    font-size: 13px;
-  }
-  .review-item:last-of-type { border-bottom: none; }
-
   .star-btn {
     background: none; border: none; padding: 0;
     font-size: 22px; line-height: 1; cursor: pointer;
