@@ -1,10 +1,10 @@
-# Spielplatzkarte
+# spieli
 
 A free, interactive web map for exploring playgrounds based on [OpenStreetMap](https://openstreetmap.org) data — configurable for any region.
 
-> **Origin:** This project is a further development of the original [Berliner Spielplatzkarte](https://github.com/SupaplexOSM/spielplatzkarte) by Alex Seidel.
+> **Origin:** This project is a further development of the original [Berliner spieli](https://github.com/SupaplexOSM/spieli) by Alex Seidel.
 
-**[Documentation](https://mfuhrmann.github.io/spielplatzkarte/)**
+**[Documentation](https://mfuhrmann.github.io/spieli/)**
 
 ---
 
@@ -51,7 +51,7 @@ Set `APP_MODE=standalone` (default) or `APP_MODE=hub` in `.env`.
 The interactive installer downloads everything it needs and walks you through configuration:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spielplatzkarte/main/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh
 bash install.sh
 ```
 
@@ -59,13 +59,13 @@ bash install.sh
 
 The installer asks for a deployment mode (`data-node` / `ui` / `data-node-ui`), your OSM region, and optional settings, then generates a `.env`, pulls images, and optionally runs the first import.
 
-For deploying from source, see [Manual Deploy](https://mfuhrmann.github.io/spielplatzkarte/ops/manual-deploy/).
+For deploying from source, see [Manual Deploy](https://mfuhrmann.github.io/spieli/ops/manual-deploy/).
 
 ---
 
 ## Configuration
 
-Key variables (full reference at [docs/ops/configuration](https://mfuhrmann.github.io/spielplatzkarte/ops/configuration/)):
+Key variables (full reference at [docs/ops/configuration](https://mfuhrmann.github.io/spieli/ops/configuration/)):
 
 | Variable | Default | Description |
 |---|---|---|
@@ -119,9 +119,9 @@ Run `make help` to list all available targets.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow (branch → commit → PR), or the [docs](https://mfuhrmann.github.io/spielplatzkarte/) for how-to guides (e.g. [adding a playground device](https://mfuhrmann.github.io/spielplatzkarte/contributing/add-device/)).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow (branch → commit → PR), or the [docs](https://mfuhrmann.github.io/spieli/) for how-to guides (e.g. [adding a playground device](https://mfuhrmann.github.io/spieli/contributing/add-device/)).
 
-New to OSM concepts like relation IDs or PBF files? See the [glossary](https://mfuhrmann.github.io/spielplatzkarte/reference/glossary/).
+New to OSM concepts like relation IDs or PBF files? See the [glossary](https://mfuhrmann.github.io/spieli/reference/glossary/).
 
 ---
 
@@ -138,7 +138,7 @@ Multiple regional instances can be aggregated into a single Hub map by deploying
 }
 ```
 
-The Hub fetches playground data from every listed backend and renders them on a shared map. Each regional instance exposes `/api/rpc/get_playgrounds` and `/api/rpc/get_meta` for cross-origin federation. See [docs/reference/federation](https://mfuhrmann.github.io/spielplatzkarte/reference/federation/).
+The Hub fetches playground data from every listed backend and renders them on a shared map. Each regional instance exposes `/api/rpc/get_playgrounds` and `/api/rpc/get_meta` for cross-origin federation. See [docs/reference/federation](https://mfuhrmann.github.io/spieli/reference/federation/).
 
 ---
 

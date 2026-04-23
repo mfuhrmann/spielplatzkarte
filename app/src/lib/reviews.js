@@ -4,7 +4,7 @@
 // Rating scale: 0–100 (we show 1–5 stars = 20/40/60/80/100)
 
 const MANGROVE_API = 'https://api.mangrove.reviews';
-const LS_KEY = 'spielplatzkarte-mangrove-keypair';
+const LS_KEY = 'spieli-mangrove-keypair';
 
 // ── Key management ─────────────────────────────────────────────────────────
 
