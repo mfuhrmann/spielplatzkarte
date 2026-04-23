@@ -21,11 +21,15 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 
 > **Origin:** This project is a further development of the original [Berliner spieli](https://github.com/SupaplexOSM/spieli) by Alex Seidel.
 
----
+## Matrix Contact
+
+Come and let's play:
+https://matrix.to/#/#spieli:matrix.org
+
 
 ## Modes
 
-**Standalone** — a single-region map backed by its own database and web UI.
+**Standalone** — a single-region map backed by its own database.
 
 ```
 Browser ──► nginx ──► PostgREST ──► PostgreSQL/PostGIS
