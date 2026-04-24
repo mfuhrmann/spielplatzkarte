@@ -208,11 +208,12 @@ COMMENT ON FUNCTION api.get_playgrounds(bigint) IS
 
 -- =========================================================================
 -- 1a. get_playground_clusters(z, bbox)
---     Pre-aggregated cluster buckets for the cluster tier (zoom ≤ 10).
---     Snaps each playground centroid to a zoom-appropriate grid and counts
---     playgrounds per cell, broken down by completeness. The cell-size table
---     is hardcoded in metres at the equator; lat-dependent visual correction
---     is the client's concern.
+--     Pre-aggregated cluster buckets for the cluster tier (zoom ≤
+--     clusterMaxZoom, default 13). Snaps each playground centroid to a
+--     zoom-appropriate grid and counts playgrounds per cell, broken down by
+--     completeness plus a separate restricted count. The cell-size table is
+--     hardcoded in metres at the equator and extends through z=13;
+--     lat-dependent visual correction is the client's concern.
 -- =========================================================================
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8);
 
@@ -298,10 +299,11 @@ GRANT EXECUTE ON FUNCTION api.get_playground_clusters(int, float8, float8, float
 
 -- =========================================================================
 -- 1b. get_playground_centroids(bbox)
---     Lightweight per-feature rows for the centroid tier (zoom 11–13). Each
---     row carries osm_id, centroid lon/lat, completeness, and the filter
---     attribute booleans the client needs for filter-aware rendering.
---     Supercluster on the client re-indexes these points.
+--     Lightweight per-feature rows: osm_id, centroid lon/lat, completeness,
+--     plus a `filter_attrs` object with the client filter booleans. Shipped
+--     server-side for federation and future re-clustering scenarios; the
+--     standalone client doesn't consume it after the two-tier pivot
+--     (cluster tier covers zoom ≤ clusterMaxZoom directly).
 -- =========================================================================
 DROP FUNCTION IF EXISTS api.get_playground_centroids(float8, float8, float8, float8);
 
@@ -350,9 +352,9 @@ GRANT EXECUTE ON FUNCTION api.get_playground_centroids(float8, float8, float8, f
 -- =========================================================================
 -- 1c. get_playgrounds_bbox(bbox)
 --     Bbox-scoped counterpart of get_playgrounds. Same response shape as the
---     region-scoped version so the polygon-tier client (zoom ≥ 14) can reuse
---     its existing feature parser. Uses ST_Intersects so playgrounds touching
---     the viewport edge are still returned.
+--     region-scoped version so the polygon-tier client (zoom > clusterMaxZoom)
+--     can reuse its existing feature parser. Uses ST_Intersects so
+--     playgrounds touching the viewport edge are still returned.
 -- =========================================================================
 DROP FUNCTION IF EXISTS api.get_playgrounds_bbox(float8, float8, float8, float8);
 

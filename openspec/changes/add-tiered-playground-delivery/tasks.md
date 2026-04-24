@@ -150,10 +150,31 @@ Three layers over the canvas stacked-ring + cluster click. Build clean; no runti
 
 ## 6. Docs
 
-- [ ] 6.1 Create `docs/reference/api.md` documenting the three tiered RPCs with request/response examples and zoom thresholds
-- [ ] 6.2 Update `CLAUDE.md` "Key frontend architecture" section to describe the three layers and the moveend orchestrator; keep the old description under a `<!-- legacy -->` comment until archive
-- [ ] 6.3 Update `docs/reference/api.md` cross-link from the main federation / architecture doc
-- [ ] 6.4 Add `Reference → API` to `mkdocs.yml` nav
+- [x] 6.1 Create `docs/reference/api.md` documenting the tiered RPCs (`get_playground_clusters`, `get_playgrounds_bbox`, the new `get_playground` single-feature lookup, plus extended `get_meta` and the centroid RPC kept server-side for federation). Reflects the two-tier client design after the pivot.
+- [x] 6.2 Update `CLAUDE.md` "Key frontend architecture" section: stores include `tier.js`; layers list cluster + polygon as tier-driven; new "Zoom-tier orchestrator" section; API + Database API tables list the new fetchers/RPCs. Legacy comment block not retained (the rewrite is small and self-explanatory).
+- [x] 6.3 `docs/reference/federation.md` "See also" cross-links the new API reference page.
+- [x] 6.4 `mkdocs.yml` nav: added `API: reference/api.md` under Reference.
+
+### Review Findings — §6 docs, Pass 1 (bmad-code-review, 2026-04-25)
+
+#### Medium
+- [x] [Review][Patch] **`is_water` vs `has_water` mismatch**. `api.md`'s `get_playgrounds_bbox` example uses `is_water` (matches SQL), the prose lists "has_water", and the centroid RPC's `filter_attrs` block uses `has_water` (the renamed field). Fix the prose to say `is_water` for bbox features and explicitly note the rename to `has_water` in the centroid `filter_attrs` payload. [docs/reference/api.md] (Medium)
+- [x] [Review][Patch] **Stale "zoom ≤ 10 / 11–13" comments in `importer/api.sql` + `dev/seed/seed.sql`** — pre-pivot wording in the §1a + §1b function-header banners. The cell-size table extends through z=13 already, but the comment text contradicts. Sweep both files. [importer/api.sql §1a/§1b headers; dev/seed/seed.sql same] (Medium)
+- [x] [Review][Patch] **Stale JSDoc on `fetchPlaygroundClusters` / `fetchPlaygroundCentroids` / `fetchPlaygroundsBbox`** still references "zoom ≤ 10", "zoom 11–13", "zoom ≥ 14" in `app/src/lib/api.js`. Update to the two-tier model. [app/src/lib/api.js fetcher JSDoc] (Medium)
+- [x] [Review][Patch] **`playgroundSourceStore` description oversells "always non-null after Map mounts"**. `Map.svelte::onDestroy` sets it to `null`. Tighten the wording — "always non-null while the Map component is mounted; reset to null on tear-down". [CLAUDE.md stores table] (Medium)
+
+#### Low
+- [x] [Review][Patch] **Cross-link missing from `docs/reference/architecture.md`** — task §6.3 said "federation / architecture". Federation got the See also; architecture didn't. Add a brief See-also pointer to `api.md` near the standalone diagram. [docs/reference/architecture.md] (Low)
+- [x] [Review][Patch] **Cluster source has no documented home**. `CLAUDE.md` describes `playgroundSource.js` as the polygon-tier source; the cluster source has no equivalent published store and the asymmetry is unexplained. Add a sentence noting the cluster `VectorSource` is local to `StandaloneApp.svelte` (no widget consumes it externally), so no store wraps it. [CLAUDE.md stores table or Layers section] (Low)
+
+### Dismissed (pass 1, §6)
+- Blind: `tier.js` vs `activeTierStore` filename-vs-symbol naming. Other store rows follow the same convention; no real drift.
+- Blind: PostgREST GET-vs-POST verb caveat. SQL functions are `STABLE` and `CORS Allow-Methods: GET, OPTIONS` — the docs' GET example is correct for the shipped configuration; over-explaining the cache of corner cases isn't a Reference's job.
+- Blind: orchestrator fallback emits the deprecation warning. Intentional — operators running stale backends should hear it; the warning is one-shot per session.
+- Edge: cluster vs `get_meta` invariant cross-RPC mismatch warning. The two invariants are individually correct and clearly stated; a "do not sum across RPCs" footnote feels like over-engineering for a Reference.
+- Edge: `get_playground` precedence over a relation row with `NULL` geometry — narrow edge case in clipped PBFs; better fixed in SQL than papered over in docs.
+- Edge: antimeridian bbox handling. Pre-existing; not introduced by this change.
+- Auditor: zoom threshold "configurable" annotation. The "default 13" wording already implies it.
 
 ## 7. Verification
 

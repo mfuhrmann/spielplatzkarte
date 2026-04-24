@@ -965,7 +965,8 @@ COMMENT ON FUNCTION api.get_playgrounds(bigint) IS
 
 -- =========================================================================
 -- 1a. get_playground_clusters(z, bbox)
---     Pre-aggregated cluster buckets for the cluster tier (zoom ≤ 10).
+--     Pre-aggregated cluster buckets for the cluster tier (zoom ≤
+--     clusterMaxZoom, default 13).
 -- =========================================================================
 DROP FUNCTION IF EXISTS api.get_playground_clusters(int, float8, float8, float8, float8);
 
@@ -1048,7 +1049,8 @@ GRANT EXECUTE ON FUNCTION api.get_playground_clusters(int, float8, float8, float
 
 -- =========================================================================
 -- 1b. get_playground_centroids(bbox)
---     Lightweight per-feature rows for the centroid tier (zoom 11–13).
+--     Lightweight per-feature rows; server-shipped for federation,
+--     unused by the standalone client after the two-tier pivot.
 -- =========================================================================
 DROP FUNCTION IF EXISTS api.get_playground_centroids(float8, float8, float8, float8);
 
@@ -1097,6 +1099,7 @@ GRANT EXECUTE ON FUNCTION api.get_playground_centroids(float8, float8, float8, f
 -- =========================================================================
 -- 1c. get_playgrounds_bbox(bbox)
 --     Bbox-scoped counterpart of get_playgrounds; same response shape.
+--     Polygon-tier RPC for zoom > clusterMaxZoom (default 13).
 -- =========================================================================
 DROP FUNCTION IF EXISTS api.get_playgrounds_bbox(float8, float8, float8, float8);
 

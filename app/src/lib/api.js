@@ -30,9 +30,10 @@ export async function fetchPlaygrounds(baseUrl = defaultApiBaseUrl) {
 // an in-flight request when the viewport changes again before it settles.
 
 /**
- * Cluster-tier buckets for zoom ≤ 10. Returns an array of
- * `{ lon, lat, count, complete, partial, missing }` bucket objects,
- * grid-aligned to a zoom-dependent cell size on the server.
+ * Cluster-tier buckets for zoom ≤ `clusterMaxZoom` (default 13). Returns an
+ * array of `{ lon, lat, count, complete, partial, missing, restricted }`
+ * bucket objects, grid-aligned to a zoom-dependent cell size on the server.
+ * Invariant: `count = complete + partial + missing + restricted`.
  */
 export async function fetchPlaygroundClusters(zoom, extentEPSG3857, baseUrl = defaultApiBaseUrl, signal) {
     const [minLon, minLat, maxLon, maxLat] = transformExtent(extentEPSG3857, 'EPSG:3857', 'EPSG:4326');
@@ -43,9 +44,13 @@ export async function fetchPlaygroundClusters(zoom, extentEPSG3857, baseUrl = de
 }
 
 /**
- * Centroid-tier rows for zoom 11–13. Returns an array of
+ * Centroid-tier rows. Returns an array of
  * `{ osm_id, lon, lat, completeness, filter_attrs: { has_water, for_baby, ... } }`.
- * No polygon geometry, no tag hstore — meant for Supercluster to re-index client-side.
+ * No polygon geometry, no tag hstore.
+ *
+ * Server-shipped for federation re-clustering and future tiers. The
+ * standalone client doesn't consume this in the two-tier design — the
+ * cluster tier covers zoom ≤ `clusterMaxZoom` directly.
  */
 export async function fetchPlaygroundCentroids(extentEPSG3857, baseUrl = defaultApiBaseUrl, signal) {
     const [minLon, minLat, maxLon, maxLat] = transformExtent(extentEPSG3857, 'EPSG:3857', 'EPSG:4326');
@@ -56,8 +61,9 @@ export async function fetchPlaygroundCentroids(extentEPSG3857, baseUrl = default
 }
 
 /**
- * Polygon-tier GeoJSON for zoom ≥ 14. Same FeatureCollection shape as the
- * legacy {@link fetchPlaygrounds} but bbox-scoped instead of region-scoped.
+ * Polygon-tier GeoJSON for zoom > `clusterMaxZoom` (default 13). Same
+ * `FeatureCollection` shape as the legacy {@link fetchPlaygrounds} but
+ * bbox-scoped instead of region-scoped.
  */
 export async function fetchPlaygroundsBbox(extentEPSG3857, baseUrl = defaultApiBaseUrl, signal) {
     const [minLon, minLat, maxLon, maxLat] = transformExtent(extentEPSG3857, 'EPSG:3857', 'EPSG:4326');
