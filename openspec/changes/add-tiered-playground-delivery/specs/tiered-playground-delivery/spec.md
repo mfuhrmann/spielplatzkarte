@@ -55,9 +55,9 @@ Each data-node SHALL expose a function returning full playground polygons scoped
 - **THEN** only playgrounds whose geometry intersects the bbox are returned
 - **AND** a playground whose polygon partially overlaps the bbox edge is still returned in full (not clipped)
 
-### Requirement: get_meta includes completeness counts and data version
+### Requirement: get_meta includes completeness counts
 
-The `api.get_meta` response SHALL include per-backend aggregate completeness counts and a data-version bump timestamp, so clients can render a macro view (proposal P2) and clients can invalidate cached responses after an import.
+The `api.get_meta` response SHALL include per-backend aggregate completeness counts, so clients can render a macro view (proposal P2).
 
 #### Scenario: get_meta carries completeness counts
 
@@ -65,11 +65,14 @@ The `api.get_meta` response SHALL include per-backend aggregate completeness cou
 - **THEN** the response includes `complete`, `partial`, `missing` integer fields in addition to the existing `playground_count`
 - **AND** `playground_count = complete + partial + missing`
 
-#### Scenario: get_meta carries data_version
+<!--
+  The `data_version` cache-bust field was originally scoped into this change
+  (task 1.7) but has been moved to `add-federation-health-exposition`, which
+  introduces `api.import_status(last_import_at, ...)` — the better-scoped home
+  for import metadata surfaced via get_meta. Until that change lands, clients
+  treat `playground_count` changes as a weak cache-bust signal.
+-->
 
-- **WHEN** the importer successfully completes
-- **THEN** the next call to `api.get_meta` returns a `data_version` ISO-8601 timestamp equal to the import completion time
-- **AND** repeated calls return the same `data_version` until the next successful import
 
 ### Requirement: Legacy get_playgrounds is retained one release, marked deprecated
 

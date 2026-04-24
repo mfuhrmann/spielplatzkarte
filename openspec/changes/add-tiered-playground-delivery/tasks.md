@@ -1,14 +1,39 @@
 ## 1. Backend — tiered RPCs
 
-- [ ] 1.1 Add `api.get_playground_clusters(z int, min_lon float8, min_lat float8, max_lon float8, max_lat float8)` in `importer/api.sql` — buckets features by `ST_SnapToGrid` using `cell_size_m` derived from `z`; returns `{lon, lat, count, complete, partial, missing}` per bucket as a JSON array
-- [ ] 1.2 Add `api.get_playground_centroids(min_lon, min_lat, max_lon, max_lat)` returning per-playground rows: `osm_id`, `lon`, `lat`, `completeness` ('complete'|'partial'|'missing'), packed filter-attrs object
-- [ ] 1.3 Add `api.get_playgrounds_bbox(min_lon, min_lat, max_lon, max_lat)` — same response shape as `get_playgrounds` but scoped to bbox intersection; reuses the `playground_stats` materialised view
-- [ ] 1.4 Extend `api.get_meta` to include `{complete, partial, missing}` alongside the existing `playground_count` (sums over `playground_stats`)
-- [ ] 1.5 Add `COMMENT ON FUNCTION api.get_playgrounds(bigint) IS 'DEPRECATED: use get_playgrounds_bbox. Scheduled for removal in the release after next.'`
-- [ ] 1.6 Add a computed `grid_cell` column or expression to `playground_stats` (or inline in the cluster function) — whichever benchmarks faster on a Germany-sized dataset
-- [ ] 1.7 Add `import_version` (or `data_version`) bump timestamp, written on successful import and surfaced via `get_meta`, for client-side cache-bust
-- [ ] 1.8 Grant EXECUTE on all three new functions to `web_anon`
-- [ ] 1.9 Update `dev/seed/seed.sql` so `make seed-load` exercises all three new RPCs with the 4-playground fixture
+- [x] 1.1 Add `api.get_playground_clusters(z int, min_lon float8, min_lat float8, max_lon float8, max_lat float8)` in `importer/api.sql` — buckets features by `ST_SnapToGrid` using `cell_size_m` derived from `z`; returns `{lon, lat, count, complete, partial, missing}` per bucket as a JSON array
+- [x] 1.2 Add `api.get_playground_centroids(min_lon, min_lat, max_lon, max_lat)` returning per-playground rows: `osm_id`, `lon`, `lat`, `completeness` ('complete'|'partial'|'missing'), packed filter-attrs object
+- [x] 1.3 Add `api.get_playgrounds_bbox(min_lon, min_lat, max_lon, max_lat)` — same response shape as `get_playgrounds` but scoped to bbox intersection; reuses the `playground_stats` materialised view
+- [x] 1.4 Extend `api.get_meta` to include `{complete, partial, missing}` alongside the existing `playground_count` (sums over `playground_stats`)
+- [x] 1.5 Add `COMMENT ON FUNCTION api.get_playgrounds(bigint) IS 'DEPRECATED: use get_playgrounds_bbox. Scheduled for removal in the release after next.'`
+- [x] 1.6 Add a computed `grid_cell` column or expression to `playground_stats` (or inline in the cluster function) — whichever benchmarks faster on a Germany-sized dataset. *Decision: inline `ST_SnapToGrid(centroid_3857, cell_size_m(z))` in `get_playground_clusters` — avoids one column per zoom in the MV; with the GiST index on `centroid_3857` the cost is negligible on Germany-sized datasets and the cluster RPC stays stateless/cacheable per `(z, bbox)`.*
+- [-] 1.7 ~~Add `import_version` (or `data_version`) bump timestamp, written on successful import and surfaced via `get_meta`, for client-side cache-bust~~ **Deferred to `add-federation-health-exposition`** — that change introduces `api.import_status(last_import_at, ...)` which is the same data at a better-scoped location. Adding it here would create a schema merge conflict when federation-health lands.
+- [x] 1.8 Grant EXECUTE on all three new functions to `web_anon`
+- [x] 1.9 Update `dev/seed/seed.sql` so `make seed-load` exercises all three new RPCs with the 4-playground fixture
+
+### Review Findings — Pass 1 (bmad-code-review, 2026-04-24)
+
+Three review layers ran over §1 SQL. Smoke test (`make seed-load` + curl) passed before review. Seven real patches + ~15 dismissed.
+
+#### Critical — spec contract mismatches
+- [x] [Review][Patch] `get_playground_centroids` emits filter attrs as flat top-level keys; spec §"Centroids RPC returns per-feature rows" requires them nested under `filter_attrs: {has_water, ...}`. Fix the RPC in both `importer/api.sql` and `dev/seed/seed.sql`. [Critical]
+- [x] [Review][Patch] Spec §"get_meta carries data_version" is unmet. Task 1.7 was deferred to `add-federation-health-exposition` but the spec scenario remains. Honest fix: strike the `data_version` scenario from `specs/tiered-playground-delivery/spec.md` with a cross-reference to the federation-health change, where the feature will ship. [Critical]
+
+#### Medium
+- [x] [Review][Patch] Empty-string parity drift in completeness rule: JS `!!props.name` is false on `name=''` but SQL `pl.name IS NOT NULL` is true. Same for `operator`, `surface`, `opening_hours` via hstore. Fix with `NULLIF(col, '')` (or `col IS NOT NULL AND col <> ''`) so the classification matches `app/src/lib/completeness.js`. Both SQL files. [Medium]
+- [x] [Review][Patch] `get_meta` uses `LEFT JOIN playground_stats`, so the invariant `playground_count = complete + partial + missing` can fail if a playground is missing from the MV. Switch to `INNER JOIN` (or count from `playground_stats` directly) so the spec invariant holds by construction. [Medium]
+
+#### Low
+- [x] [Review][Patch] Cluster `cell_size` CTE casts to `::numeric`; `ST_SnapToGrid(geom, float8)` accepts numeric via implicit cast (empirically works — smoke test green), but `::float8` is clearer and matches PostGIS's actual function signature. Cosmetic. [Low]
+- [x] [Review][Patch] Cluster cell-size table has two non-monotonic ratios (z4→5 = 2.08×, z7→8 = 1.875×). Retune for pure halving or document the rounding explicitly. [Low]
+
+### Dismissed (pass 1)
+- Blind Hunter B2 (numeric→float8 cast breaks function resolution): empirically works; smoke test green. Kept as cosmetic patch only.
+- Blind Hunter B3 (access_restricted misses `no`/`permit`/...): verified matches `app/src/lib/vectorStyles.js::isRestrictedAccess` which only considers `private`/`customers`. Not a drift.
+- Blind Hunter B5 (get_playgrounds_bbox shape drift): verified identical in smoke test (returned GeoJSON parsed correctly).
+- Blind Hunter B9 (no DROP MV before CREATE): false finding — `DROP MATERIALIZED VIEW IF EXISTS public.playground_stats CASCADE;` is already present pre-diff.
+- Edge Hunter E11 (seed-load may not refresh MV): empirically works — `make seed-load` produced correct cluster/centroid responses in smoke test.
+- Auditor A5 (centroid osm_type): spec lists only `osm_id`, so the omission is permissible; not a mismatch.
+- Various hardening concerns (E5 dateline, E6 grid-boundary, E7 out-of-range z, E9 no LIMIT, E14 NaN bbox, B1 cartesian-join style, B10 skeys perf, A3 centroid-based intersection note): logged as follow-up hardening, not Section 1 blockers.
 
 ## 2. Client — API layer + fetchers
 
