@@ -8,7 +8,7 @@
 #   OSM_RELATION_ID        OSM relation ID of the target region (used for Nominatim bbox lookup)
 #   OSM_BBOX               Optional bbox override: west,south,east,north (skips Nominatim)
 #   OSM_BBOX_PADDING       Degrees to pad bbox on each side (default: 0.15 ≈ 15 km)
-#   OSM_PREFILTER_MIN_MB   Skip pre-filter if source PBF is smaller than this (default: 20)
+#   OSM_PREFILTER_MIN_MB   Skip bbox pre-filter if source PBF is smaller than this (default: 20)
 #   POSTGRES_HOST          Default: db
 #   POSTGRES_PORT          Default: 5432
 #   POSTGRES_DB            Default: osm
@@ -20,6 +20,7 @@ set -e
 
 PBF_URL="${PBF_URL:-https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf}"
 PBF_FILE="/data/$(basename "$PBF_URL")"
+PBF_BASENAME=$(basename "$PBF_FILE" .pbf)
 
 OSM_BBOX="${OSM_BBOX:-}"
 OSM_BBOX_PADDING="${OSM_BBOX_PADDING:-0.15}"
@@ -54,19 +55,18 @@ else
 fi
 
 # --------------------------------------------------------------------------- #
-# Osmium pre-filter: clip PBF to region bbox before osm2pgsql
+# Step 1 — Bbox pre-filter: clip PBF to region bounding box
 # --------------------------------------------------------------------------- #
 SKIP_PREFILTER=0
 IMPORT_PBF="$PBF_FILE"
 
-# Check source PBF size — skip pre-filter for already-small files
+# Skip for already-small source PBFs (city-level extracts, etc.)
 PBF_SIZE_MB=$(du -m "$PBF_FILE" | cut -f1)
 if [ "$PBF_SIZE_MB" -lt "$OSM_PREFILTER_MIN_MB" ]; then
-    echo "[importer] Source PBF is small (${PBF_SIZE_MB} MB < ${OSM_PREFILTER_MIN_MB} MB), skipping pre-filter"
+    echo "[importer] Source PBF is small (${PBF_SIZE_MB} MB < ${OSM_PREFILTER_MIN_MB} MB), skipping bbox pre-filter"
     SKIP_PREFILTER=1
 fi
 
-# Resolve bbox if pre-filter is still active
 if [ "$SKIP_PREFILTER" -eq 0 ]; then
     if [ -n "$OSM_BBOX" ]; then
         echo "[importer] Using OSM_BBOX override: $OSM_BBOX"
@@ -96,26 +96,77 @@ if [ "$SKIP_PREFILTER" -eq 0 ]; then
     fi
 fi
 
-# Run osmium extract if pre-filter is still active
 if [ "$SKIP_PREFILTER" -eq 0 ]; then
-    PBF_BASENAME=$(basename "$PBF_FILE" .pbf)
-    FILTERED_PBF="/data/${PBF_BASENAME}_${OSM_RELATION_ID}.pbf"
+    BBOX_PBF="/data/${PBF_BASENAME}_${OSM_RELATION_ID}.pbf"
 
-    if [ -f "$FILTERED_PBF" ] && [ "$FILTERED_PBF" -nt "$PBF_FILE" ]; then
-        echo "[importer] Cache hit: $FILTERED_PBF is newer than source, skipping osmium"
+    if [ -f "$BBOX_PBF" ] && [ "$BBOX_PBF" -nt "$PBF_FILE" ]; then
+        echo "[importer] Bbox cache hit: $BBOX_PBF is newer than source, skipping osmium extract"
     else
         echo "[importer] Running osmium extract (bbox=$RESOLVED_BBOX)..."
         osmium extract \
             --bbox="$RESOLVED_BBOX" \
             --strategy=smart \
-            -o "$FILTERED_PBF" \
+            -o "$BBOX_PBF" \
             "$PBF_FILE" \
             --overwrite
-        echo "[importer] osmium extract complete: $(du -sh "$FILTERED_PBF" | cut -f1)"
+        echo "[importer] Bbox extract complete: $(du -sh "$BBOX_PBF" | cut -f1)"
     fi
 
-    IMPORT_PBF="$FILTERED_PBF"
+    IMPORT_PBF="$BBOX_PBF"
 fi
+
+# --------------------------------------------------------------------------- #
+# Step 2 — Tag filter: keep only objects the app actually queries
+# --------------------------------------------------------------------------- #
+TAGS_PBF="/data/${PBF_BASENAME}_${OSM_RELATION_ID}_tags.pbf"
+
+if [ -f "$TAGS_PBF" ] && [ "$TAGS_PBF" -nt "$IMPORT_PBF" ]; then
+    echo "[importer] Tag-filter cache hit: $TAGS_PBF is newer than source, skipping osmium tags-filter"
+else
+    echo "[importer] Running osmium tags-filter..."
+    osmium tags-filter \
+        -o "$TAGS_PBF" \
+        "$IMPORT_PBF" \
+        --overwrite \
+        n/natural=tree \
+        n/leisure=playground \
+        n/leisure=pitch \
+        n/leisure=fitness_station \
+        n/leisure=picnic_table \
+        n/amenity=bench \
+        n/amenity=shelter \
+        n/amenity=toilets \
+        n/amenity=ice_cream \
+        n/amenity=cafe \
+        n/amenity=restaurant \
+        n/highway=bus_stop \
+        n/shop=chemist \
+        n/shop=supermarket \
+        n/shop=convenience \
+        n/emergency \
+        n/playground \
+        w/leisure=playground \
+        w/leisure=pitch \
+        w/leisure=fitness_station \
+        w/leisure=picnic_table \
+        w/amenity=bench \
+        w/amenity=shelter \
+        w/amenity=toilets \
+        w/amenity=ice_cream \
+        w/amenity=cafe \
+        w/amenity=restaurant \
+        w/shop=chemist \
+        w/shop=supermarket \
+        w/shop=convenience \
+        w/playground \
+        r/leisure=playground \
+        r/leisure=pitch \
+        r/type=multipolygon \
+        r/boundary=administrative
+    echo "[importer] Tag-filter complete: $(du -sh "$TAGS_PBF" | cut -f1)"
+fi
+
+IMPORT_PBF="$TAGS_PBF"
 
 # --------------------------------------------------------------------------- #
 # Import with osm2pgsql
