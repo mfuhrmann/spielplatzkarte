@@ -7,8 +7,9 @@
 #   docker compose -f compose.prod.yml --profile data-node-ui up -d
 #   docker compose -f compose.prod.yml --profile data-node run --rm importer
 #
-# Images are published to ghcr.io on every tagged release and on every push
-# to main (tagged :latest). Pin to a specific version for reproducible deploys.
+# Images are published to ghcr.io on every push to main (tagged :rc) and on
+# every tagged release (tagged :latest + semver). Pin to a semver tag for
+# reproducible deploys.
 
 services:
 
@@ -68,7 +69,7 @@ services:
 
   # ── Svelte app — serves the frontend and proxies /api/ to PostgREST ─────────
   app:
-    image: ghcr.io/mfuhrmann/spieli:rc
+    image: ghcr.io/mfuhrmann/spieli:latest
     profiles: [ui, data-node-ui]
     ports:
       - "${APP_PORT:-8080}:80"
