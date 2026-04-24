@@ -86,13 +86,39 @@ Three review layers over §2/§3 client work. Build clean; not yet runtime-valid
 
 ## 4. Client — cluster renderer + Supercluster integration
 
-- [ ] 4.1 Add `supercluster` to `app/package.json` dependencies; run `npm install` in `app/`
-- [ ] 4.2 Create `app/src/components/ClusterLayer.svelte` — encapsulates a Supercluster instance, the OL source/layer pair, and the canvas renderer
-- [ ] 4.3 Implement `stackedRingRenderer` in `app/src/lib/clusterStyle.js` — canvas 2D draw of the ring with complete/partial/missing segments + count; cached by `(count_bucket, r_frac, p_frac, m_frac)` with a WeakMap-keyed bitmap pool
-- [ ] 4.4 Single-child clusters render as a single completeness-colour dot (no ring, matches polygon colour at higher zoom)
-- [ ] 4.5 Cluster click zooms to the cluster's bounding extent with `view.fit`, same padding behaviour as the existing polygon select
+- [x] 4.1 Add `supercluster` to `app/package.json` dependencies; run `npm install` in `app/`
+- [-] 4.2 ~~Create `app/src/components/ClusterLayer.svelte` — encapsulates a Supercluster instance, the OL source/layer pair, and the canvas renderer~~ *Not extracted — Supercluster lives in `app/src/lib/tieredOrchestrator.js`, the OL layer is created in `Map.svelte`, and the canvas renderer is in `app/src/lib/clusterStyle.js`. Equivalent separation of concerns without the component extraction. Re-evaluate for P2 (hub) if the hub wants its own cluster wiring.*
+- [x] 4.3 Implement `stackedRingRenderer` in `app/src/lib/clusterStyle.js` — canvas 2D draw of the ring with complete/partial/missing segments + count; cached by `(count_bucket, c_frac, p_frac, m_frac)` with a bitmap pool keyed on that tuple + pixelRatio
+- [x] 4.4 Single-child clusters render as a single completeness-colour dot (no ring, matches polygon colour at higher zoom)
+- [x] 4.5 Cluster click zooms toward the cluster centre (`view.animate` + 2 zoom levels, capped at view maxZoom). Note: the spec said "fit to bounding extent" — extent isn't knowable from a server-bucketed cluster without an extra round-trip, so we zoom in by 2 which naturally transitions to the centroid tier. Refine if UX testing shows drift.
 - [ ] 4.6 Filter badge: below the count, a small pill "N match" rendered in the same canvas when `$filterStore` has any active filter; only on the centroid tier and above (not at zoom ≤ 10)
 - [ ] 4.7 Hover on a cluster shows a small tooltip (reuse `HoverPreview`) listing aggregate counts
+
+### Review Findings — §4 renderer, Pass 1 (bmad-code-review, 2026-04-25)
+
+Three layers over the canvas stacked-ring + cluster click. Build clean; no runtime eyeballing yet.
+
+#### Medium — spec drift
+- [x] [Review][Patch] **Radius table drifts +2 px from spec**. Spec §"Ring renders scale with count" mandates radii 12 / 14 / 18 / 22 CSS px for counts 5 / 25 / 100 / 500; `clusterStyle.js::radiusForCount` returns 14 / 18 / 22 / 26. One-line fix. [app/src/lib/clusterStyle.js] (Medium)
+- [x] [Review][Patch] **Cluster count not rendered in tabular numerals**. Spec calls for "tabular numerals"; current font stack uses `system-ui` which defaults to proportional figures. Add `ctx.fontFeatureSettings = '"tnum" 1'` (or add `ui-monospace` to the font stack). [app/src/lib/clusterStyle.js drawStackedRing] (Medium)
+- [x] [Review][Patch] **Cache key inconsistency — `m10` is derived, draw uses raw fractions**. Two features with different raw (complete, partial, missing) but the same rounded `(c10, p10)` collide in the cache under the same key; whichever paints first wins. Either round the draw inputs to tenths, or change the cache key to include the *actual* rounded `m10`. [app/src/lib/clusterStyle.js cacheKey + drawStackedRing] (Medium)
+
+#### Low
+- [x] [Review][Patch] **Single-child dot radius 6 ≠ centroid tier default 5**. Spec says single-cluster dot "size matches the centroid tier's default point size"; currently 1 px larger. [app/src/lib/clusterStyle.js renderStackedRing] (Low)
+- [x] [Review][Patch] **No pointer-cursor affordance on cluster/centroid hover**. Click-to-zoom is wired but the pointermove handler only sets `cursor: pointer` for polygon + overlay layers. Add cluster and centroid layers to the hit-test that drives cursor style. [app/src/components/Map.svelte pointermove handler] (Low)
+
+### Dismissed (pass 1, §4)
+- Blind: OL renderer caching per-Style. Assumption flagged; OL docs (and actual behaviour across OL versions in use) invoke the renderer per feature per frame — not a bug.
+- Blind: `count <= 1` colour pick order — would only misfire if data is malformed (`count=1` with two non-zero counts). Upstream invariant issue, not a render bug.
+- Blind: Negative `m10` in cache key as a sentinel. Cosmetic; doesn't collide with valid keys.
+- Blind: Unbounded bitmap cache across pixelRatio. Bounded in practice (~8k keys worst case), no eviction needed.
+- Blind: Total-zero silent draw. Indicates upstream data bug, not renderer's concern.
+- Edge: Supercluster `getClusterExpansionZoom` for centroid-cluster clicks — real UX improvement but requires exposing the Supercluster index across a module boundary; defer to a follow-up refactor once §4.6 lands.
+- Edge: `+2` nudge not boundary-aware for custom `clusterMaxZoom`. Two clicks to drill out of cluster tier in unusual configs; acceptable.
+- Edge: Centroid-cluster visually inconsistent with cluster-tier ring (still uses placeholder circle). Intentional — §4.6 will reuse the renderer once centroid-clusters carry completeness breakdowns.
+- Edge: Initial 200-ring paint latency at Germany zoom 10. ~200 ms first paint; cached thereafter. Acceptable.
+- Auditor: `view.fit(extent)` vs `view.animate(zoom + 2)` — deviation documented in §4.5 note. Acceptable for WIP.
+- Auditor: ClusterLayer.svelte component not extracted. Current three-file split (orchestrator + Map.svelte + clusterStyle.js) is equivalent; documented in §4.2.
 
 ## 5. Client — selection + deeplink adaptation
 

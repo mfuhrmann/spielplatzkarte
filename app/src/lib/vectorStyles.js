@@ -137,28 +137,13 @@ export const treeStyle = new Style({
     })
 });
 
-// ── Tiered-delivery placeholder styles (P1 §3) ────────────────────────────────
-// Simple OL primitives so the three layers render something visible during §3.
-// Section 4 replaces clusterTierStyleFn with a canvas-based stacked-ring
-// renderer via Supercluster; centroidTierStyleFn may also gain its own badge.
+// ── Tiered-delivery styles (P1 §3 / §4) ───────────────────────────────────────
 
-/** Cluster tier (zoom ≤ clusterMaxZoom) — one circle per server-bucketed cell. */
-export function clusterTierStyleFn(feature) {
-  const count = feature.get('count') ?? 0;
-  const radius = count < 10 ? 12 : count < 100 ? 16 : count < 1000 ? 20 : 24;
-  return new Style({
-    image: new Circle({
-      radius,
-      fill:   new Fill({ color: 'rgba(55, 65, 81, 0.75)' }),
-      stroke: new Stroke({ color: '#1f2937', width: 1.5 }),
-    }),
-    text: new Text({
-      text: String(count),
-      font: 'bold 12px system-ui, sans-serif',
-      fill: new Fill({ color: '#fff' }),
-    }),
-  });
-}
+// Cluster tier (zoom ≤ clusterMaxZoom) — canvas-rendered stacked ring with
+// complete/partial/missing segments and the count in the centre.
+// Single-child clusters (count === 1) render as a solid completeness dot.
+// See app/src/lib/clusterStyle.js for the renderer + bitmap cache.
+export { clusterRingStyleFn as clusterTierStyleFn } from './clusterStyle.js';
 
 /** Centroid tier (zoom 11–13) — Supercluster may merge points; solo points
  *  render as a completeness-coloured dot. */

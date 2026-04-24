@@ -147,9 +147,12 @@
       }
     });
 
-    // Click handler: select playground on click. Cluster/centroid tier clicks
-    // are inert for now — §4.5 wires cluster zoom-to-extent and §5 wires
-    // centroid select — but they must NOT fall through to `selection.clear()`.
+    // Click handler: tier-aware.
+    //  - Polygon tier: select + fit-to-extent (existing behaviour).
+    //  - Cluster tier (§4.5): zoom in ~2 levels toward the cluster centre.
+    //  - Centroid-tier cluster (Supercluster): zoom in ~2 levels toward centre.
+    //  - Centroid-tier single point (§5): TODO — resolve to polygon + select.
+    //  - Empty space: clear selection.
     olMap.on('click', (evt) => {
       const polygonHit = olMap.forEachFeatureAtPixel(evt.pixel, (f) => f, {
         layerFilter: (l) => l === playgroundLayer,
@@ -164,10 +167,22 @@
         });
         return;
       }
-      const tierHit = olMap.forEachFeatureAtPixel(evt.pixel, (f) => f, {
+      const clusterHit = olMap.forEachFeatureAtPixel(evt.pixel, (f) => f, {
         layerFilter: (l) => l === clusterLayer || l === centroidLayer,
       });
-      if (tierHit) return; // deferred to §4.5 / §5
+      if (clusterHit) {
+        const tier = clusterHit.get('_tier');
+        if (tier === 'cluster' || tier === 'centroid-cluster') {
+          const center = clusterHit.getGeometry().getCoordinates();
+          view.animate({
+            center,
+            zoom: Math.min((view.getZoom() ?? 0) + 2, view.getMaxZoom?.() ?? 19),
+            duration: 400,
+          });
+        }
+        // Single-point 'centroid' hits are deferred to §5.
+        return;
+      }
       selection.clear();
     });
 
@@ -187,8 +202,13 @@
       const playHit = olMap.forEachFeatureAtPixel(evt.pixel, f => f, {
         layerFilter: l => l === playgroundLayer,
       });
+      // Cluster/centroid tier hits get the pointer cursor too — click-to-zoom
+      // is wired for them and users need the affordance.
+      const tierHit = olMap.forEachFeatureAtPixel(evt.pixel, f => f, {
+        layerFilter: l => l === clusterLayer || l === centroidLayer,
+      });
 
-      mapContainer.style.cursor = (overlayHit || playHit) ? 'pointer' : '';
+      mapContainer.style.cursor = (overlayHit || playHit || tierHit) ? 'pointer' : '';
 
       // Overlay hover takes priority
       if (overlayHit !== lastEquipHoverFeature) {
