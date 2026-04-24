@@ -1111,6 +1111,24 @@
 <td>CPU threads for the import</td>
 </tr>
 <tr>
+<td><code>OSM_BBOX</code></td>
+<td><em>(auto)</em></td>
+<td>data-node, data-node-ui</td>
+<td>Manual bounding box for the osmium pre-filter (<code>west,south,east,north</code>). Skips Nominatim lookup when set.</td>
+</tr>
+<tr>
+<td><code>OSM_BBOX_PADDING</code></td>
+<td><code>0.15</code></td>
+<td>data-node, data-node-ui</td>
+<td>Degrees of padding added to each side of the Nominatim bbox (≈ 15 km).</td>
+</tr>
+<tr>
+<td><code>OSM_PREFILTER_MIN_MB</code></td>
+<td><code>20</code></td>
+<td>data-node, data-node-ui</td>
+<td>Source PBF files smaller than this many MB skip the osmium pre-filter step.</td>
+</tr>
+<tr>
 <td><code>GEOSERVER_URL</code></td>
 <td><em>(disabled)</em></td>
 <td>data-node, data-node-ui</td>
