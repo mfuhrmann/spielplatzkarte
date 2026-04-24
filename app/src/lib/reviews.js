@@ -5,10 +5,20 @@
 
 const MANGROVE_API = 'https://api.mangrove.reviews';
 const LS_KEY = 'spieli-mangrove-keypair';
+const LS_KEY_LEGACY = 'spielplatzkarte-mangrove-keypair';
 
 // ── Key management ─────────────────────────────────────────────────────────
 
+function migrateLegacyKey() {
+    const legacy = localStorage.getItem(LS_KEY_LEGACY);
+    if (legacy && !localStorage.getItem(LS_KEY)) {
+        localStorage.setItem(LS_KEY, legacy);
+        localStorage.removeItem(LS_KEY_LEGACY);
+    }
+}
+
 export async function loadOrGenerateKeypair() {
+    migrateLegacyKey();
     const stored = localStorage.getItem(LS_KEY);
     if (stored) {
         const { priv, pub } = JSON.parse(stored);
