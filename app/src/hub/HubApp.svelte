@@ -6,20 +6,32 @@
 
   import AppShell from '../components/AppShell.svelte';
   import InstancePanel from './InstancePanel.svelte';
+  import MacroView from './MacroView.svelte';
 
   import { createRegistry } from './registry.js';
+  import { attachHubOrchestrator } from './hubOrchestrator.js';
   import { mapStore } from '../stores/map.js';
+  import { clusterMaxZoom } from '../lib/config.js';
 
   // Generic OSM wiki link for the contribution modal (hub is region-agnostic).
   const HUB_WIKI_URL = 'https://wiki.openstreetmap.org/wiki/Tag:leisure%3Dplayground';
 
-  const sharedSource = new VectorSource();
+  // Three sources owned by the hub — the orchestrator populates cluster /
+  // polygon on every moveend; MacroView (P2 §5) populates macro from
+  // backend metadata (no fetch). Map.svelte toggles layer visibility from
+  // activeTierStore — same pattern as the standalone two-tier design,
+  // extended with the hub-only macro tier.
+  const polygonSource = new VectorSource();
+  const clusterSource = new VectorSource();
+  const macroSource   = new VectorSource();
+  let detachOrchestrator = null;
+
   const {
     backends,
     registryError,
     aggregatedBbox,
     fetchNearestAcrossBackends,
-  } = createRegistry(sharedSource);
+  } = createRegistry();
 
   const dataContribLinks = { wikiUrl: HUB_WIKI_URL, chatUrl: null };
 
@@ -40,9 +52,21 @@
 
   function tryFit(map, bbox) {
     if (fitDone || !map || !bbox) return;
+    // Single-backend hubs always clamp to clusterMaxZoom + 1 (spec §6.1):
+    // a single small city's bbox fitted with normal padding lands in the
+    // macro tier, where one giant ring covers a city the user already
+    // implied they wanted to look at. Clamping forces the initial paint
+    // into the cluster tier.
+    //
+    // Multi-backend hubs accept whatever the union dictates (spec §6.2)
+    // — a Germany+France union legitimately wants the macro continent
+    // overview now that §5 ships and macro rings render properly.
+    const backendCount = get(backends).length;
+    const fitOpts = { padding: [20, 20, 20, 380], duration: 0 };
+    if (backendCount <= 1) fitOpts.maxZoom = clusterMaxZoom + 1;
     map.getView().fit(
       transformExtent(bbox, 'EPSG:4326', 'EPSG:3857'),
-      { padding: [20, 20, 20, 380], duration: 0 }
+      fitOpts,
     );
     fitDone = true;
     detachMap?.();
@@ -55,16 +79,36 @@
     let latestBbox = null;
     detachMap = mapStore.subscribe(m => { latestMap = m; tryFit(latestMap, latestBbox); });
     detachBbox = aggregatedBbox.subscribe(b => { latestBbox = b; tryFit(latestMap, latestBbox); });
+
+    // Attach the hub orchestrator once the map is published. The orchestrator
+    // fans out per-tier RPCs across registered backends on every (debounced)
+    // moveend, populates clusterSource / polygonSource, and writes the
+    // active tier to activeTierStore for layer-visibility toggling.
+    const detachAttach = mapStore.subscribe(map => {
+      if (!map || detachOrchestrator) return;
+      detachOrchestrator = attachHubOrchestrator({
+        map,
+        backendsStore: backends,
+        clusterSource,
+        polygonSource,
+      });
+      detachAttach();
+    });
   });
 
   onDestroy(() => {
     detachMap?.();
     detachBbox?.();
+    detachOrchestrator?.();
   });
 </script>
 
+<MacroView {backends} source={macroSource} />
+
 <AppShell
-  playgroundSource={sharedSource}
+  playgroundSource={polygonSource}
+  {clusterSource}
+  {macroSource}
   searchExtent={aggregatedBbox}
   nearestFetcher={fetchNearestAcrossBackends}
   {resolveSlugToBackendUrl}

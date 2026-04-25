@@ -1,14 +1,16 @@
-// Hub registry — loads the registry JSON, fetches playgrounds from each
-// backend in parallel, populates a shared OL VectorSource, and periodically
-// refreshes. Exposes derived stores and a multi-backend nearest fetcher.
+// Hub registry — loads the registry JSON, fetches per-backend metadata
+// (`get_meta`) on a 5-min poll, exposes the resulting `backends` readable
+// store, and provides a multi-backend nearest-playground fetcher.
+//
+// Note (P2 §3): the eager `get_playgrounds(relation_id)` fetch that this
+// module used to do at startup has moved to `hubOrchestrator.js`, which
+// fans out the per-tier RPCs (clusters / bbox-polygons) on every moveend.
+// The registry now only handles registry discovery + metadata + nearest.
 
 import { readable, writable, derived } from 'svelte/store';
-import GeoJSON from 'ol/format/GeoJSON.js';
 import { registryUrl, hubPollInterval } from '../lib/config.js';
 import { fetchMeta } from '../lib/api.js';
 import { isValidSlug } from '../lib/deeplink.js';
-
-const geojsonFormat = new GeoJSON();
 
 // Per-backend timeout for multi-backend nearest fan-out. A slow or unreachable
 // backend contributes zero results but never stalls the user interaction.
@@ -26,19 +28,29 @@ const NEAREST_MAX_DISTANCE_M = 25_000;
  *   slug: string | null,
  *   loading: boolean,
  *   error: string | null,
- *   featureCount: number,
  *   version: string | null,
  *   region: string | null,
  *   bbox: [minLon, minLat, maxLon, maxLat] | null,
+ *   playgroundCount: number,                          // from get_meta.playground_count (P1)
+ *   completeness: { complete, partial, missing } | null, // from get_meta (P1)
  * }
+ *
+ * `completeness` is `null` until `get_meta` returns, AND stays `null` if the
+ * backend is on a pre-P1 release that doesn't ship the three completeness
+ * fields. Downstream macro-view rendering uses this sentinel to distinguish
+ * "stale / pre-P1 backend" from "actual zero-playground region".
+ *
+ * Each `loadBackend` call replaces the entry in the `backends` array with a
+ * new object identity (immutable patch via `{ ...prev, ...patch }`) so
+ * memoised consumers (e.g. macro-view rings) can use reference equality.
  */
 
 /**
  * Creates a registry that loads backend status into a Svelte readable store
- * and populates `vectorSource` with playground features (tagged with
- * `_backendUrl` and, when present, `_backendSlug`).
+ * and exposes derived stores + a multi-backend nearest fetcher. The hub
+ * orchestrator (P2 §3) consumes the `backends` store to drive bbox routing
+ * and per-tier fan-out; the registry no longer touches any vector source.
  *
- * @param {import('ol/source/Vector.js').default} vectorSource
  * @returns {{
  *   backends: import('svelte/store').Readable<Array>,
  *   registryError: import('svelte/store').Readable<string|null>,
@@ -46,7 +58,7 @@ const NEAREST_MAX_DISTANCE_M = 25_000;
  *   fetchNearestAcrossBackends: (lat: number, lon: number, limit?: number) => Promise<Array>,
  * }}
  */
-export function createRegistry(vectorSource) {
+export function createRegistry() {
   let backends = [];
   let pollTimer = null;
   const registryError = writable(null);
@@ -56,47 +68,42 @@ export function createRegistry(vectorSource) {
       set([...backends]);
     }
 
-    async function loadBackend(backend) {
-      backend.loading = true;
-      backend.error = null;
+    function patchBackend(url, patch) {
+      const idx = backends.findIndex(b => b.url === url);
+      if (idx < 0) return null;
+      const updated = { ...backends[idx], ...patch };
+      backends[idx] = updated;
       notify();
+      return updated;
+    }
+
+    async function loadBackend(backend) {
+      patchBackend(backend.url, { loading: true, error: null });
 
       try {
-        const [meta, geojson] = await Promise.all([
-          fetchMeta(backend.url).catch(() => null),
-          fetchPlaygroundsHub(backend.url),
-        ]);
+        const meta = await fetchMeta(backend.url);
 
+        const patch = { loading: false };
         if (meta) {
-          backend.version = meta.version ?? null;
-          backend.region  = meta.name    ?? null;
-          backend.bbox    = Array.isArray(meta.bbox) && meta.bbox.length === 4 ? meta.bbox : null;
-          if (!backend.name && backend.region) backend.name = backend.region;
+          patch.version         = meta.version ?? null;
+          patch.region          = meta.name    ?? null;
+          patch.bbox            = Array.isArray(meta.bbox) && meta.bbox.length === 4 ? meta.bbox : null;
+          patch.playgroundCount = meta.playground_count ?? 0;
+          // Pre-P1 backends omit the three completeness fields. Use a null
+          // sentinel for `completeness` in that case so the macro view can
+          // render a "no completeness data" treatment instead of an
+          // all-zero ring (which would look like a healthy empty region).
+          const hasCompleteness = ['complete', 'partial', 'missing'].every(k => k in meta);
+          patch.completeness = hasCompleteness
+            ? { complete: meta.complete, partial: meta.partial, missing: meta.missing }
+            : null;
+          if (!backend.name && patch.region) patch.name = patch.region;
         }
 
-        // Parse first — only touch the map if parsing succeeds
-        const features = geojsonFormat.readFeatures(geojson, {
-          dataProjection:    'EPSG:4326',
-          featureProjection: 'EPSG:3857',
-        });
-        features.forEach(f => {
-          f.set('_backendUrl', backend.url);
-          if (backend.slug) f.set('_backendSlug', backend.slug);
-        });
-
-        // Atomic swap: remove stale then add new in the same JS turn
-        const stale = vectorSource.getFeatures().filter(f => f.get('_backendUrl') === backend.url);
-        if (stale.length) vectorSource.removeFeatures(stale);
-        vectorSource.addFeatures(features);
-
-        backend.featureCount = features.length;
-        backend.loading      = false;
+        patchBackend(backend.url, patch);
       } catch (err) {
-        backend.error   = err.message;
-        backend.loading = false;
+        patchBackend(backend.url, { error: err.message, loading: false });
       }
-
-      notify();
     }
 
     async function loadAll() {
@@ -110,15 +117,16 @@ export function createRegistry(vectorSource) {
         // Support both { instances: [...] } and bare array formats
         const entries = Array.isArray(data) ? data : (data.instances ?? []);
         backends = entries.map(entry => ({
-          url:          entry.url,
-          name:         entry.name || entry.url,
-          slug:         normaliseSlug(entry.slug, entry.url),
-          loading:      true,
-          error:        null,
-          featureCount: 0,
-          version:      null,
-          region:       null,
-          bbox:         null,
+          url:             entry.url,
+          name:            entry.name || entry.url,
+          slug:            normaliseSlug(entry.slug, entry.url),
+          loading:         true,
+          error:           null,
+          version:         null,
+          region:          null,
+          bbox:            null,
+          playgroundCount: 0,
+          completeness:    null, // populated after get_meta lands; see status-shape JSDoc
         }));
         notify();
 
@@ -205,14 +213,6 @@ function normaliseSlug(raw, url) {
   if (isValidSlug(raw)) return raw;
   console.warn(`[registry] invalid slug "${raw}" on backend ${url} — treating as missing`);
   return null;
-}
-
-/** Fetches all playgrounds from a backend without passing a relation_id —
- *  the backend uses its own configured default. */
-async function fetchPlaygroundsHub(baseUrl) {
-  const res = await fetch(`${baseUrl}/rpc/get_playgrounds`);
-  if (res.ok) return res.json();
-  throw new Error(`get_playgrounds failed: ${res.status}`);
 }
 
 /** Per-backend nearest-playgrounds call with a timeout. Returns [] on any

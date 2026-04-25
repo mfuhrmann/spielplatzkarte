@@ -34,9 +34,17 @@ For any tier that requires a per-backend fetch, the hub SHALL invoke each select
 
 #### Scenario: Progressive render
 
-- **WHEN** the hub fans out a centroid fetch to backends A, B, and C, and C takes 2 seconds while A and B respond in 100 ms
-- **THEN** the centroid layer renders data from A and B within ~100 ms (plus debounce)
+- **WHEN** the hub fans out a cluster fetch to backends A, B, and C, and C takes 2 seconds while A and B respond in 100 ms
+- **THEN** the cluster layer renders data from A and B within ~100 ms (plus debounce)
 - **AND** C's contribution appears when its response settles, without re-rendering the whole map
+
+<!--
+  The original spec scenario read "centroid fetch" — pre-pivot the hub had
+  three tiers (cluster/centroid/polygon). Centroid was dropped in P1's
+  two-tier pivot; the same progressive-render requirement applies to the
+  cluster tier.
+-->
+
 
 #### Scenario: Slow backend does not block the paint
 
@@ -108,7 +116,7 @@ At the cluster tier, merged cluster buckets from multiple backends SHALL be re-c
 
 ### Requirement: Hub renders a country-level macro view at zoom 0–5
 
-At zoom levels at or below `clusterMaxZoom` (default 10; the macro tier starts at 5), the hub SHALL render one stacked-ring feature per registered backend, sized and segmented by the backend's `get_meta` aggregate counts, without fetching any per-playground data.
+At zoom levels at or below `macroMaxZoom` (default 5; introduced as a separate config knob during implementation so the cluster tier can keep its own `clusterMaxZoom = 13` threshold), the hub SHALL render one stacked-ring feature per registered backend, sized and segmented by the backend's `get_meta` aggregate counts, without fetching any per-playground data.
 
 #### Scenario: Macro view renders one ring per backend
 

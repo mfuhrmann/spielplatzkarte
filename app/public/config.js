@@ -27,6 +27,10 @@ window.APP_CONFIG = {
 
   // --- Tiered playground delivery (standalone mode in P1) ---
   // Two tiers: cluster (zoom ≤ 13) and polygon (zoom > 13).
-  // Hub-side fan-out lands in add-federated-playground-clustering (P2).
   clusterMaxZoom: 13,
+
+  // --- Federated clustering (hub mode, P2) ---
+  // Zoom ≤ macroMaxZoom shows the country-level macro view (one ring per
+  // backend) and the orchestrator skips per-tier fetches entirely.
+  macroMaxZoom: 5,
 };

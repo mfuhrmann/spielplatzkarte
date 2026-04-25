@@ -17,7 +17,11 @@
   // both the region count in the pill and the zero-reachable messaging.
   $: reachable = $backends.filter(b => !b.error && !b.loading);
   $: regionCount = reachable.length;
-  $: playgroundCount = reachable.reduce((acc, b) => acc + (b.featureCount || 0), 0);
+  // Total playgrounds across reachable backends. Sourced from each backend's
+  // `playgroundCount` (from `get_meta`, region-wide total) since the hub
+  // orchestrator no longer eagerly loads every backend's polygons; it
+  // fetches the per-tier RPCs on moveend instead.
+  $: playgroundCount = reachable.reduce((acc, b) => acc + (b.playgroundCount || 0), 0);
   $: isLoading = !$registryError && $backends.length === 0;
   $: hasRegistryError = !!$registryError;
 

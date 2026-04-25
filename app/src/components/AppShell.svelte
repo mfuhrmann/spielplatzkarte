@@ -37,6 +37,13 @@
   export let clusterSource = null;
 
   /**
+   * Macro-tier source (hub-only, zoom ≤ macroMaxZoom). Fed by `MacroView`
+   * from the registry's per-backend metadata; null in standalone mode.
+   * @type {import('ol/source/Vector.js').default | null}
+   */
+  export let macroSource = null;
+
+  /**
    * Readable store emitting the current map view in WGS84 as
    * `[minLon, minLat, maxLon, maxLat]` (or null). Consumed by SearchBar as
    * Nominatim `viewbox`.
@@ -135,31 +142,45 @@
       return;
     }
 
-    // §5.1 — when the polygon source is empty (cluster tier on first load),
-    // hydrate the single feature on demand from get_playground(osm_id).
-    // The source's 'change' event re-runs this handler and the standard
-    // match path then selects + fits.
+    // §5.1 — when the polygon source is empty (cluster/macro tier on first
+    // load), hydrate the single feature on demand from `get_playground`.
     //
-    // Only standalone, slug-less deeplinks need hydration:
-    //   - Hub mode: registry's per-backend broadcast loading populates the
-    //     source as each backend responds, then the match path above runs
-    //     on every 'change' until a hit. Hydrating here would race against
-    //     that and target the wrong backend URL.
-    //   - Standalone + slug: the slug is ignored (`resolveSlugToBackendUrl`
-    //     is null), the match path runs as broadcast across all features,
-    //     and once the orchestrator loads the polygon tier the match
-    //     succeeds. No hydration needed.
+    // Hydration cases:
+    //   - Standalone + slug-less hash → fetch from `defaultBackendUrl`.
+    //   - Hub + slug-prefixed hash    → fetch from the slug-resolved
+    //     backend URL (P2 §3 — registry no longer eager-loads polygons,
+    //     so this path is needed for slug-routed hub deeplinks too).
+    //   - Hub + slug-less hash (broadcast) → defer; no good way to pick a
+    //     backend without a hint. Resolves once the user pans/zooms into
+    //     polygon tier and the orchestrator loads features that match.
+    //   - Standalone + slug-prefixed → defer; standalone has no slug
+    //     resolver, so `resolveSlugToBackendUrl` is null and we wait for
+    //     the orchestrator's polygon-tier load to surface the feature.
     if (hydrating) return;
-    if (resolveSlugToBackendUrl) return; // hub mode — registry handles it
-    if (parsed.slug) return;             // standalone with slug — wait for source
+    let hydrateFromUrl = null;
+    if (parsed.slug && resolveSlugToBackendUrl) {
+      hydrateFromUrl = resolveSlugToBackendUrl(parsed.slug);
+      if (!hydrateFromUrl) return; // unknown slug — keep waiting (warned above)
+    } else if (!parsed.slug && !resolveSlugToBackendUrl) {
+      hydrateFromUrl = defaultBackendUrl;
+    } else {
+      return; // hub broadcast or standalone-with-slug — defer to source change
+    }
     hydrating = true;
     try {
-      const feature = await fetchPlaygroundByOsmId(parsed.osmId, defaultBackendUrl);
+      const feature = await fetchPlaygroundByOsmId(parsed.osmId, hydrateFromUrl);
       if (feature) {
         const olFeatures = geojsonFormat.readFeatures(
           { type: 'FeatureCollection', features: [feature] },
           { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' },
         );
+        // Stamp `_backendUrl` (and `_backendSlug` when present) so the
+        // standard match path's `f.get('_backendUrl') ?? defaultBackendUrl`
+        // routes selection to the right hub backend.
+        for (const f of olFeatures) {
+          f.set('_backendUrl', hydrateFromUrl);
+          if (parsed.slug) f.set('_backendSlug', parsed.slug);
+        }
         playgroundSource.addFeatures(olFeatures);
       } else {
         // 200 OK with no body — the backend confirms no playground exists
@@ -306,6 +327,7 @@
   <Map
     {playgroundSource}
     {clusterSource}
+    {macroSource}
     {defaultBackendUrl}
     onhover={handleHover}
     onclearhover={clearHover}

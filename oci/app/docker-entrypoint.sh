@@ -24,6 +24,7 @@ window.APP_CONFIG = {
   mapZoom:           ${MAP_ZOOM:-6},
   mapMinZoom:        ${MAP_MIN_ZOOM:-4},
   clusterMaxZoom:    ${CLUSTER_MAX_ZOOM:-13},
+  macroMaxZoom:      ${MACRO_MAX_ZOOM:-5},
   parentOrigin:      '${SAFE_PARENT_ORIGIN}'
 };
 JSEOF
