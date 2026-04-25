@@ -139,18 +139,19 @@
     // hydrate the single feature on demand from get_playground(osm_id).
     // The source's 'change' event re-runs this handler and the standard
     // match path then selects + fits.
+    //
+    // Only standalone, slug-less deeplinks need hydration:
+    //   - Hub mode: registry's per-backend broadcast loading populates the
+    //     source as each backend responds, then the match path above runs
+    //     on every 'change' until a hit. Hydrating here would race against
+    //     that and target the wrong backend URL.
+    //   - Standalone + slug: the slug is ignored (`resolveSlugToBackendUrl`
+    //     is null), the match path runs as broadcast across all features,
+    //     and once the orchestrator loads the polygon tier the match
+    //     succeeds. No hydration needed.
     if (hydrating) return;
-    if (parsed.slug) {
-      // Hub-mode hydration via slug → backend URL is P2 scope. In a
-      // standalone build any slug-prefixed deeplink reads as "selector for
-      // a backend we don't have" — don't keep retrying.
-      if (!warnedUnknownSlug) {
-        console.warn(`[deeplink] slug-prefixed hash "${parsed.slug}" is hub-mode only — ignoring`);
-        warnedUnknownSlug = true;
-      }
-      hashRestored = true;
-      return;
-    }
+    if (resolveSlugToBackendUrl) return; // hub mode — registry handles it
+    if (parsed.slug) return;             // standalone with slug — wait for source
     hydrating = true;
     try {
       const feature = await fetchPlaygroundByOsmId(parsed.osmId, defaultBackendUrl);
