@@ -46,3 +46,13 @@ export const hubPollInterval = c.hubPollInterval ?? 300;
 //   zoom ≤ clusterMaxZoom → cluster layer (get_playground_clusters)
 //   zoom >  clusterMaxZoom → polygon layer (get_playgrounds_bbox)
 export const clusterMaxZoom = c.clusterMaxZoom ?? 13;
+
+// --- Federated clustering (P2, hub mode only) ---
+
+// Below this zoom the hub renders a country-level macro view (one ring per
+// backend at its bbox centroid, sized by playground_count) and the
+// orchestrator skips per-tier fetches entirely.
+//   zoom ≤ macroMaxZoom              → macro view (no fan-out)
+//   macroMaxZoom < zoom ≤ clusterMaxZoom → cluster tier fan-out
+//   zoom >  clusterMaxZoom            → polygon tier fan-out
+export const macroMaxZoom = c.macroMaxZoom ?? 5;

@@ -32,7 +32,11 @@ const bitmapCache = new Map();
 // Radii bumped substantially for strong visual prominence at zoom ≤ 13
 // (two-tier design — no centroid tier). Original spec values were
 // 12/14/18/22; here we roughly double them.
-function radiusForCount(count) {
+//
+// Exported for macro-view reuse (P2 §5) — the spec scenario
+// "Macro ring position and sizing" requires that backend rings use the same
+// size scale as cluster rings.
+export function radiusForCount(count) {
   if (count <   10) return 26;
   if (count <  100) return 32;
   if (count < 1000) return 38;

@@ -2,7 +2,7 @@
   import { _ } from 'svelte-i18n';
   import { X } from 'lucide-svelte';
 
-  /** @type {Array<{ url: string, name: string, version: string|null, loading: boolean, error: string|null, featureCount: number }>} */
+  /** @type {Array<{ url: string, name: string, version: string|null, loading: boolean, error: string|null, playgroundCount: number }>} */
   export let backends;
   /** @type {string | null} */
   export let registryError;
@@ -86,7 +86,7 @@
           {:else}
             <div class="instance-status text-muted">
               <i class="bi bi-geo-alt-fill me-1"></i>
-              {$_('hub.playgroundCount', { values: { count: b.featureCount } })}
+              {$_('hub.playgroundCount', { values: { count: b.playgroundCount } })}
             </div>
           {/if}
         </li>

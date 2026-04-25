@@ -6,20 +6,32 @@
 
   import AppShell from '../components/AppShell.svelte';
   import InstancePanel from './InstancePanel.svelte';
+  import MacroView from './MacroView.svelte';
 
   import { createRegistry } from './registry.js';
+  import { attachHubOrchestrator } from './hubOrchestrator.js';
   import { mapStore } from '../stores/map.js';
+  import { clusterMaxZoom } from '../lib/config.js';
 
   // Generic OSM wiki link for the contribution modal (hub is region-agnostic).
   const HUB_WIKI_URL = 'https://wiki.openstreetmap.org/wiki/Tag:leisure%3Dplayground';
 
-  const sharedSource = new VectorSource();
+  // Three sources owned by the hub — the orchestrator populates cluster /
+  // polygon on every moveend; MacroView (P2 §5) populates macro from
+  // backend metadata (no fetch). Map.svelte toggles layer visibility from
+  // activeTierStore — same pattern as the standalone two-tier design,
+  // extended with the hub-only macro tier.
+  const polygonSource = new VectorSource();
+  const clusterSource = new VectorSource();
+  const macroSource   = new VectorSource();
+  let detachOrchestrator = null;
+
   const {
     backends,
     registryError,
     aggregatedBbox,
     fetchNearestAcrossBackends,
-  } = createRegistry(sharedSource);
+  } = createRegistry();
 
   const dataContribLinks = { wikiUrl: HUB_WIKI_URL, chatUrl: null };
 
@@ -30,44 +42,102 @@
     return get(backends).find(b => b.slug === slug)?.url ?? null;
   }
 
-  // Initial region fit: once both the map and the first aggregated bbox are
-  // available, fit the view and then stop listening. Until that point the map
-  // stays on its default Germany-wide center from Map.svelte — the "safe"
-  // fallback from D5.
+  // Sync accessor for the slug-less broadcast deeplink path. AppShell fans
+  // `fetchPlaygroundByOsmId` across these URLs in parallel; first hit wins.
+  function getAllBackendUrls() {
+    return get(backends).map(b => b.url);
+  }
+
+  // Initial region fit: once the map is ready, every registered backend has
+  // finished its first `get_meta` (success or error), and `aggregatedBbox`
+  // has emitted its non-null union, fit the view and then stop listening.
+  // Until that point the map stays on its default Germany-wide center from
+  // Map.svelte — the "safe" fallback from D5.
+  //
+  // Why wait for *every* backend's first load: with two backends, the
+  // first one to settle drives `aggregatedBbox` to its own bbox alone.
+  // If we fit on that single-bbox emission, `backendCount === 1` and the
+  // single-backend clamp (`clusterMaxZoom + 1`) latches — even though
+  // the union with the second backend would justify the macro tier.
   let fitDone = false;
+  let latestMap = null;
+  let latestBbox = null;
+  let backendsSettled = false;
   let detachMap = null;
   let detachBbox = null;
+  let detachBackends = null;
 
-  function tryFit(map, bbox) {
-    if (fitDone || !map || !bbox) return;
-    map.getView().fit(
-      transformExtent(bbox, 'EPSG:4326', 'EPSG:3857'),
-      { padding: [20, 20, 20, 380], duration: 0 }
+  function tryFit() {
+    if (fitDone || !latestMap || !latestBbox || !backendsSettled) return;
+    // Single-backend hubs always clamp to clusterMaxZoom + 1 (spec §6.1):
+    // a single small city's bbox fitted with normal padding lands in the
+    // macro tier, where one giant ring covers a city the user already
+    // implied they wanted to look at. Clamping forces the initial paint
+    // into the cluster tier.
+    //
+    // Multi-backend hubs accept whatever the union dictates (spec §6.2)
+    // — a Germany+France union legitimately wants the macro continent
+    // overview now that §5 ships and macro rings render properly.
+    const backendCount = get(backends).length;
+    const fitOpts = { padding: [20, 20, 20, 380], duration: 0 };
+    if (backendCount <= 1) fitOpts.maxZoom = clusterMaxZoom + 1;
+    latestMap.getView().fit(
+      transformExtent(latestBbox, 'EPSG:4326', 'EPSG:3857'),
+      fitOpts,
     );
     fitDone = true;
     detachMap?.();
     detachBbox?.();
-    detachMap = detachBbox = null;
+    detachBackends?.();
+    detachMap = detachBbox = detachBackends = null;
   }
 
   onMount(() => {
-    let latestMap = null;
-    let latestBbox = null;
-    detachMap = mapStore.subscribe(m => { latestMap = m; tryFit(latestMap, latestBbox); });
-    detachBbox = aggregatedBbox.subscribe(b => { latestBbox = b; tryFit(latestMap, latestBbox); });
+    detachMap = mapStore.subscribe(m => { latestMap = m; tryFit(); });
+    detachBbox = aggregatedBbox.subscribe(b => { latestBbox = b; tryFit(); });
+    detachBackends = backends.subscribe(bs => {
+      // Settled = registry loaded AND every backend's get_meta has resolved
+      // (success or error). A backend that errors keeps `bbox: null`, which
+      // aggregatedBbox already excludes; the only thing the settle-gate
+      // changes is the *clamp decision* in tryFit.
+      backendsSettled = bs.length > 0 && bs.every(b => !b.loading);
+      tryFit();
+    });
+
+    // Attach the hub orchestrator once the map is published. The orchestrator
+    // fans out per-tier RPCs across registered backends on every (debounced)
+    // moveend, populates clusterSource / polygonSource, and writes the
+    // active tier to activeTierStore for layer-visibility toggling.
+    const detachAttach = mapStore.subscribe(map => {
+      if (!map || detachOrchestrator) return;
+      detachOrchestrator = attachHubOrchestrator({
+        map,
+        backendsStore: backends,
+        clusterSource,
+        polygonSource,
+      });
+      detachAttach();
+    });
   });
 
   onDestroy(() => {
     detachMap?.();
     detachBbox?.();
+    detachBackends?.();
+    detachOrchestrator?.();
   });
 </script>
 
+<MacroView {backends} source={macroSource} />
+
 <AppShell
-  playgroundSource={sharedSource}
+  playgroundSource={polygonSource}
+  {clusterSource}
+  {macroSource}
   searchExtent={aggregatedBbox}
   nearestFetcher={fetchNearestAcrossBackends}
   {resolveSlugToBackendUrl}
+  {getAllBackendUrls}
   {dataContribLinks}
 >
   {#snippet instancePanel()}

@@ -150,12 +150,62 @@ export async function stubHubRegistry(page, { instanceA, instanceB }) {
       body: JSON.stringify(b.playgrounds),
     }))
   );
-  await page.route('**/rpc/get_meta**', route =>
+  // Hub orchestrator (P2 §3) calls bbox-scoped + cluster RPCs per backend
+  // on every moveend. Stub them with the same per-backend playgrounds
+  // fixture so existing hub tests don't time out on unstubbed routes.
+  await page.route('**/rpc/get_playgrounds_bbox**', route =>
     dispatch(route, (b) => ({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(b.meta ?? null),
+      body: JSON.stringify(b.playgrounds),
     }))
+  );
+  await page.route('**/rpc/get_playground_clusters**', route =>
+    dispatch(route, (_b) => ({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([]), // no cluster buckets — keeps cluster tier rendering empty for hub tests that exercise polygon tier
+    }))
+  );
+  await page.route('**/rpc/get_playground?**', route => {
+    // Single-playground hydration: match the requested osm_id against the
+    // backend's fixture.
+    const url = new URL(route.request().url());
+    const wantedId = Number(url.searchParams.get('osm_id'));
+    return dispatch(route, (b) => {
+      const features = b.playgrounds?.features ?? [];
+      const match = features.find(f => f.properties?.osm_id === wantedId) ?? features[0] ?? null;
+      return {
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(match),
+      };
+    });
+  });
+  await page.route('**/rpc/get_meta**', route =>
+    dispatch(route, (b) => {
+      // Merge defaults under the supplied meta so existing tests that pass
+      // a partial meta (just `name`/`version`/`bbox`) still render the P1
+      // completeness fields + playground_count the InstancePanel pill and
+      // macro view need. Without this merge, hub-pill / hub-smoke /
+      // hub-deeplink would all see playground_count=0 and the pill
+      // would render "0 Spielplätze" instead of the asserted total.
+      const features = b.playgrounds?.features ?? [];
+      const defaults = {
+        name: b.name ?? b.slug,
+        bbox: [13.4, 52.5, 13.5, 52.6],
+        playground_count: features.length,
+        complete: 0,
+        partial: 0,
+        missing: features.length,
+      };
+      const meta = { ...defaults, ...(b.meta ?? {}) };
+      return {
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(meta),
+      };
+    })
   );
   await page.route('**/rpc/get_equipment**', route =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ type: 'FeatureCollection', features: [] }) })

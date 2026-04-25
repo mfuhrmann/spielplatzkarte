@@ -34,9 +34,17 @@ For any tier that requires a per-backend fetch, the hub SHALL invoke each select
 
 #### Scenario: Progressive render
 
-- **WHEN** the hub fans out a centroid fetch to backends A, B, and C, and C takes 2 seconds while A and B respond in 100 ms
-- **THEN** the centroid layer renders data from A and B within ~100 ms (plus debounce)
+- **WHEN** the hub fans out a cluster fetch to backends A, B, and C, and C takes 2 seconds while A and B respond in 100 ms
+- **THEN** the cluster layer renders data from A and B within ~100 ms (plus debounce)
 - **AND** C's contribution appears when its response settles, without re-rendering the whole map
+
+<!--
+  The original spec scenario read "centroid fetch" — pre-pivot the hub had
+  three tiers (cluster/centroid/polygon). Centroid was dropped in P1's
+  two-tier pivot; the same progressive-render requirement applies to the
+  cluster tier.
+-->
+
 
 #### Scenario: Slow backend does not block the paint
 
@@ -98,7 +106,7 @@ At the cluster tier, merged cluster buckets from multiple backends SHALL be re-c
 - **WHEN** backend A returns buckets summing to count 2000 and backend B returns buckets summing to count 1500 inside the viewport
 - **THEN** the rendered cluster layer, after re-clustering, shows a total count of 3500 across its rings
 - **AND** the sum of `complete` segments equals the sum of `complete` inputs from A and B
-- **AND** likewise for `partial` and `missing`
+- **AND** likewise for `partial`, `missing`, and `restricted` (the four-segment ring shipped with P1's restricted bucket)
 
 #### Scenario: Border clusters merge visually
 
@@ -108,7 +116,7 @@ At the cluster tier, merged cluster buckets from multiple backends SHALL be re-c
 
 ### Requirement: Hub renders a country-level macro view at zoom 0–5
 
-At zoom levels at or below `clusterMaxZoom` (default 10; the macro tier starts at 5), the hub SHALL render one stacked-ring feature per registered backend, sized and segmented by the backend's `get_meta` aggregate counts, without fetching any per-playground data.
+At zoom levels at or below `macroMaxZoom` (default 5; introduced as a separate config knob during implementation so the cluster tier can keep its own `clusterMaxZoom = 13` threshold), the hub SHALL render one stacked-ring feature per registered backend, sized and segmented by the backend's `get_meta` aggregate counts, without fetching any per-playground data.
 
 #### Scenario: Macro view renders one ring per backend
 
@@ -124,15 +132,17 @@ At zoom levels at or below `clusterMaxZoom` (default 10; the macro tier starts a
 
 #### Scenario: Macro ring segments reflect completeness
 
-- **WHEN** backend A has `{complete: 12000, partial: 30000, missing: 23000}` in its `get_meta` response
-- **THEN** A's ring displays three segments proportional to 12 : 30 : 23
+- **WHEN** backend A has `{complete: 12000, partial: 30000, missing: 23000}` in its `get_meta` response (P1 `get_meta` doesn't yet ship `restricted`; macro view treats it as zero in that case)
+- **THEN** A's ring displays segments proportional to 12 : 30 : 23 : 0 (the four-segment renderer collapses the empty `restricted` arc)
 - **AND** colours match the playground polygon completeness colours
+- **WHEN** a backend extends `get_meta` with `restricted` in a future release
+- **THEN** the macro ring renders four segments including the gray-hatched restricted arc, matching the cluster ring's four-segment layout
 
 #### Scenario: Macro ring click zooms to backend bbox
 
 - **WHEN** the user clicks a macro-view ring
 - **THEN** the map view animates to fit the backend's bbox with standard padding
-- **AND** the zoom lands in the cluster or centroid tier (depending on bbox size)
+- **AND** the zoom lands in the cluster or polygon tier (depending on bbox size — centroid tier was dropped in P1's two-tier pivot)
 - **AND** a tier fetch is issued to (only) that backend after the moveend debounce
 
 ### Requirement: Hub polygon tier concatenates without re-merging
@@ -158,8 +168,8 @@ When only one backend is registered, the hub's initial `view.fit` SHALL clamp to
 #### Scenario: Single-backend hub lands above macro threshold
 
 - **WHEN** a hub starts with exactly one backend whose bbox corresponds to a small region (e.g. a single city)
-- **THEN** the initial map fit zoom is at least `clusterMaxZoom + 1` (default 11)
-- **AND** the user sees cluster or centroid features on first paint, not macro rings
+- **THEN** the initial map fit zoom is at least `clusterMaxZoom + 1` (default 14, since `clusterMaxZoom` defaults to 13)
+- **AND** the user sees cluster or polygon features on first paint, not macro rings
 
 #### Scenario: Multi-backend hub lands in whatever tier the union bbox dictates
 

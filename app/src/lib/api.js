@@ -13,13 +13,25 @@ let _fetchPlaygroundsDeprecationWarned = false;
  * @deprecated Since v0.2.7 — use {@link fetchPlaygroundsBbox} with a viewport
  *   extent. The region-scoped `get_playgrounds` RPC will be removed in the
  *   release after next. See openspec change add-tiered-playground-delivery.
+ *
+ * @param {string} baseUrl  PostgREST base URL (defaults to apiBaseUrl).
+ * @param {AbortSignal} [signal]  Optional cancellation signal — honoured so the
+ *   hub orchestrator's per-fan-out abort cancels in-flight legacy fallbacks.
+ *
+ * Hub usage note: when called from the hub's per-backend legacy fallback,
+ * `osmRelationId` is the hub's *global* config (typically `0`), which is not
+ * meaningful to the target backend. The query string omits `relation_id`
+ * entirely when it is falsy so the backend's own SQL default takes over.
  */
-export async function fetchPlaygrounds(baseUrl = defaultApiBaseUrl) {
+export async function fetchPlaygrounds(baseUrl = defaultApiBaseUrl, signal) {
     if (!_fetchPlaygroundsDeprecationWarned) {
         _fetchPlaygroundsDeprecationWarned = true;
         console.warn('[api] fetchPlaygrounds is deprecated — use fetchPlaygroundsBbox. Scheduled for removal in the release after next.');
     }
-    const res = await fetch(`${baseUrl}/rpc/get_playgrounds?relation_id=${osmRelationId}`);
+    const url = osmRelationId
+        ? `${baseUrl}/rpc/get_playgrounds?relation_id=${osmRelationId}`
+        : `${baseUrl}/rpc/get_playgrounds`;
+    const res = await fetch(url, { signal });
     if (res.ok) return res.json();
     throw new Error(`get_playgrounds failed: ${res.status}`);
 }

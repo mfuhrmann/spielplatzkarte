@@ -5,7 +5,7 @@
   import VectorSource from 'ol/source/Vector.js';
   import XYZ from 'ol/source/XYZ.js';
   import GeoJSON from 'ol/format/GeoJSON.js';
-  import { transform } from 'ol/proj';
+  import { transform, transformExtent } from 'ol/proj';
   import { ScaleLine, defaults as defaultControls } from 'ol/control.js';
   import { defaults as defaultInteractions } from 'ol/interaction/defaults';
 
@@ -17,6 +17,7 @@
     treeStyle,
     clusterTierStyleFn,
   } from '../lib/vectorStyles.js';
+  import { macroRingStyleFn } from '../hub/macroRingStyle.js';
   import { selection } from '../stores/selection.js';
   import { mapStore } from '../stores/map.js';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
@@ -30,6 +31,8 @@
   export let playgroundSource = null;
   /** @type {VectorSource | null} - cluster-tier source (zoom ≤ clusterMaxZoom) */
   export let clusterSource = null;
+  /** @type {VectorSource | null} - macro-tier source (hub-only, zoom ≤ macroMaxZoom) */
+  export let macroSource = null;
   /** Backend URL used for selection — standalone passes apiBaseUrl, hub passes per-feature URL */
   export let defaultBackendUrl = apiBaseUrl;
   
@@ -46,6 +49,7 @@
   let olMap = null;
   let playgroundLayer = null; // polygon tier (zoom > clusterMaxZoom) — exposed for filter reactivity
   let clusterLayer = null;    // cluster tier (zoom ≤ clusterMaxZoom) — §3
+  let macroLayer = null;      // macro tier (hub-only, zoom ≤ macroMaxZoom) — P2 §5
   let equipmentLayer = null;  // overlay: equipment points/polygons
   let treeLayer = null;       // overlay: tree dots
   let overlayUnsubscribe = null;
@@ -56,9 +60,10 @@
     // renders in degraded paths (e.g. tests that mount Map without a parent).
     const polygonSrc = playgroundSource ?? new VectorSource();
     const clusterSrc = clusterSource    ?? new VectorSource();
+    const macroSrc   = macroSource      ?? new VectorSource();
 
-    // Both tier layers start hidden; the activeTierStore subscription below
-    // reveals the right one once the orchestrator has chosen a tier.
+    // All three tier layers start hidden; the activeTierStore subscription
+    // below reveals exactly one once the orchestrator has chosen a tier.
     playgroundLayer = new VectorLayer({
       source: polygonSrc,
       zIndex: 10,
@@ -69,6 +74,14 @@
       source: clusterSrc,
       zIndex: 12,
       style: clusterTierStyleFn,
+      visible: false,
+    });
+    // Macro tier sits above the cluster layer (zIndex 14) so any future
+    // overlap during a tier transition keeps the macro rings on top.
+    macroLayer = new VectorLayer({
+      source: macroSrc,
+      zIndex: 14,
+      style: macroRingStyleFn,
       visible: false,
     });
 
@@ -89,7 +102,7 @@
 
     olMap = new Map({
       target: mapContainer,
-      layers: [basemap, playgroundLayer, clusterLayer],
+      layers: [basemap, playgroundLayer, clusterLayer, macroLayer],
       view,
       // Disable default zoom/rotate controls for cleaner UI like Google Maps
       controls: defaultControls({ 
@@ -141,6 +154,9 @@
     //  - Cluster tier (§4.5): zoom in ~2 levels toward the cluster centre;
     //    a single-child cluster (count === 1) at high zoom transitions
     //    naturally into the polygon tier.
+    //  - Macro tier (P2 §5): fit-to-bbox of the clicked backend; the
+    //    orchestrator's debounced moveend will land in cluster or polygon
+    //    tier and trigger a fan-out scoped to that backend.
     //  - Empty space: clear selection.
     olMap.on('click', (evt) => {
       const polygonHit = olMap.forEachFeatureAtPixel(evt.pixel, (f) => f, {
@@ -168,6 +184,19 @@
         });
         return;
       }
+      const macroHit = olMap.forEachFeatureAtPixel(evt.pixel, (f) => f, {
+        layerFilter: (l) => l === macroLayer,
+      });
+      if (macroHit) {
+        const bbox4326 = macroHit.get('_bbox');
+        if (Array.isArray(bbox4326) && bbox4326.length === 4) {
+          view.fit(transformExtent(bbox4326, 'EPSG:4326', 'EPSG:3857'), {
+            padding: [40, 40, 40, 420],
+            duration: 400,
+          });
+        }
+        return;
+      }
       selection.clear();
     });
 
@@ -192,8 +221,12 @@
       const clusterHit = olMap.forEachFeatureAtPixel(evt.pixel, f => f, {
         layerFilter: l => l === clusterLayer,
       });
+      // Macro tier rings: click → fit-to-bbox; same affordance as clusters.
+      const macroHit = olMap.forEachFeatureAtPixel(evt.pixel, f => f, {
+        layerFilter: l => l === macroLayer,
+      });
 
-      mapContainer.style.cursor = (overlayHit || playHit || clusterHit) ? 'pointer' : '';
+      mapContainer.style.cursor = (overlayHit || playHit || clusterHit || macroHit) ? 'pointer' : '';
 
       // Overlay hover takes priority
       if (overlayHit !== lastEquipHoverFeature) {
@@ -239,16 +272,18 @@
     playgroundSourceStore.set(polygonSrc);
 
     // Tier-driven layer visibility. `tier === null` means the orchestrator
-    // hasn't run yet — keep both layers hidden.
+    // hasn't run yet — keep all three tier layers hidden.
     tierUnsubscribe = activeTierStore.subscribe(tier => {
       if (!playgroundLayer) return;
       if (tier === null) {
         playgroundLayer.setVisible(false);
         clusterLayer.setVisible(false);
+        macroLayer.setVisible(false);
         return;
       }
       playgroundLayer.setVisible(tier === 'polygon');
       clusterLayer.setVisible(tier === 'cluster');
+      macroLayer.setVisible(tier === 'macro');
     });
   });
 
