@@ -93,7 +93,14 @@ export function createRegistry() {
           // sentinel for `completeness` in that case so the macro view can
           // render a "no completeness data" treatment instead of an
           // all-zero ring (which would look like a healthy empty region).
-          const hasCompleteness = ['complete', 'partial', 'missing'].every(k => k in meta);
+          //
+          // The `Number.isFinite` check (rather than `k in meta`) also
+          // collapses `null` and `NaN` sentinels into the unknown branch
+          // — without it, a backend that ships `{ complete: null, partial:
+          // null, missing: null }` would pass the `in` test, then poison
+          // the macro renderer's `quantiseSegments` with NaN tenths and
+          // produce an invisible ring with no error surface.
+          const hasCompleteness = ['complete', 'partial', 'missing'].every(k => Number.isFinite(meta[k]));
           patch.completeness = hasCompleteness
             ? { complete: meta.complete, partial: meta.partial, missing: meta.missing }
             : null;

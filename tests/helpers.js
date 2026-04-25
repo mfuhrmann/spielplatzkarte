@@ -184,10 +184,14 @@ export async function stubHubRegistry(page, { instanceA, instanceB }) {
   });
   await page.route('**/rpc/get_meta**', route =>
     dispatch(route, (b) => {
-      // Default to a meta payload that includes the P1 completeness fields
-      // so InstancePanel + macro view (when it ships in §5) render sensibly.
+      // Merge defaults under the supplied meta so existing tests that pass
+      // a partial meta (just `name`/`version`/`bbox`) still render the P1
+      // completeness fields + playground_count the InstancePanel pill and
+      // macro view need. Without this merge, hub-pill / hub-smoke /
+      // hub-deeplink would all see playground_count=0 and the pill
+      // would render "0 Spielplätze" instead of the asserted total.
       const features = b.playgrounds?.features ?? [];
-      const meta = b.meta ?? {
+      const defaults = {
         name: b.name ?? b.slug,
         bbox: [13.4, 52.5, 13.5, 52.6],
         playground_count: features.length,
@@ -195,6 +199,7 @@ export async function stubHubRegistry(page, { instanceA, instanceB }) {
         partial: 0,
         missing: features.length,
       };
+      const meta = { ...defaults, ...(b.meta ?? {}) };
       return {
         status: 200,
         contentType: 'application/json',

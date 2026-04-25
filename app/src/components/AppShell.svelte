@@ -87,6 +87,15 @@
    */
   export let resolveSlugToBackendUrl = null;
 
+  /**
+   * Hub-only "list every registered backend URL" accessor. Used by the
+   * slug-less deeplink path to broadcast `fetchPlaygroundByOsmId` across
+   * every backend; the first match wins, duplicates log a warning.
+   * Standalone passes `null`.
+   * @type {(() => string[]) | null}
+   */
+  export let getAllBackendUrls = null;
+
   // ── URL hash restore ──────────────────────────────────────────────────────
   //
   // Runs once on first load and again on every `change` event from the
@@ -150,13 +159,59 @@
     //   - Hub + slug-prefixed hash    → fetch from the slug-resolved
     //     backend URL (P2 §3 — registry no longer eager-loads polygons,
     //     so this path is needed for slug-routed hub deeplinks too).
-    //   - Hub + slug-less hash (broadcast) → defer; no good way to pick a
-    //     backend without a hint. Resolves once the user pans/zooms into
-    //     polygon tier and the orchestrator loads features that match.
+    //   - Hub + slug-less hash (broadcast) → fan out `get_playground`
+    //     across every registered backend; first match wins, duplicates
+    //     log a warning. Cost: N parallel requests per slug-less hub
+    //     deeplink load (bounded by registry size, ≤30 backends).
     //   - Standalone + slug-prefixed → defer; standalone has no slug
     //     resolver, so `resolveSlugToBackendUrl` is null and we wait for
     //     the orchestrator's polygon-tier load to surface the feature.
     if (hydrating) return;
+
+    // Hub + slug-less broadcast — handled separately because it's the
+    // only path that fans out across multiple backends in parallel.
+    if (!parsed.slug && resolveSlugToBackendUrl && getAllBackendUrls) {
+      const urls = getAllBackendUrls();
+      if (urls.length === 0) return; // backends still loading — retry on next change
+      hydrating = true;
+      try {
+        const settled = await Promise.all(urls.map(url =>
+          fetchPlaygroundByOsmId(parsed.osmId, url)
+            .then(feat => feat ? { feat, url } : null)
+            .catch(() => null),
+        ));
+        const matches = settled.filter(Boolean);
+        if (matches.length > 1) {
+          console.warn(`[deeplink] osm_id ${parsed.osmId} matched ${matches.length} backends — selecting the first`);
+        }
+        if (matches.length > 0) {
+          const { feat, url } = matches[0];
+          const olFeatures = geojsonFormat.readFeatures(
+            { type: 'FeatureCollection', features: [feat] },
+            { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' },
+          );
+          for (const f of olFeatures) f.set('_backendUrl', url);
+          playgroundSource.addFeatures(olFeatures);
+          // The standard match path inside `playgroundSource.on('change')`
+          // will pick up the freshly-added features and complete the
+          // selection + fit on the next tick.
+        } else if (!warnedHydrationFailed) {
+          warnedHydrationFailed = true;
+          console.warn(`[deeplink] no playground found for osm_id ${parsed.osmId} across ${urls.length} backend(s)`);
+          hashRestored = true;
+        }
+      } catch (err) {
+        if (!warnedHydrationFailed) {
+          warnedHydrationFailed = true;
+          console.warn('[deeplink] broadcast hydration failed (give up; reload to retry):', err);
+        }
+        hashRestored = true;
+      } finally {
+        hydrating = false;
+      }
+      return;
+    }
+
     let hydrateFromUrl = null;
     if (parsed.slug && resolveSlugToBackendUrl) {
       hydrateFromUrl = resolveSlugToBackendUrl(parsed.slug);
@@ -164,7 +219,7 @@
     } else if (!parsed.slug && !resolveSlugToBackendUrl) {
       hydrateFromUrl = defaultBackendUrl;
     } else {
-      return; // hub broadcast or standalone-with-slug — defer to source change
+      return; // standalone-with-slug — defer to source change
     }
     hydrating = true;
     try {

@@ -76,7 +76,29 @@ export function attachHubOrchestrator({
   // serviceable when one peer is on a pre-tier release.
   const backendUseLegacy = new Set();
   const backendLegacyWarned = new Set();
-  const detachStore = backendsStore.subscribe(b => { allBackends = b; });
+  // Per-backend "malformed cluster bucket" warning de-dup. A backend returning
+  // a bucket with non-finite lon/lat would otherwise place a feature at
+  // [NaN, NaN] (projects to ~0,0) or trip Supercluster's KDBush; we drop
+  // those buckets and warn at most once per backend per session.
+  const backendMalformedBucketWarned = new Set();
+  // Skip the very first subscribe-firing — the synchronous initial value is
+  // the registry's empty bootstrap, and the first real load triggers the
+  // immediate `orchestrate()` call at the bottom of this function. After
+  // that, subsequent emissions (5-min poll, bbox refresh, backend
+  // add/remove) need to re-render the active tier against the new set.
+  let initialBackendsSet = false;
+  const detachStore = backendsStore.subscribe(b => {
+    allBackends = b;
+    if (!initialBackendsSet) {
+      initialBackendsSet = true;
+      return;
+    }
+    // Backends changed (registry poll or registry mutation) — re-orchestrate
+    // on the same debounce as moveend so a flurry of poll-driven updates
+    // collapses to one fan-out. `debounced` is defined below; safe to call
+    // because the subscribe callback is async w.r.t. attach time.
+    debounced();
+  });
 
   function clearSourcesAndProgress() {
     polygonSource.clear();
@@ -87,6 +109,12 @@ export function attachHubOrchestrator({
   async function orchestrate() {
     const view = map.getView();
     const zoom = view.getZoom();
+    // OL `getZoom()` returns `undefined` when the view's resolution doesn't
+    // map to an integer zoom (boot, mid-animation, fractional resolution).
+    // `tierForZoom(undefined)` would fall through every `<=` to `'polygon'`,
+    // dispatching a continent-wide bbox fan-out at boot. Skip until the
+    // next moveend brings a finite zoom.
+    if (!Number.isFinite(zoom)) return;
     const tier = tierForZoom(zoom);
     activeTierStore.set(tier);
 
@@ -163,8 +191,21 @@ export function attachHubOrchestrator({
         onResult: (entry) => {
           if (signal.aborted) return;
           if (entry.ok && Array.isArray(entry.value)) {
+            let droppedMalformed = 0;
             for (const b of entry.value) {
+              // Drop buckets with non-finite coordinates rather than
+              // pushing a `[NaN, NaN]` Point that projects to lon=0,lat=0
+              // (Gulf of Guinea) or trips Supercluster's KDBush. Warn
+              // at most once per backend per session.
+              if (!Number.isFinite(b.lon) || !Number.isFinite(b.lat)) {
+                droppedMalformed += 1;
+                continue;
+              }
               accumulated.push(bucketToSuperclusterPoint(b, entry.backendUrl));
+            }
+            if (droppedMalformed > 0 && !backendMalformedBucketWarned.has(entry.backendUrl)) {
+              backendMalformedBucketWarned.add(entry.backendUrl);
+              console.warn(`[hub-tier] backend ${entry.backendUrl} returned ${droppedMalformed} cluster bucket(s) with non-finite lon/lat — dropped`);
             }
             // Reload the index with the accumulated set and re-render.
             // Supercluster's `load` is O(N); for cluster-tier viewport
@@ -193,11 +234,15 @@ export function attachHubOrchestrator({
         signal,
         onResult: (entry) => {
           if (signal.aborted) return;
+          // Clear the source on the *first* arrival regardless of `ok` so
+          // an all-error fan-out doesn't leave ghost polygons from the
+          // previous viewport. The latch fires exactly once per
+          // orchestrate() call; subsequent arrivals append.
+          if (polygonFirstArrival) {
+            polygonFirstArrival = false;
+            polygonSource.clear();
+          }
           if (entry.ok) {
-            if (polygonFirstArrival) {
-              polygonFirstArrival = false;
-              polygonSource.clear();
-            }
             const backend = backendByUrl.get(entry.backendUrl);
             const features = parsePolygonFeatures(entry.value, entry.backendUrl, backend);
             polygonSource.addFeatures(features);
@@ -258,8 +303,13 @@ export function attachHubOrchestrator({
   };
 }
 
+// Matches the exact format thrown by api.js fetchers: `<rpc> failed: 404`.
+// Anchored on the trailing `failed: 404` so a transient error whose message
+// happens to mention "404" elsewhere (URL fragment, payload echo) cannot
+// permanently degrade a backend to the legacy fallback for the rest of the
+// session.
 function isNotFound(err) {
-  return typeof err?.message === 'string' && /\b404\b/.test(err.message);
+  return typeof err?.message === 'string' && /failed: 404$/.test(err.message);
 }
 
 // Wrap a server cluster bucket in the GeoJSON shape Supercluster expects.

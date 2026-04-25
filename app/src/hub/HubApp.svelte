@@ -42,16 +42,33 @@
     return get(backends).find(b => b.slug === slug)?.url ?? null;
   }
 
-  // Initial region fit: once both the map and the first aggregated bbox are
-  // available, fit the view and then stop listening. Until that point the map
-  // stays on its default Germany-wide center from Map.svelte — the "safe"
-  // fallback from D5.
+  // Sync accessor for the slug-less broadcast deeplink path. AppShell fans
+  // `fetchPlaygroundByOsmId` across these URLs in parallel; first hit wins.
+  function getAllBackendUrls() {
+    return get(backends).map(b => b.url);
+  }
+
+  // Initial region fit: once the map is ready, every registered backend has
+  // finished its first `get_meta` (success or error), and `aggregatedBbox`
+  // has emitted its non-null union, fit the view and then stop listening.
+  // Until that point the map stays on its default Germany-wide center from
+  // Map.svelte — the "safe" fallback from D5.
+  //
+  // Why wait for *every* backend's first load: with two backends, the
+  // first one to settle drives `aggregatedBbox` to its own bbox alone.
+  // If we fit on that single-bbox emission, `backendCount === 1` and the
+  // single-backend clamp (`clusterMaxZoom + 1`) latches — even though
+  // the union with the second backend would justify the macro tier.
   let fitDone = false;
+  let latestMap = null;
+  let latestBbox = null;
+  let backendsSettled = false;
   let detachMap = null;
   let detachBbox = null;
+  let detachBackends = null;
 
-  function tryFit(map, bbox) {
-    if (fitDone || !map || !bbox) return;
+  function tryFit() {
+    if (fitDone || !latestMap || !latestBbox || !backendsSettled) return;
     // Single-backend hubs always clamp to clusterMaxZoom + 1 (spec §6.1):
     // a single small city's bbox fitted with normal padding lands in the
     // macro tier, where one giant ring covers a city the user already
@@ -64,21 +81,28 @@
     const backendCount = get(backends).length;
     const fitOpts = { padding: [20, 20, 20, 380], duration: 0 };
     if (backendCount <= 1) fitOpts.maxZoom = clusterMaxZoom + 1;
-    map.getView().fit(
-      transformExtent(bbox, 'EPSG:4326', 'EPSG:3857'),
+    latestMap.getView().fit(
+      transformExtent(latestBbox, 'EPSG:4326', 'EPSG:3857'),
       fitOpts,
     );
     fitDone = true;
     detachMap?.();
     detachBbox?.();
-    detachMap = detachBbox = null;
+    detachBackends?.();
+    detachMap = detachBbox = detachBackends = null;
   }
 
   onMount(() => {
-    let latestMap = null;
-    let latestBbox = null;
-    detachMap = mapStore.subscribe(m => { latestMap = m; tryFit(latestMap, latestBbox); });
-    detachBbox = aggregatedBbox.subscribe(b => { latestBbox = b; tryFit(latestMap, latestBbox); });
+    detachMap = mapStore.subscribe(m => { latestMap = m; tryFit(); });
+    detachBbox = aggregatedBbox.subscribe(b => { latestBbox = b; tryFit(); });
+    detachBackends = backends.subscribe(bs => {
+      // Settled = registry loaded AND every backend's get_meta has resolved
+      // (success or error). A backend that errors keeps `bbox: null`, which
+      // aggregatedBbox already excludes; the only thing the settle-gate
+      // changes is the *clamp decision* in tryFit.
+      backendsSettled = bs.length > 0 && bs.every(b => !b.loading);
+      tryFit();
+    });
 
     // Attach the hub orchestrator once the map is published. The orchestrator
     // fans out per-tier RPCs across registered backends on every (debounced)
@@ -99,6 +123,7 @@
   onDestroy(() => {
     detachMap?.();
     detachBbox?.();
+    detachBackends?.();
     detachOrchestrator?.();
   });
 </script>
@@ -112,6 +137,7 @@
   searchExtent={aggregatedBbox}
   nearestFetcher={fetchNearestAcrossBackends}
   {resolveSlugToBackendUrl}
+  {getAllBackendUrls}
   {dataContribLinks}
 >
   {#snippet instancePanel()}

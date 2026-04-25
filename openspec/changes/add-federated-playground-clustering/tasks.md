@@ -127,6 +127,52 @@ backends.
 - [x] 8.2 Added a tier-RPC prerequisite to `docs/ops/federated-deployment.md` Prerequisites section (data-nodes must ship the tiered API + completeness extension; older data-nodes degrade rather than fail). Updated the Step 4 verification list to point at `get_playground_clusters` / `get_playgrounds_bbox` per moveend instead of the deprecated `get_playgrounds`, and called out the macro-tier "no per-playground requests" expectation at zoom ≤ 5.
 - [x] 8.3 Embedded a mermaid `flowchart LR` in `docs/reference/federation.md` showing user moveend → tier dispatch → bboxRouter → federationHealth filter → fanOut → (Supercluster | concat) → source repaint, plus the macro-view branch that bypasses fan-out entirely.
 
+### Review Findings — §5 macro view + §6 fit clamp + §7/§8 docs, Pass 1 (bmad-code-review, 2026-04-26)
+
+#### Decision resolved → patch
+- [x] [Review][Patch] **Slug-less hub broadcast deeplinks regress at cluster tier** — *resolved 2026-04-26 to option 1*: implemented broadcast fan-out via `fetchPlaygroundByOsmId` across every registered backend when `parsed.slug` is absent and `resolveSlugToBackendUrl` is available (hub mode). First successful response wins; multiple matches log a duplicate-osm_id warning. New `getAllBackendUrls` callback wired through HubApp → AppShell. [tests/hub-deeplink.spec.js + AppShell.svelte tryRestoreFromHash + HubApp.svelte] (High)
+
+#### High
+- [x] [Review][Patch] **`stubHubRegistry` overrides `meta` instead of merging defaults**. Switched to `const meta = { ...defaults, ...(b.meta ?? {}) }` so existing hub tests' partial-meta fixtures still get `playground_count` + completeness fields. Restores `hub-pill` / `hub-smoke` / `hub-deeplink` against the new code path. [tests/helpers.js stubHubRegistry get_meta] (High)
+- [x] [Review][Patch] **Hub legacy fallback is structurally broken** — chose option (a) **fix `fetchPlaygrounds`** rather than dropping the fallback (preserves the docs-promised graceful degradation in §8). `fetchPlaygrounds(baseUrl, signal)` now honours the optional signal AND omits `relation_id` from the URL when `osmRelationId` is falsy (hub mode), so the backend's own SQL default takes over. [app/src/lib/api.js fetchPlaygrounds] (High)
+
+#### Medium
+- [x] [Review][Patch] **`tierForZoom(undefined)` falls through to polygon tier**. Added `if (!Number.isFinite(zoom)) return;` early-guard in `orchestrate()` so non-integer-resolution boot states don't dispatch a continent-wide bbox fan-out. [app/src/hub/hubOrchestrator.js orchestrate] (Medium)
+- [x] [Review][Patch] **Backends store updates don't re-orchestrate**. The `backendsStore.subscribe` callback now triggers the same debounced `orchestrate` used for moveend on every subsequent emission (initial sync emission still skipped via `initialBackendsSet` flag). A 5-min poll that reveals a bbox change re-renders the active tier within 300 ms. [app/src/hub/hubOrchestrator.js attachHubOrchestrator] (Medium)
+- [x] [Review][Patch] **Polygon first-arrival latch leaves ghost features**. Moved the `polygonFirstArrival` clear outside the `if (entry.ok)` branch so an all-error fan-out also wipes stale features. [app/src/hub/hubOrchestrator.js polygon onResult] (Medium)
+- [x] [Review][Patch] **`tryFit` latches the clamp on the first bbox emission**. Added a `backendsSettled` gate (`bs.every(b => !b.loading)`) so the clamp decision waits for every registered backend's first `get_meta` to resolve. Multi-backend hubs no longer accidentally latch the single-backend clamp when one backend returns first. [app/src/hub/HubApp.svelte tryFit] (Medium)
+- [x] [Review][Patch] **Spec text out-of-sync after §3+§4 review patches missed two scenarios**. Updated four scenarios in `spec.md`: (a) "default 11" → "default 14"; (b) macro-ring 3-segment scenario annotated to acknowledge P1 `get_meta` doesn't ship `restricted` yet, with a follow-up scenario for when it does; (c) "centroid tier" → "polygon tier" in the macro-click scenario; (d) re-cluster scenario adds `restricted` to the parity list. [openspec/.../spec.md] (Medium)
+
+#### Low
+- [-] [Review][Patch] **`hubLoadingStore.loaded` increments after abort** — *verified non-issue on closer inspection*. The `if (signal.aborted) return;` early-return at the top of each onResult callback correctly skips the increment; the original Edge Hunter finding self-corrected in the same paragraph. No code change applied. (Low — dismissed)
+- [x] [Review][Patch] **`isNotFound` regex too broad**. Tightened from `/\b404\b/` to `/failed: 404$/` to match the exact error format thrown by `api.js` fetchers (`<rpc> failed: 404`). A transient error mentioning "404" elsewhere can no longer permanently degrade a backend to the legacy fallback. [app/src/hub/hubOrchestrator.js isNotFound] (Low)
+- [x] [Review][Patch] **`get_meta` completeness fields accept null sentinel via `in` check**. Replaced `k in meta` with `Number.isFinite(meta[k])` so a backend that ships the keys with `null` or `NaN` values falls into the unknown-completeness branch instead of producing an invisible NaN ring. [app/src/hub/registry.js loadBackend] (Low)
+- [x] [Review][Patch] **`bucketToSuperclusterPoint` accepts non-finite `lon/lat`**. The cluster fan-out's bucket loop now skips buckets with non-finite coordinates and warns at most once per backend per session via `backendMalformedBucketWarned`. [app/src/hub/hubOrchestrator.js cluster onResult] (Low)
+
+#### Deferred (acknowledged in design or pre-existing)
+- **Offline-backend rendering scenarios** — `isBackendHealthy` stub means no offline ring can ever render and the bbox router can't exclude offline backends. Documented as forward-compat with `add-federation-health-exposition`; spec scenarios are unverifiable until that change ships. (Acceptance Auditor High; defer matches §1.5 deferral.)
+- **`/federation-status.json` absent fallback** — Same: scenario lives with the real impl in `add-federation-health-exposition`. (Acceptance Auditor High; matches §1+§2 deferral.)
+- **Backend recovery transition pathway** — Same dependency on health-exposition.
+- **§9 Playwright multi-backend verification** — Out of scope per PR body; ships in a follow-up PR.
+- **Backend marked legacy never recovers in-session** — Architectural; flagged in §3 review deferrals.
+- **Cluster click can't drill down via Supercluster APIs** — Documented; `sc` GC'd per orchestrate; click handler does +2-zoom which works.
+- **Initial `orchestrate()` races `tryFit`** — One wasted, immediately-aborted fan-out at boot. Bounded waste, not a correctness issue.
+- **`detachAttach()` self-unsubscribe pattern** — Works in practice (Svelte parent.onMount fires before child mounts); flagged for future cleanup.
+- **`tests/helpers.js` `get_playground` returns `features[0]` fallback** — Pattern is consistent with the pre-existing standalone helper; changing both is wider than this PR.
+- **`_warnedTimeoutBackends` never resets** — Already deferred in §1+§2 review.
+
+### Dismissed
+- Blind: `fanOut` abort error type doesn't propagate parent reason — no consumer checks `err.name === 'AbortError'`.
+- Blind: `signal.addEventListener`/`removeEventListener` asymmetry — cosmetic, no-op when listener wasn't registered.
+- Blind: `fetchPlaygroundClusters` argument order — verified `(zoom, extent, baseUrl, signal)` matches `api.js` exactly.
+- Blind: `MacroView.source.clear()` on destroy — HubApp tears down `MacroView` before `Map` in practice.
+- Blind: `AppShell` hydration `defaultBackendUrl` null edge — unchanged from pre-diff for standalone; nullish-coalesce already handles it downstream.
+- Blind: `InstancePanel` `||` vs `??` for `playgroundCount` — `0` is the boundary value and both behave the same.
+- Blind: `bboxRouter` returns input array by reference for null/non-finite viewport — no caller mutates the result.
+- Blind: HubApp `get(backends)` import not visible in diff — verified imported pre-diff.
+- Edge: MacroView subscription captures `source` prop in closure — HubApp creates `macroSource` once and never reassigns; not a real bug.
+- Auditor: slow backend warn-once not per-backend — verified `_warnedTimeoutBackends` is keyed on `b.url`, spec-compliant.
+
 ## 9. Verification
 
 - [ ] 9.1 Playwright: on a two-backend test registry, load the hub at zoom 4, assert macro rings appear for both backends with correct counts; zoom in and assert transitions to cluster tier trigger fan-out to both backends
