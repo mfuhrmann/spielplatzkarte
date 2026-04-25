@@ -19,7 +19,7 @@ A free, interactive web map for exploring playgrounds based on [OpenStreetMap](h
 
 ### Historically
 
-> **Origin:** This project is a further development of the original [Berliner spieli](https://github.com/SupaplexOSM/spieli) by Alex Seidel.
+> **Origin:** This project is a further development of the original [Berliner Spielplatzkarte](https://github.com/SupaplexOSM/spielplatzkarte) by Alex Seidel.
 
 ## Matrix Contact
 
