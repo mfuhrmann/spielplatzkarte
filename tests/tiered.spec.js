@@ -50,19 +50,22 @@ test.describe('Tiered delivery', () => {
       route.fulfill({ status: 404, contentType: 'application/json', body: '{}' })
     );
 
-    const warnings = [];
+    const deprecationLogs = [];
     page.on('console', msg => {
-      if (msg.type() === 'warning') warnings.push(msg.text());
+      if (msg.type() === 'warning' && msg.text().includes('fetchPlaygrounds is deprecated')) {
+        deprecationLogs.push(msg.text());
+      }
     });
 
     await page.goto('/');
-    // Give the orchestrator's debounced moveend a chance to settle and
-    // the legacy fallback to log.
-    await page.waitForTimeout(800);
-
-    const deprecationLogs = warnings.filter(t =>
-      t.includes('fetchPlaygrounds is deprecated')
-    );
+    // Wait deterministically for the warning to surface — the orchestrator
+    // debounces moveend by 300 ms and the legacy fallback adds one fetch
+    // round-trip, but on a slow runner that can drift past a fixed
+    // sleep. Polling with a generous deadline avoids the flake.
+    await expect.poll(
+      () => deprecationLogs.length,
+      { timeout: 8000, message: 'expected the deprecation warning to fire after the cluster RPC 404s' },
+    ).toBeGreaterThanOrEqual(1);
     expect(deprecationLogs.length).toBe(1);
   });
 });
