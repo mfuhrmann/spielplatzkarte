@@ -71,21 +71,6 @@ git commit -am "chore: bump version to 0.2.7-rc"
 git push origin main
 ```
 
-## Current state (as of 2026-04-26)
-
-| Item | State |
-|---|---|
-| `app/package.json` on `main` | `0.2.6-rc` |
-| Latest git tag on origin | `v0.2.4` |
-| Latest GitHub release | `v0.2.0` (2026-04-19, by @rntrommer) |
-| `:latest` container | **does not exist** → root cause of #274 |
-
-**What went wrong with v0.2.4:** the release commit (`chore: release v0.2.4`) and the `v0.2.4` tag were pushed to origin, which caused CI to run and publish `:latest`, `:0.2.4`, `:0.2`. However, step 5 (`gh release create`) was never run, so the Releases page still shows v0.2.0 as the latest release.
-
-Additionally, tags `v0.2.1`–`v0.2.3` were created locally but never pushed to origin and have no effect.
-
-**To fix #274:** run steps 5–7 above for `v0.2.6` (after merging the remaining open work), or re-trigger CI for `v0.2.4` and create a GitHub release for it if that version is considered stable.
-
 ## E2E tests and tag pushes
 
 The E2E test workflow runs on pushes to `main` and on pull requests — **not** on tag pushes. This means the image published on a tag push is built from a commit that was already tested when it landed on `main`. No additional test run is needed before tagging.
