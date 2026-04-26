@@ -26,40 +26,54 @@ Issue #202 named the problem and proposed dedup. The openspec change directory w
 
 ## Decisions
 
-### D1 — Dedup at VectorSource insertion time, not at fetch time
+### D1 — Dedup at the polygon-tier `onResult` in `hubOrchestrator.js`, not in `registry.js`
 
-The merge runs in `app/src/hub/registry.js` `loadBackend()` after the stale-removal step (the existing `vectorSource.removeFeatures(stale)` line). Alternative locations considered and rejected:
+The merge runs in `app/src/hub/hubOrchestrator.js` — specifically inside the polygon-tier `onResult` callback, immediately before `polygonSource.addFeatures(features)` — using a per-`orchestrate()`-call `Map<osm_id, Feature>` to look up an existing feature by `osm_id` and apply the merge rule (D2).
 
-- **At fetch time, before adding to source**: would require deduping the in-memory backends array of pending features, then a single batched insert. Adds memory pressure (hold N backends' results before any render) and breaks the existing progressive-render contract from `add-federated-playground-clustering` §3.2.
-- **In an OL `VectorSource` subclass** (`addFeature` override): the cleanest separation, but introduces a new module and ties dedup to the source rather than to the federation flow. Reserve for a future refactor if dedup logic grows.
+Earlier drafts of this proposal (and the rejected PR #295) anchored the dedup in `app/src/hub/registry.js` `loadBackend()`, with a phrase like "after the existing `vectorSource.removeFeatures(stale)` line". On current `main` that line **does not exist**: `registry.js` does not import any `VectorSource`, does not accept one, and does not call `removeFeatures` or `addFeatures`. All polygon `VectorSource` ownership lives in `app/src/hub/HubApp.svelte` and the only code that mutates it is `hubOrchestrator.js` (`polygonSource.clear()`, `polygonSource.addFeatures()`, `polygonSource.removeFeature()`). The `removeFeatures(stale)` line was removed wholesale when `add-federated-playground-clustering` archived (the orchestrator now handles all source mutation; `registry.js` was demoted to "registry discovery + metadata + nearest" per its own header comment). PR #295 reintroduced the line in its own diff, which is one of the architectural reasons it was rejected.
+
+The orchestrator anchor has three concrete benefits:
+
+- `parsePolygonFeatures` is the only place per-feature properties (`_backendUrl`, soon `_lastImportAt`) get stamped — keeping the dedup loop next to it avoids splitting feature-state initialisation across two modules.
+- The polygon-tier `onResult` is already the per-arrival callback in the fan-out — the natural granularity for dedup.
+- A per-`orchestrate()` map is naturally scoped: every new moveend / fan-out re-creates `polygonSource` cleared and the map fresh. No session-wide cache to invalidate.
+
+Alternative locations considered and rejected:
+
+- **An OL `VectorSource` subclass** (`addFeature` override): the cleanest separation, but introduces a new module and ties dedup to the source rather than to the federation flow. Reserve for a future refactor if dedup logic grows beyond `osm_id`.
+- **At fetch time, before any source mutation**: would require buffering N backends' results before the first paint and breaks the existing progressive-render contract from `add-federated-playground-clustering` §3.2.
 - **At selection time**: too late — the source still holds duplicates, OL's spatial index still sees N features per spot, hover preview still picks arbitrarily.
-
-Insertion-time dedup runs once per backend join, lives next to the per-backend stale-removal it pairs with, and stays under the existing `loadBackend` lock.
 
 ### D2 — Compare by `last_import_at` (numeric), tie-break by URL alphabetical
 
-The merge rule for two features sharing an `osm_id`:
+The merge rule for two features sharing an `osm_id`. Define `parseable(v)` ≡ `v != null && Number.isFinite(Date.parse(v))`:
 
-1. Both have `last_import_at` → newer wins (numeric `Date.parse(a) - Date.parse(b)`).
-2. One has `last_import_at`, the other null → the one with a value wins.
-3. Both null OR equal `last_import_at` → URL alphabetical (lower URL string wins).
+1. `parseable(a) && parseable(b)` → newer wins (`Date.parse(a) - Date.parse(b)`, numeric).
+2. `parseable(a)` XOR `parseable(b)` → the parseable one wins.
+3. `!parseable(a) && !parseable(b)` OR `Date.parse(a) === Date.parse(b)` → URL alphabetical: raw JavaScript `<` compare on the unmodified `_backendUrl` string.
 
 The numeric compare via `Date.parse` is mandatory — the rejected PR #295's lexicographic string compare flips winners non-deterministically when two backends emit the same instant in different ISO TZ formats (`2026-04-25T12:00:00Z` vs `2026-04-25T14:00:00+02:00`).
+
+`parseable` collapses three "no-timestamp" inputs into one bucket: JSON `null`, JS `undefined` (property never set), and any string `Date.parse` returns `NaN` for (e.g. truncated ISO without seconds on Safari, garbage data, empty string). All three behave identically under D5 → fall through to URL alphabetical at step 3. This avoids `NaN`-arithmetic falling silently through the step-1 numeric compare (`NaN - NaN === NaN`, neither `> 0` nor `< 0`) — which would otherwise produce a non-deterministic outcome.
 
 URL-alphabetical tie-break is chosen over "first arrival" because:
 
 - Arrival order is non-deterministic across moveends (parallel fan-out).
-- URL is stable across the session (registry doesn't re-rank backends).
+- URL is stable across the session (registry is loaded once at boot; subsequent registry-polls re-fetch `get_meta` per backend but do not re-rank or re-rewrite the URL strings).
 - Easy to reason about in test expectations.
 
-### D3 — Stamp `_lastImportAt` on the kept feature, frozen at insertion time
+The `<` compare is **raw string, code-unit-wise**, against `_backendUrl` as it arrived from the registry. No case-folding, no scheme/trailing-slash normalisation. Operators who want a particular tie-break order should rename the URLs in `registry.json` accordingly. Documenting this explicitly avoids two valid implementations (`a < b` vs `a.localeCompare(b)` vs `a.toLowerCase() < b.toLowerCase()`) silently disagreeing.
 
-Each kept feature carries:
+### D3 — Stamp `_lastImportAt` on each feature at parse time, frozen
 
-- `_backendUrl` (already shipped by `add-federated-playground-clustering`).
-- `_lastImportAt` (new) — the value of `backend.lastImportAt` *at the moment this feature was inserted*. Subsequent reads MUST come from the feature, not from the live backends store entry.
+Each feature emitted by `parsePolygonFeatures` carries:
 
-The "frozen value" requirement is load-bearing. PR #295 read the existing-feature's age via `backends.find(b => b.url === existing.get('_backendUrl'))?.osmDataAge`, which is a *live* read of the backends store. By the time a fresher backend's refresh poll fires, its store entry has already been mutated to the new `last_import_at` *before* the dedup loop runs. The comparison `incomingAge > existingAge` then evaluates `freshAge > freshAge → false`, the feature is dropped, and the fresher backend's polygons silently disappear from the source on every refresh. Reading from the feature's own `_lastImportAt` (which was frozen on the previous insertion) avoids the data-race entirely.
+- `_backendUrl` (already set today — `f.set('_backendUrl', backendUrl)` in `parsePolygonFeatures`).
+- `_lastImportAt` (new) — the value of `backend.lastImportAt` at the moment `parsePolygonFeatures` runs. Subsequent dedup cycles read from the feature (`existing.get('_lastImportAt')`), never from the live `backends` store.
+
+Why frozen-at-parse-time, not live-read: the rejected PR #295 read the existing feature's age via `backends.find(b => b.url === existing.get('_backendUrl'))?.osmDataAge`. On `main` today, the `backends` store uses immutable patches (`backends[idx] = { ...backends[idx], ...patch }`), so a live read happens to be safe today. But there is no architectural guarantee against a future refactor reintroducing in-place mutation — and PR #295's own diff *did* reintroduce in-place mutation, exposing the race. Frozen-at-parse-time is the defensive contract: feature lifecycle and store lifecycle are decoupled, so no future store-mutation refactor can produce a silent-drop regression.
+
+`_lastImportAt` is stored as a string (ISO-8601) or `null` — never `undefined`. Readers MUST treat `feature.get('_lastImportAt') === undefined` (property never set on a pre-this-change feature in a half-rolled-out frontend) and `=== null` identically. The `parseable()` predicate in D2 already collapses both with `NaN`-Date.parse cases, so this is automatic for the merge rule but worth naming so test fixtures don't depend on a particular sentinel.
 
 ### D4 — Pre-index existing features as `Map<osm_id, feature>` once per backend join
 
@@ -82,19 +96,26 @@ If this change ships before `add-federation-health-exposition`, every backend's 
 
 This is intentional: it lets the dedup work ship independently if the federation-health work hits a delay.
 
-### D7 — Single `addFeatures(toAdd)` at the end of the loop, not per-feature
+### D7 — Batch source mutations: `removeFeatures(toRemove)` + `addFeatures(toAdd)`, not per-feature
 
-OL's `VectorSource.addFeature` fires `change` events synchronously per call. The polygon-tier renderer reacts to `change` to repaint. Per-feature inserts → N repaints per backend join. Use `addFeatures(toAdd)` once after the loop so the renderer paints the merged set in a single cycle.
+OL's `VectorSource.addFeature` and `removeFeature` each fire a synchronous `change` event per call (verified — `ol/source/Vector.js`). The polygon-tier renderer reacts to `change` to repaint. Per-feature mutations therefore produce N repaints per backend arrival.
 
-The corresponding `removeFeature(existing)` calls inside the loop are unavoidable (the loser must be evicted before its replacement can be added by `addFeatures`), but their `change` events are batched against the subsequent `addFeatures` by OL's existing event coalescing.
+The reference implementation should:
+
+1. Walk the incoming features once, populating `toAdd` and `toRemove` arrays via the merge rule (D2).
+2. Call `polygonSource.removeFeatures(toRemove)` once — fires one `change` event regardless of array length.
+3. Call `polygonSource.addFeatures(toAdd)` once — fires one `change` event regardless of array length.
+
+Total: two repaints per arrival (or one, if `toRemove` is empty — the common no-overlap case where dedup is a pass-through). PR #302's reference implementation calls `removeFeature` per-loser inside the loop, which works correctly but produces (losers + 1) repaints; the contract above is tighter and cheaper. Either pattern satisfies the spec scenarios — repaint count isn't testable from Playwright without performance instrumentation — but the batched form is the prescribed shape.
+
+Note: there is **no** "OL existing event coalescing" — earlier drafts of this proposal claimed there was. There isn't. Each `removeFeature`/`addFeature` call fires its own event synchronously. The batched form above is the only way to limit repaint count.
 
 ## Risks / Trade-offs
 
-- **Pan flicker on `last_import_at` change.** If a backend's refresh-poll arrives with a slightly different `last_import_at` than the previous cycle (importer ran between polls), a feature that was the winner might transiently swap to the other backend before the next refresh re-stabilises. In practice `add-federation-health-exposition`'s import cadence is on the order of hours-to-days, polls are every 5 minutes, and observed flicker should be effectively never.
-- **URL-alphabetical bias.** When tie-breaking on equal/null ages, URL ordering is not policy — it's coincidental. If a deployment names backends `a-fulda` and `z-hessen`, the city backend wins ties; rename to `z-fulda` and the state backend wins. Document this in the dedup section so operators understand the tie-break.
-- **`_relationId` carries opaque payload with no consumer in this change.** Tagging features with `_relationId` is speculative state until a future change consumes it. Keeping it conditional on `add-federation-health-exposition` shipping `relation_id` (which it already does) means we don't ship dead data on pre-FHE backends. Cleaner to drop entirely if no consumer materialises within two release cycles.
-- **OL `getFeatures()` snapshot vs Map staleness.** The `Map<osm_id, feature>` is built once per backend join. Within one join, a `removeFeature(existing)` call followed by another lookup for the same osm_id — possible if the incoming backend somehow has duplicate features for the same `osm_id` *within its own response* — would still find the removed feature in the Map. Mitigation: dedup within a single backend's response is the upstream's problem; if it ships duplicates, the second-seen wins (Map gets overwritten). Document.
-- **Selection-store invalidation.** If the user has selected feature `osm_id=X` from backend A, and backend B's refresh causes A's feature to be evicted, the selection store still holds a reference to the now-removed feature. The selection store already keys on `(osm_id, backendUrl)` per `add-federation-health-exposition`'s spec, but the displayed polygon disappears. Mitigation: surface a one-time toast / log when this happens; defer to a follow-up if the UX is observed to be confusing.
+- **Pan flicker on `last_import_at` change.** If a backend's refresh-poll arrives with a slightly different `last_import_at` than the previous cycle (importer ran between polls), a feature that was the winner might transiently swap to the other backend before the next refresh re-stabilises. In practice import cadence is on the order of hours-to-days, registry polls are every 5 minutes, and observed flicker should be effectively never. The spec's "Refresh stability" scenario asserts no winner *change* on stable inputs — not "no observable removeFeature/addFeature event", which would be unimplementable given the per-arrival fan-out architecture.
+- **URL-alphabetical bias.** When tie-breaking on equal/null/NaN ages, URL ordering is not policy — it's coincidental. If a deployment names backends `https://a-fulda.example/api` and `https://z-hessen.example/api`, the city backend wins ties; rename to `https://z-fulda.example/api` and the state backend wins. Document in `docs/reference/federation.md` so operators understand. Case sensitivity matters: `https://A.example/api` < `https://a.example/api` (uppercase ASCII has lower code points than lowercase).
+- **OL `Map` snapshot vs duplicate within one backend response.** The per-`orchestrate()` `Map<osm_id, Feature>` is updated by every winning incoming. If the incoming backend somehow has duplicate features for the same `osm_id` within its own single response (multipolygon-tagged-as-leisure-playground relations exploded by osm2pgsql — see issue #299), the second-seen wins (Map gets overwritten). Mitigation: track this as a server-side concern in #299; it is not a property the dedup loop can detect from a single backend's payload.
+- **Selection-store invalidation.** If the user has selected feature `osm_id=X` from backend A, and backend B's later arrival in the same `orchestrate()` call wins, A's feature is removed before the new winner is added — the selection store still holds a reference to the now-removed feature. The selection store keys on `(osm_id, backendUrl)`, so the user's selection no longer matches anything on the map. Mitigation: out of scope for this change — reconciling the selection on winner flip is its own UX concern. Documented as an Open Question.
 
 ## Migration Plan
 
