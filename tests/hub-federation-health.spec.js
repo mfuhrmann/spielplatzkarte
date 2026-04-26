@@ -142,6 +142,37 @@ test.describe('Hub federation health drawer', () => {
     // Banner text matches the i18n key hub.observationStale
     await expect(drawer.locator('.drawer__stale-banner')).toBeVisible({ timeout: 5000 });
   });
+
+  // Regression for #323: when registry.json omits `slug`, poll-federation.sh
+  // falls back to a URL-sanitized key so the federation-status keys differ
+  // from any client-side slug. The patch loop must match by `entry.url`,
+  // not by the registry slug, otherwise the drawer never receives the
+  // freshness fields and silently shows only the playground count.
+  test('matches federation-status entries by url even when keys differ from registry slugs', async ({ page }) => {
+    await injectHubConfig(page);
+    await stubHubRegistry(page, { instanceA, instanceB });
+
+    const dataAgeSec = 2 * 24 * 60 * 60;
+    await stubFederationStatus(page, {
+      backends: {
+        // Server's URL-sanitized fallback key, intentionally different from
+        // `instanceA.slug`. Client must look up by `entry.url`.
+        'https___api_a_url_sanitized': {
+          url: instanceA.url,
+          up: true,
+          latency_seconds: 0.04,
+          last_success: new Date().toISOString(),
+          last_import_at: new Date(Date.now() - dataAgeSec * 1000).toISOString(),
+          data_age_seconds: dataAgeSec,
+        },
+      },
+    });
+
+    await page.goto('/');
+    const drawer = await openDrawer(page);
+
+    await expect(drawer).toContainText(/2\s*(Tage|days)/, { timeout: 5000 });
+  });
 });
 
 // TODO: filterHealthy skip-down-backend test

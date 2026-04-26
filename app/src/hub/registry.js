@@ -170,10 +170,18 @@ export function createRegistry() {
 
     loadAll();
 
-    startFederationHealthPoll((statusBySlug, observationStale) => {
+    startFederationHealthPoll((status, observationStale) => {
+      // Match by `url`, not slug: slugs are optional in registry.json (only
+      // used for deep-link URLs), but every federation-status entry carries
+      // a `url` field. Matching by url avoids having two implementations of
+      // the slug-fallback algorithm (jq `gsub` server-side, `normaliseSlug`
+      // client-side) that have to stay in lockstep.
+      const entriesByUrl = new Map();
+      for (const e of Object.values(status)) {
+        if (e?.url) entriesByUrl.set(e.url, e);
+      }
       for (const b of backends) {
-        const key = b.slug ?? null;
-        const entry = key ? statusBySlug[key] : null;
+        const entry = entriesByUrl.get(b.url);
         if (!entry) continue;
         patchBackend(b.url, {
           healthUp:           entry.up ?? null,
