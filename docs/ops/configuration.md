@@ -21,7 +21,12 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `APP_PORT` | `8080` | ui, data-node-ui | Host port the app is exposed on |
 | `POSTGRES_PASSWORD` | `change-me` | data-node, data-node-ui | Database password — **change in production** |
 | `POI_RADIUS_M` | `5000` | ui, data-node-ui | Radius in metres for nearby POI search |
-| `OSM2PGSQL_THREADS` | `4` | data-node, data-node-ui | CPU threads for the import |
+| `OSM2PGSQL_THREADS` | `4` | data-node, data-node-ui | CPU threads for the osm2pgsql data-loading step |
+| `PG_MAX_PARALLEL_WORKERS` | `6` | data-node, data-node-ui | Total parallel worker processes available to PostgreSQL (set ≤ CPU count) |
+| `PG_MAX_PARALLEL_WORKERS_PER_GATHER` | `4` | data-node, data-node-ui | Parallel workers per query — used when building the `playground_stats` materialized view |
+| `PG_MAX_PARALLEL_MAINTENANCE_WORKERS` | `4` | data-node, data-node-ui | Parallel workers for `CREATE INDEX` during the schema step |
+| `PG_MAINTENANCE_WORK_MEM` | `512MB` | data-node, data-node-ui | Memory per maintenance operation (index builds etc.) — aim for ~6 % of total RAM |
+| `PG_WORK_MEM` | `128MB` | data-node, data-node-ui | Memory per sort/hash operation inside parallel workers |
 | `OSM_BBOX` | *(auto)* | data-node, data-node-ui | Manual bounding box for the osmium pre-filter (`west,south,east,north`). Skips Nominatim lookup when set. |
 | `OSM_BBOX_PADDING` | `0.15` | data-node, data-node-ui | Degrees of padding added to each side of the Nominatim bbox (≈ 15 km). |
 | `OSM_PREFILTER_MIN_MB` | `20` | data-node, data-node-ui | Source PBF files smaller than this many MB skip the osmium pre-filter step. |

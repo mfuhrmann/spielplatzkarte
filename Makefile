@@ -63,7 +63,15 @@ docker-build: require-docker  ## Rebuild and restart the Svelte app container (D
 ## ── Database ──────────────────────────────────────────────────────────────────
 
 db-apply: require-docker  ## Apply importer/api.sql to the running database and reload PostgREST schema
-	set -a && . ./.env && set +a && envsubst '$$OSM_RELATION_ID' < importer/api.sql | docker compose exec -T db psql -U osm -d osm --single-transaction
+	set -a && . ./.env && \
+	PG_MAX_PARALLEL_WORKERS=$${PG_MAX_PARALLEL_WORKERS:-6} \
+	PG_MAX_PARALLEL_WORKERS_PER_GATHER=$${PG_MAX_PARALLEL_WORKERS_PER_GATHER:-4} \
+	PG_MAX_PARALLEL_MAINTENANCE_WORKERS=$${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-4} \
+	PG_MAINTENANCE_WORK_MEM=$${PG_MAINTENANCE_WORK_MEM:-512MB} \
+	PG_WORK_MEM=$${PG_WORK_MEM:-128MB} && \
+	set +a && \
+	envsubst '$$OSM_RELATION_ID $$PG_MAX_PARALLEL_WORKERS $$PG_MAX_PARALLEL_WORKERS_PER_GATHER $$PG_MAX_PARALLEL_MAINTENANCE_WORKERS $$PG_MAINTENANCE_WORK_MEM $$PG_WORK_MEM' \
+	< importer/api.sql | docker compose exec -T db psql -U osm -d osm --single-transaction
 	docker compose exec db psql -U osm -d osm -c "NOTIFY pgrst, 'reload schema';"
 
 db-shell: require-docker  ## Open a psql shell in the running database container

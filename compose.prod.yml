@@ -17,6 +17,13 @@ services:
   db:
     image: postgis/postgis:16-3.4-alpine
     profiles: [data-node, data-node-ui]
+    command: >-
+      postgres
+      -c max_parallel_workers=${PG_MAX_PARALLEL_WORKERS:-6}
+      -c max_parallel_workers_per_gather=${PG_MAX_PARALLEL_WORKERS_PER_GATHER:-4}
+      -c max_parallel_maintenance_workers=${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-4}
+      -c maintenance_work_mem=${PG_MAINTENANCE_WORK_MEM:-512MB}
+      -c work_mem=${PG_WORK_MEM:-128MB}
     environment:
       POSTGRES_DB:       osm
       POSTGRES_USER:     osm
@@ -48,6 +55,11 @@ services:
       PBF_URL:           ${PBF_URL}
       OSM2PGSQL_THREADS: ${OSM2PGSQL_THREADS:-4}
       OSM_RELATION_ID:   ${OSM_RELATION_ID}
+      PG_MAX_PARALLEL_WORKERS:             ${PG_MAX_PARALLEL_WORKERS:-6}
+      PG_MAX_PARALLEL_WORKERS_PER_GATHER:  ${PG_MAX_PARALLEL_WORKERS_PER_GATHER:-4}
+      PG_MAX_PARALLEL_MAINTENANCE_WORKERS: ${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-4}
+      PG_MAINTENANCE_WORK_MEM:             ${PG_MAINTENANCE_WORK_MEM:-512MB}
+      PG_WORK_MEM:                         ${PG_WORK_MEM:-128MB}
     volumes:
       - pbf_cache:/data
     restart: "no"

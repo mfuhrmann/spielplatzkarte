@@ -8,6 +8,29 @@
 --   - planet_osm_polygon → ways/relations rendered as polygons
 --   - Uncommon tags land in other_tags (hstore)
 
+-- =========================================================================
+-- Session tuning — applied only to this psql session; does not affect
+-- PostgREST connections. OSM2PGSQL_THREADS only covers the osm2pgsql step;
+-- the CREATE MATERIALIZED VIEW and CREATE INDEX work happens here in psql
+-- and benefits from these settings instead.
+-- Values are substituted by envsubst in import.sh / make db-apply.
+-- Tune via PG_* variables in .env (see .env.example).
+-- =========================================================================
+SET max_parallel_workers             = ${PG_MAX_PARALLEL_WORKERS};
+SET max_parallel_workers_per_gather  = ${PG_MAX_PARALLEL_WORKERS_PER_GATHER};
+SET max_parallel_maintenance_workers = ${PG_MAX_PARALLEL_MAINTENANCE_WORKERS};
+SET maintenance_work_mem             = '${PG_MAINTENANCE_WORK_MEM}';
+SET work_mem                         = '${PG_WORK_MEM}';
+
+-- Terminate idle PostgREST connections before dropping the MV so the
+-- DROP does not block waiting for an AccessExclusiveLock. PostgREST
+-- reconnects automatically; active (non-idle) queries are left alone.
+SELECT pg_terminate_backend(pid)
+FROM   pg_stat_activity
+WHERE  datname = current_database()
+  AND  state   = 'idle'
+  AND  pid    <> pg_backend_pid();
+
 -- Make sure web_anon can call everything we create here.
 GRANT USAGE ON SCHEMA api TO web_anon;
 
