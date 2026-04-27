@@ -126,7 +126,6 @@ export function getEquipmentAttributesFromProps(props, t) {
     const osmId    = g('osm_id');
     const mcTheme  = (leisure === 'fitness_station' || leisure === 'pitch') ? 'sports' : 'playgrounds';
     const mcUrl    = `https://mapcomplete.org/${mcTheme}.html` + (osmId ? `#${osmType}/${osmId}` : '');
-    const addPhotoLink = `<p class="mb-0 mt-1"><a href="${mcUrl}" target="_blank" rel="noopener" style="font-size:0.75rem;"><span class="bi bi-camera-fill"></span> ${escapeHtml(t('popup.addPhoto'))}</a></p>`;
 
     let html = '';
     if (content.length) {
@@ -155,6 +154,5 @@ export function getEquipmentAttributesFromProps(props, t) {
         }
     }
 
-    if (!panoramaxUuid) html += addPhotoLink;
-    return { html, panoramaxUuid: panoramaxUuid || null };
+    return { html, panoramaxUuid: panoramaxUuid || null, mcUrl };
 }

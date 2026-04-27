@@ -3,6 +3,7 @@
   import { objColors } from '../lib/vectorStyles.js';
   import { getEquipmentAttributesFromProps } from '../lib/equipmentAttributes.js';
   import { _ } from 'svelte-i18n';
+  import MapCompleteLink from './MapCompleteLink.svelte';
 
   /** @type {Array} GeoJSON features from fetchPlaygroundEquipment */
   export let features = [];
@@ -94,6 +95,8 @@
                     <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="photo-thumb" />
                     <span class="photo-label"><span class="bi bi-camera"></span> {$_('popup.devicePhoto')}</span>
                   </button>
+                {:else}
+                  <MapCompleteLink href={detail.mcUrl} label={$_('popup.addPhoto')} />
                 {/if}
                 {@html detail.html}
               </div>
@@ -125,6 +128,8 @@
                     <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="photo-thumb" />
                     <span class="photo-label"><span class="bi bi-camera"></span> {$_('popup.devicePhoto')}</span>
                   </button>
+                {:else}
+                  <MapCompleteLink href={detail.mcUrl} label={$_('popup.addPhoto')} />
                 {/if}
                 {@html detail.html}
               </div>
@@ -159,6 +164,8 @@
                     <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="photo-thumb" />
                     <span class="photo-label"><span class="bi bi-camera"></span> {$_('popup.devicePhoto')}</span>
                   </button>
+                {:else}
+                  <MapCompleteLink href={detail.mcUrl} label={$_('popup.addPhoto')} />
                 {/if}
                 {@html detail.html}
               </div>
