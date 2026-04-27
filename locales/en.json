@@ -262,7 +262,8 @@
       "tree_evergreen": "Tree (conifer)",
       "tree": "Tree",
       "waste_basket": "Waste bin"
-    }
+    },
+    "groupParts": "{count, plural, one {# part} other {# parts}}"
   },
   "photos": {
     "none": "No photos for this playground yet.<br>Have you been there?",

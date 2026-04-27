@@ -4,9 +4,12 @@
   import { getEquipmentAttributesFromProps } from '../lib/equipmentAttributes.js';
   import { _ } from 'svelte-i18n';
   import MapCompleteLink from './MapCompleteLink.svelte';
+  import PanoramaxViewer from './PanoramaxViewer.svelte';
 
-  /** @type {Array} GeoJSON features from fetchPlaygroundEquipment */
+  /** @type {Array} GeoJSON features from fetchPlaygroundEquipment (standalone only) */
   export let features = [];
+  /** @type {Array<{structure: Object, children: Object[]}>} Grouped structure entries */
+  export let groups = [];
   /** @type {Object} Playground polygon properties (for playground:<key> fallback) */
   export let playgroundAttr = {};
 
@@ -41,13 +44,27 @@
     return `dev-${f.properties.osm_id ?? Math.random().toString(36).slice(2)}`;
   }
 
+  // Collect all panoramax UUIDs for a structure group (structure first, then children)
+  function groupUuids({ structure, children }) {
+    const uuids = [];
+    const push = props => {
+      for (let i = 0; i <= 9; i++) {
+        const key = i === 0 ? 'panoramax' : `panoramax:${i}`;
+        if (props[key]) { uuids.push(props[key]); break; }
+      }
+    };
+    push(structure.properties);
+    for (const child of children) push(child.properties);
+    return uuids;
+  }
+
   // Panoramax fullscreen modal for device photos
   let modalUuid = null;
   const thumbUrl  = uuid => `https://api.panoramax.xyz/api/pictures/${uuid}/thumb.jpg`;
   const viewerUrl = uuid => `https://api.panoramax.xyz/?pic=${uuid}&nav=none&focus=pic`;
 </script>
 
-{#if features.length === 0 && Object.keys(fallbackCounts).length === 0}
+{#if features.length === 0 && groups.length === 0 && Object.keys(fallbackCounts).length === 0}
   <ul><li><small class="text-muted">{$_('equipment.noDevices')}</small></li></ul>
   <p class="text-muted mt-2 mb-0" style="font-size:smaller">
     {@html $_('equipment.mapcompleteHint', { values: { link: '<a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a>' } })}
@@ -71,6 +88,48 @@
       <li>{$_('equipment.picnic', { values: { count: picnicCount } })}</li>
     {/if}
   </ul>
+
+  <!-- Structure groups (playground=structure polygon containers) -->
+  {#if groups.length}
+    <ul class="mb-0 device-list">
+      {#each groups as group (group.structure.properties.osm_id)}
+        {@const structKey = 'structure'}
+        {@const structName = group.structure.properties.name || $_('equipment.devices.structure', { default: objDevices[structKey]?.name_de ?? structKey })}
+        {@const structColor = objColors['structure_parts'] ?? objColors['fallback']}
+        {@const groupId = `grp-${group.structure.properties.osm_id}`}
+        {@const uuids = groupUuids(group)}
+        {@const structDetail = getEquipmentAttributesFromProps(group.structure.properties, $_)}
+        <li>
+          <button type="button" class="device-toggle" onclick={() => toggleItem(groupId)}>
+            <span style="color:{structColor}">●</span> {structName}
+            <span class="group-badge">{$_('equipment.groupParts', { values: { count: group.children.length } })}</span>
+            <span class="bi {openItems.has(groupId) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
+          </button>
+          {#if openItems.has(groupId)}
+            <div class="device-detail">
+              <PanoramaxViewer {uuids} mcUrl={structDetail.mcUrl} />
+              {#if structDetail.html}
+                {@html structDetail.html}
+              {/if}
+              <ul class="group-children">
+                {#each group.children as child (child.properties.osm_id)}
+                  {@const childKey = child.properties.playground}
+                  {@const childName = childKey
+                    ? $_('equipment.devices.' + childKey, { default: objDevices[childKey]?.name_de ?? childKey })
+                    : child.properties.leisure === 'fitness_station'
+                      ? $_('equipment.fitnessDefault')
+                      : childKey ?? '?'}
+                  {@const childCat = childKey ? (objDevices[childKey]?.category ?? 'fallback') : 'fallback'}
+                  {@const childColor = objColors[childCat] ?? objColors['fallback']}
+                  <li><span style="color:{childColor}">◦</span> {childName}</li>
+                {/each}
+              </ul>
+            </div>
+          {/if}
+        </li>
+      {/each}
+    </ul>
+  {/if}
 
   <!-- Detailed device list (mapped individually) -->
   {#if deviceFeatures.length || fitnessFeatures.length || pitchFeatures.length}
@@ -217,6 +276,19 @@
 {/if}
 
 <style>
+  .group-badge {
+    font-size: 0.72rem;
+    color: #6b7280;
+    margin-left: 0.3rem;
+  }
+  .group-children {
+    list-style: none;
+    padding-left: 0.8rem;
+    margin: 0.25rem 0 0;
+    font-size: smaller;
+    color: #374151;
+  }
+  .group-children li { margin-bottom: 0.15rem; }
   .summary-list { font-size: 13px; color: #1f2937; }
   .device-list { padding-left: 0; list-style: none; font-size: 13px; color: #1f2937; }
   .device-list li { margin-bottom: 0.25rem; }

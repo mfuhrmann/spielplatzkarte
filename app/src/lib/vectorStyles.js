@@ -138,6 +138,7 @@ export { clusterRingStyleFn as clusterTierStyleFn } from './clusterStyle.js';
 
 /** Style function for the equipment overlay layer. Never uses icon image files. */
 export function equipmentLayerStyleFn(feature) {
+    if (feature.get('_groupId')) return null;
     const geomType = feature.getGeometry()?.getType();
     const playground = feature.get('playground');
     const leisure    = feature.get('leisure');
