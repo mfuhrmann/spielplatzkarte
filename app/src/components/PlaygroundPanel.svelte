@@ -2,11 +2,11 @@
   import { onMount, onDestroy } from 'svelte';
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
-  import { X, Share2, Check, ChevronDown, ChevronRight, Pencil, Clock, ExternalLink, Image, Package, Navigation, Star } from 'lucide-svelte';
+  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Pencil, Clock, ExternalLink, Image, Package, Navigation, Star, Info } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
 
   import { selection } from '../stores/selection.js';
-  import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees } from '../lib/api.js';
+  import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees, fetchMeta } from '../lib/api.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
   import { poiRadiusM } from '../lib/config.js';
@@ -33,6 +33,66 @@
   let pois = [];
   let equipmentLoading = false;
   let poisLoading = false;
+
+  // ── Backend metadata (data age) ───────────────────────────────────────────
+  // Cached per backend URL so we only fetch once per session, not once per
+  // playground selection. null = not yet fetched / unavailable (dev mode).
+  const metaCache = new Map();
+  let osmDataAgeSec = null;
+
+  async function loadMeta(url) {
+    if (!url) { osmDataAgeSec = null; return; }
+    if (metaCache.has(url)) { osmDataAgeSec = metaCache.get(url); return; }
+    try {
+      const meta = await fetchMeta(url);
+      // Prefer the user-facing OSM snapshot age; fall back to import-run age.
+      const ageSec = meta?.osm_data_age_seconds ?? meta?.data_age_seconds ?? null;
+      metaCache.set(url, ageSec);
+      osmDataAgeSec = ageSec;
+    } catch {
+      metaCache.set(url, null);
+      osmDataAgeSec = null;
+    }
+  }
+
+  function formatDataAge(sec) {
+    if (sec == null) return null;
+    const m = Math.round(sec / 60);
+    if (m < 60)   return $_('hub.dataAgeMinutes', { values: { m } });
+    const h = Math.round(m / 60);
+    if (h < 48)   return $_('hub.dataAgeHours',   { values: { h } });
+    const d = Math.round(h / 24);
+    return $_('hub.dataAgeDays', { values: { d } });
+  }
+
+  $: loadMeta(backendUrl);
+  $: dataAgeFormatted = formatDataAge(osmDataAgeSec);
+
+  // ── Data age popover ──────────────────────────────────────────────────────
+  let dataAgePopoverOpen = false;
+  let dataAgePopoverStyle = '';
+  let chipEl;
+
+  function toggleDataAgePopover(e) {
+    e.stopPropagation();
+    if (!dataAgePopoverOpen && chipEl) {
+      const chip = chipEl.getBoundingClientRect();
+      // Clamp right edge against the panel's right boundary.
+      const panel = chipEl.closest('aside, [data-panel]');
+      const panelRight = panel ? panel.getBoundingClientRect().right : window.innerWidth;
+      const maxWidth = Math.min(260, panelRight - chip.left - 12);
+      dataAgePopoverStyle = [
+        `top:${chip.bottom + 6}px`,
+        `left:${chip.left}px`,
+        `width:${maxWidth}px`,
+      ].join(';');
+    }
+    dataAgePopoverOpen = !dataAgePopoverOpen;
+  }
+
+  function closeDataAgePopover() {
+    dataAgePopoverOpen = false;
+  }
 
   // Centre of selected playground in WGS84
   let centerLat = 0, centerLon = 0;
@@ -109,7 +169,11 @@
 
   onMount(() => {
     window.addEventListener('keydown', handleKeydown);
-    return () => window.removeEventListener('keydown', handleKeydown);
+    window.addEventListener('click', closeDataAgePopover);
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
+      window.removeEventListener('click', closeDataAgePopover);
+    };
   });
 
   onDestroy(() => {
@@ -259,7 +323,26 @@
     {#if !embedded}
       <div class="info-panel__header">
         <div class="flex-1 min-w-0">
-          <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
+            {#if dataAgeFormatted}
+              <button
+                bind:this={chipEl}
+                class="data-age-chip"
+                onclick={toggleDataAgePopover}
+                title={$_('details.osmDataAgeTitle')}
+                aria-expanded={dataAgePopoverOpen}
+              >
+                <Info class="h-3 w-3" />
+                {$_('details.osmDataAgeChip', { values: { age: dataAgeFormatted } })}
+                {#if dataAgePopoverOpen}
+                  <ChevronUp class="h-3 w-3" />
+                {:else}
+                  <ChevronDown class="h-3 w-3" />
+                {/if}
+              </button>
+            {/if}
+          </div>
           {#if getPlaygroundLocation(attr, $_)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
           {/if}
@@ -277,7 +360,26 @@
       <!-- Embedded header (bottom sheet) -->
       <div class="flex items-start justify-between gap-2 mb-4">
         <div class="flex-1 min-w-0">
-          <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h2 class="panel-title">{getPlaygroundTitle(attr, $_)}</h2>
+            {#if dataAgeFormatted}
+              <button
+                bind:this={chipEl}
+                class="data-age-chip"
+                onclick={toggleDataAgePopover}
+                title={$_('details.osmDataAgeTitle')}
+                aria-expanded={dataAgePopoverOpen}
+              >
+                <Info class="h-3 w-3" />
+                {$_('details.osmDataAgeChip', { values: { age: dataAgeFormatted } })}
+                {#if dataAgePopoverOpen}
+                  <ChevronUp class="h-3 w-3" />
+                {:else}
+                  <ChevronDown class="h-3 w-3" />
+                {/if}
+              </button>
+            {/if}
+          </div>
           {#if getPlaygroundLocation(attr, $_)}
             <p class="text-sm text-muted-foreground mt-0.5">{getPlaygroundLocation(attr, $_)}</p>
           {/if}
@@ -479,6 +581,19 @@
       </div>
     </div>
   </aside>
+{/if}
+
+{#if dataAgePopoverOpen && dataAgeFormatted}
+  <div
+    class="data-age-popover"
+    style={dataAgePopoverStyle}
+    role="tooltip"
+  >
+    <p class="data-age-popover__title">{$_('details.osmDataAgeTitle')}</p>
+    <p class="data-age-popover__body">
+      {$_('details.osmDataAgeBody', { values: { age: dataAgeFormatted } })}
+    </p>
+  </div>
 {/if}
 
 <style>
@@ -727,5 +842,56 @@
     color: #9ca3af;
     text-transform: uppercase;
     letter-spacing: 0.06em;
+  }
+
+  /* ── Data-age chip + fixed popover ──────────────────────────────────── */
+  .data-age-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #6b7280;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1.4;
+  }
+
+  .data-age-chip:hover,
+  .data-age-chip[aria-expanded="true"] {
+    background: #e5e7eb;
+    color: #374151;
+  }
+
+  /* Rendered outside the aside so overflow-y: auto can't clip it. */
+  :global(.data-age-popover) {
+    position: fixed;
+    z-index: 500;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    padding: 10px 12px;
+  }
+
+  :global(.data-age-popover__title) {
+    font-size: 10px;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 4px;
+  }
+
+  :global(.data-age-popover__body) {
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.5;
+    margin: 0;
   }
 </style>

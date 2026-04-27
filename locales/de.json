@@ -405,6 +405,10 @@
     "emailLabel": "E-Mail",
     "editMapComplete": "Bei MapComplete bearbeiten",
     "loading": "Wird geladen …",
+    "osmDataAgeChip": "Datenstand: {age}",
+    "osmDataAgeTitle": "Aktualität der Kartendaten",
+    "osmDataAgeBody": "Die Karte basiert auf OpenStreetMap-Daten, die vor {age} als Schnappschuss abgerufen wurden. Änderungen, die du mit MapComplete oder anderen OSM-Editoren eingetragen hast, werden erst nach dem nächsten Datenbankimport sichtbar.",
+    "osmDataAgeFallbackBody": "Die Karte basiert auf OpenStreetMap-Daten. Änderungen, die du mit MapComplete oder anderen OSM-Editoren eingetragen hast, werden erst nach dem nächsten Datenbankimport sichtbar.",
     "access": {
       "yes": "öffentlich",
       "private": "privat",
