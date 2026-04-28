@@ -38,6 +38,8 @@
   let pitchLayer = null;
   let detachPitchLayer = null;
   let detachMapSub = null;
+  let regionFitTimer = null;
+  let detachRegionFitWatcher = null;
 
   // Readable store of the current map view in WGS84 for Nominatim `viewbox`.
   // Subscribes to the map's `moveend` when the map becomes available and
@@ -81,18 +83,41 @@
       detachMapSub?.();
       detachMapSub = null;
 
-      // Region fit via Nominatim bbox — skipped when the URL carries a
-      // deeplink hash so that the hash-restore zoom-in is not overwritten
-      // by the (slower) Nominatim response.
+      // Region fit via Nominatim bbox. The deeplink hash (if any) is read
+      // BEFORE the await so the decision can't be invalidated by anything
+      // that mutates window.location.hash while we're waiting on Nominatim.
+      const hadDeeplink = parseHash(window.location.hash);
       try {
         const region = await fetchRegionInfo(osmRelationId);
-        if (!parseHash(window.location.hash)) {
-          map.getView().fit(transformExtent(region.extent, 'EPSG:4326', 'EPSG:3857'), {
+        document.title = `spieli ${region.name}`;
+        const regionExtent = transformExtent(region.extent, 'EPSG:4326', 'EPSG:3857');
+        const fitToRegion = () => {
+          map.getView().fit(regionExtent, {
             padding: [20, 20, 20, 380], // leave room for the side panel on desktop
             duration: 0,
           });
+        };
+        if (!hadDeeplink) {
+          fitToRegion();
+        } else {
+          // Deeplink hash present — the deeplink expresses explicit user
+          // intent that takes precedence over the default region framing,
+          // so we don't fit eagerly. But if AppShell.tryRestoreFromHash
+          // can't deliver (osm_id 404, hydration error, unknown slug, etc.)
+          // no fit ever happens and the user lands on the OL default view.
+          // Fall back to the region view after a short delay if no moveend
+          // has fired — the deeplink-restore success path always fires one.
+          let restored = false;
+          const onMove = () => { restored = true; };
+          map.once('moveend', onMove);
+          detachRegionFitWatcher = () => map.un('moveend', onMove);
+          regionFitTimer = setTimeout(() => {
+            regionFitTimer = null;
+            detachRegionFitWatcher?.();
+            detachRegionFitWatcher = null;
+            if (!restored) fitToRegion();
+          }, 1500);
         }
-        document.title = `spieli ${region.name}`;
       } catch (err) {
         console.warn('Nominatim region fetch failed, using default extent:', err);
       }
@@ -157,6 +182,8 @@
     if (detachMapSub)      detachMapSub();
     if (detachPitchLayer)  detachPitchLayer();
     if (detachOrchestrator) detachOrchestrator();
+    if (regionFitTimer)    clearTimeout(regionFitTimer);
+    if (detachRegionFitWatcher) detachRegionFitWatcher();
   });
 </script>
 
