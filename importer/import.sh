@@ -41,6 +41,41 @@ POSTGRES_DB="${POSTGRES_DB:-osm}"
 POSTGRES_USER="${POSTGRES_USER:-osm}"
 OSM2PGSQL_THREADS="${OSM2PGSQL_THREADS:-4}"
 
+PG_MAX_PARALLEL_WORKERS="${PG_MAX_PARALLEL_WORKERS:-2}"
+PG_MAX_PARALLEL_WORKERS_PER_GATHER="${PG_MAX_PARALLEL_WORKERS_PER_GATHER:-2}"
+PG_MAX_PARALLEL_MAINTENANCE_WORKERS="${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-2}"
+PG_MAINTENANCE_WORK_MEM="${PG_MAINTENANCE_WORK_MEM:-256MB}"
+PG_WORK_MEM="${PG_WORK_MEM:-32MB}"
+
+# Validate PG_* before they reach envsubst → SQL. Strict regexes prevent
+# both injection (the values flow into raw SQL via `SET … = '${VAR}';`) and
+# silent kB-vs-MB confusion (PostgreSQL parses bare integers in memory GUCs
+# as kilobytes — `PG_WORK_MEM=128` means 128 kB, not 128 MB).
+for var in PG_MAX_PARALLEL_WORKERS PG_MAX_PARALLEL_WORKERS_PER_GATHER PG_MAX_PARALLEL_MAINTENANCE_WORKERS; do
+    eval "value=\${$var}"
+    case "$value" in
+        ''|*[!0-9]*)
+            echo "[importer] $var must be a positive integer (got: '$value')" >&2
+            exit 1
+            ;;
+    esac
+done
+for var in PG_MAINTENANCE_WORK_MEM PG_WORK_MEM; do
+    eval "value=\${$var}"
+    case "$value" in
+        *[0-9]kB|*[0-9]MB|*[0-9]GB|*[0-9]TB) ;;
+        *)
+            echo "[importer] $var must be a number followed by a unit (kB|MB|GB|TB) (got: '$value')" >&2
+            exit 1
+            ;;
+    esac
+done
+if [ "$PG_MAX_PARALLEL_WORKERS_PER_GATHER" -gt "$PG_MAX_PARALLEL_WORKERS" ] \
+    || [ "$PG_MAX_PARALLEL_MAINTENANCE_WORKERS" -gt "$PG_MAX_PARALLEL_WORKERS" ]; then
+    echo "[importer] PG_MAX_PARALLEL_WORKERS_PER_GATHER and PG_MAX_PARALLEL_MAINTENANCE_WORKERS must each be ≤ PG_MAX_PARALLEL_WORKERS ($PG_MAX_PARALLEL_WORKERS); PostgreSQL silently caps the excess otherwise" >&2
+    exit 1
+fi
+
 export PGPASSWORD="$POSTGRES_PASSWORD"
 
 # --------------------------------------------------------------------------- #
@@ -214,7 +249,7 @@ echo "[importer] Applying API schema..."
 # timestamp").
 TMP_API_SQL=$(mktemp)
 trap 'rm -f "$TMP_API_SQL"' EXIT
-envsubst '$OSM_RELATION_ID' < /api.sql > "$TMP_API_SQL"
+envsubst '$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM' < /api.sql > "$TMP_API_SQL"
 psql -v ON_ERROR_STOP=1 \
     -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
     -f "$TMP_API_SQL"

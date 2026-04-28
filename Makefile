@@ -63,7 +63,26 @@ docker-build: require-docker  ## Rebuild and restart the Svelte app container (D
 ## ── Database ──────────────────────────────────────────────────────────────────
 
 db-apply: require-docker  ## Apply importer/api.sql to the running database and reload PostgREST schema
-	set -a && . ./.env && set +a && envsubst '$$OSM_RELATION_ID' < importer/api.sql | docker compose exec -T db psql -U osm -d osm --single-transaction
+	set -a && . ./.env && \
+	PG_MAX_PARALLEL_WORKERS=$${PG_MAX_PARALLEL_WORKERS:-2} \
+	PG_MAX_PARALLEL_WORKERS_PER_GATHER=$${PG_MAX_PARALLEL_WORKERS_PER_GATHER:-2} \
+	PG_MAX_PARALLEL_MAINTENANCE_WORKERS=$${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-2} \
+	PG_MAINTENANCE_WORK_MEM=$${PG_MAINTENANCE_WORK_MEM:-256MB} \
+	PG_WORK_MEM=$${PG_WORK_MEM:-32MB} && \
+	set +a && \
+	for v in PG_MAX_PARALLEL_WORKERS PG_MAX_PARALLEL_WORKERS_PER_GATHER PG_MAX_PARALLEL_MAINTENANCE_WORKERS; do \
+	    eval "val=\$$$$v"; \
+	    case "$$val" in ''|*[!0-9]*) echo "$$v must be a positive integer (got: '$$val')" >&2; exit 1 ;; esac; \
+	done && \
+	for v in PG_MAINTENANCE_WORK_MEM PG_WORK_MEM; do \
+	    eval "val=\$$$$v"; \
+	    case "$$val" in *[0-9]kB|*[0-9]MB|*[0-9]GB|*[0-9]TB) ;; *) echo "$$v must be a number followed by kB|MB|GB|TB (got: '$$val')" >&2; exit 1 ;; esac; \
+	done && \
+	if [ "$$PG_MAX_PARALLEL_WORKERS_PER_GATHER" -gt "$$PG_MAX_PARALLEL_WORKERS" ] || [ "$$PG_MAX_PARALLEL_MAINTENANCE_WORKERS" -gt "$$PG_MAX_PARALLEL_WORKERS" ]; then \
+	    echo "PG_MAX_PARALLEL_WORKERS_PER_GATHER and PG_MAX_PARALLEL_MAINTENANCE_WORKERS must each be ≤ PG_MAX_PARALLEL_WORKERS ($$PG_MAX_PARALLEL_WORKERS)" >&2; exit 1; \
+	fi && \
+	envsubst '$$OSM_RELATION_ID $$PG_MAX_PARALLEL_WORKERS $$PG_MAX_PARALLEL_WORKERS_PER_GATHER $$PG_MAX_PARALLEL_MAINTENANCE_WORKERS $$PG_MAINTENANCE_WORK_MEM $$PG_WORK_MEM' \
+	< importer/api.sql | docker compose exec -T db psql -U osm -d osm --single-transaction
 	docker compose exec db psql -U osm -d osm -c "NOTIFY pgrst, 'reload schema';"
 
 db-shell: require-docker  ## Open a psql shell in the running database container

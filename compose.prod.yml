@@ -17,6 +17,7 @@ services:
   db:
     image: postgis/postgis:16-3.4-alpine
     profiles: [data-node, data-node-ui]
+    # Tuning GUCs are applied via ALTER SYSTEM in importer/api.sql.
     environment:
       POSTGRES_DB:       osm
       POSTGRES_USER:     osm
@@ -48,6 +49,11 @@ services:
       PBF_URL:           ${PBF_URL}
       OSM2PGSQL_THREADS: ${OSM2PGSQL_THREADS:-4}
       OSM_RELATION_ID:   ${OSM_RELATION_ID}
+      PG_MAX_PARALLEL_WORKERS:             ${PG_MAX_PARALLEL_WORKERS:-6}
+      PG_MAX_PARALLEL_WORKERS_PER_GATHER:  ${PG_MAX_PARALLEL_WORKERS_PER_GATHER:-4}
+      PG_MAX_PARALLEL_MAINTENANCE_WORKERS: ${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-4}
+      PG_MAINTENANCE_WORK_MEM:             ${PG_MAINTENANCE_WORK_MEM:-512MB}
+      PG_WORK_MEM:                         ${PG_WORK_MEM:-128MB}
     volumes:
       - pbf_cache:/data
     restart: "no"

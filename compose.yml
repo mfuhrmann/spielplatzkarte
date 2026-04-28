@@ -12,6 +12,9 @@
 services:
 
   # ── PostGIS database ────────────────────────────────────────────────────────
+  # Tuning GUCs (max_parallel_workers, work_mem, …) are applied via
+  # ALTER SYSTEM SET in importer/api.sql — they persist in the pgdata volume
+  # and apply to every connection, no `command:` override needed here.
   db:
     image: postgis/postgis:16-3.4-alpine
     environment:
@@ -47,6 +50,11 @@ services:
       OSM_BBOX:               ${OSM_BBOX:-}
       OSM_BBOX_PADDING:       ${OSM_BBOX_PADDING:-0.15}
       OSM_PREFILTER_MIN_MB:   ${OSM_PREFILTER_MIN_MB:-20}
+      PG_MAX_PARALLEL_WORKERS:             ${PG_MAX_PARALLEL_WORKERS:-6}
+      PG_MAX_PARALLEL_WORKERS_PER_GATHER:  ${PG_MAX_PARALLEL_WORKERS_PER_GATHER:-4}
+      PG_MAX_PARALLEL_MAINTENANCE_WORKERS: ${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-4}
+      PG_MAINTENANCE_WORK_MEM:             ${PG_MAINTENANCE_WORK_MEM:-512MB}
+      PG_WORK_MEM:                         ${PG_WORK_MEM:-128MB}
     volumes:
       - pbf_cache:/data
     profiles: [import]    # not started by "docker compose up"
@@ -69,6 +77,7 @@ services:
   # ── Second backend (Hub mode dev testing) ───────────────────────────────────
   # Provides /api2/ for Vogelsberg (relation 8743914).
   # Populate with: docker compose run --rm importer2
+  # Tuning GUCs are applied via ALTER SYSTEM in importer/api.sql (see `db`).
   db2:
     image: postgis/postgis:16-3.4-alpine
     environment:
@@ -103,6 +112,11 @@ services:
       OSM_BBOX:               ${OSM_BBOX:-}
       OSM_BBOX_PADDING:       ${OSM_BBOX_PADDING:-0.15}
       OSM_PREFILTER_MIN_MB:   ${OSM_PREFILTER_MIN_MB:-20}
+      PG_MAX_PARALLEL_WORKERS:             ${PG_MAX_PARALLEL_WORKERS:-6}
+      PG_MAX_PARALLEL_WORKERS_PER_GATHER:  ${PG_MAX_PARALLEL_WORKERS_PER_GATHER:-4}
+      PG_MAX_PARALLEL_MAINTENANCE_WORKERS: ${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-4}
+      PG_MAINTENANCE_WORK_MEM:             ${PG_MAINTENANCE_WORK_MEM:-512MB}
+      PG_WORK_MEM:                         ${PG_WORK_MEM:-128MB}
     volumes:
       - pbf_cache:/data
     profiles: [import2]
