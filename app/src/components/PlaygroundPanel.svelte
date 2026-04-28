@@ -1,3 +1,12 @@
+<script context="module">
+  // Module-scoped cache so a single `get_meta()` per backend URL is shared
+  // across every PlaygroundPanel mount (the panel re-mounts on every
+  // selection cycle in standalone). Successful results stay cached for
+  // the page lifetime; failures are NOT cached so a transient network
+  // blip doesn't permanently hide the chip.
+  const metaCache = new Map();
+</script>
+
 <script>
   import { onMount, onDestroy } from 'svelte';
   import OpeningHours from 'opening_hours';
@@ -35,63 +44,121 @@
   let poisLoading = false;
 
   // ── Backend metadata (data age) ───────────────────────────────────────────
-  // Cached per backend URL so we only fetch once per session, not once per
-  // playground selection. null = not yet fetched / unavailable (dev mode).
-  const metaCache = new Map();
+  // metaCache is module-scoped (see <script context="module"> above) so the
+  // get_meta() result survives the panel's per-selection remount cycle.
   let osmDataAgeSec = null;
+  // Generation guard so a slow earlier loadMeta() can't overwrite a faster
+  // later one when the user selects two playgrounds in quick succession.
+  let metaGen = 0;
 
   async function loadMeta(url) {
+    const gen = ++metaGen;
     if (!url) { osmDataAgeSec = null; return; }
-    if (metaCache.has(url)) { osmDataAgeSec = metaCache.get(url); return; }
+    if (metaCache.has(url)) {
+      if (gen === metaGen) osmDataAgeSec = metaCache.get(url);
+      return;
+    }
     try {
       const meta = await fetchMeta(url);
       // Prefer the user-facing OSM snapshot age; fall back to import-run age.
       const ageSec = meta?.osm_data_age_seconds ?? meta?.data_age_seconds ?? null;
       metaCache.set(url, ageSec);
-      osmDataAgeSec = ageSec;
+      if (gen === metaGen) osmDataAgeSec = ageSec;
     } catch {
-      metaCache.set(url, null);
-      osmDataAgeSec = null;
+      // Don't cache failures — a transient network error must not permanently
+      // hide the chip for this backend URL.
+      if (gen === metaGen) osmDataAgeSec = null;
     }
   }
 
   function formatDataAge(sec) {
-    if (sec == null) return null;
+    if (!Number.isFinite(sec) || sec < 0) return null;
+    if (sec < 60) return $_('hub.dataAgeJustNow');
     const m = Math.round(sec / 60);
     if (m < 60)   return $_('hub.dataAgeMinutes', { values: { m } });
     const h = Math.round(m / 60);
     if (h < 48)   return $_('hub.dataAgeHours',   { values: { h } });
     const d = Math.round(h / 24);
-    return $_('hub.dataAgeDays', { values: { d } });
+    if (d <= 365) return $_('hub.dataAgeDays',    { values: { d } });
+    const y = Math.round(d / 365);
+    return $_('hub.dataAgeYears', { values: { y } });
   }
 
   $: loadMeta(backendUrl);
   $: dataAgeFormatted = formatDataAge(osmDataAgeSec);
+  // Close the popover when the user picks a different playground / backend
+  // — the popover's body text references `dataAgeFormatted`, which would
+  // otherwise show stale content next to the new title until the user
+  // dismisses the popover.
+  $: if (backendUrl !== undefined) dataAgePopoverOpen = false;
 
   // ── Data age popover ──────────────────────────────────────────────────────
   let dataAgePopoverOpen = false;
   let dataAgePopoverStyle = '';
   let chipEl;
 
-  function toggleDataAgePopover(e) {
-    e.stopPropagation();
-    if (!dataAgePopoverOpen && chipEl) {
-      const chip = chipEl.getBoundingClientRect();
-      // Clamp right edge against the panel's right boundary.
-      const panel = chipEl.closest('aside, [data-panel]');
-      const panelRight = panel ? panel.getBoundingClientRect().right : window.innerWidth;
-      const maxWidth = Math.min(260, panelRight - chip.left - 12);
-      dataAgePopoverStyle = [
-        `top:${chip.bottom + 6}px`,
-        `left:${chip.left}px`,
-        `width:${maxWidth}px`,
-      ].join(';');
+  function recomputePopoverStyle() {
+    if (!chipEl) return;
+    const chip = chipEl.getBoundingClientRect();
+    // Clamp right edge against the panel's right boundary; floor the width
+    // so we never compute a zero/negative width on very narrow viewports.
+    const panel = chipEl.closest('aside, [data-panel]');
+    const panelRight = panel ? panel.getBoundingClientRect().right : window.innerWidth;
+    const maxWidth = Math.max(140, Math.min(260, panelRight - chip.left - 12));
+    dataAgePopoverStyle = [
+      `top:${chip.bottom + 6}px`,
+      `left:${chip.left}px`,
+      `width:${maxWidth}px`,
+    ].join(';');
+  }
+
+  function onDocumentClick(e) {
+    // Don't close when the click is inside the popover (so users can select
+    // text) or on the chip button itself (its own onclick handles toggle).
+    if (e.target?.closest?.('.data-age-popover, .data-age-chip')) return;
+    closeDataAgePopover();
+  }
+  function onPopoverKeydown(e) {
+    if (e.key === 'Escape' && dataAgePopoverOpen) {
+      // Stop propagation so the panel-level Escape handler doesn't also fire
+      // and close the entire panel.
+      e.stopPropagation();
+      closeDataAgePopover();
     }
-    dataAgePopoverOpen = !dataAgePopoverOpen;
+  }
+  function onViewportChange() {
+    // Scroll/resize/sheet-drag invalidate the fixed-position style. Cheaper
+    // and less surprising to close than to chase the chip around the screen.
+    closeDataAgePopover();
+  }
+
+  function openDataAgePopover() {
+    recomputePopoverStyle();
+    dataAgePopoverOpen = true;
+    // Defer listener attachment by a tick so the click that opened the
+    // popover doesn't immediately close it via document-level capture.
+    setTimeout(() => {
+      window.addEventListener('click', onDocumentClick);
+      window.addEventListener('keydown', onPopoverKeydown);
+      window.addEventListener('resize', onViewportChange);
+      // capture: catches scroll on any ancestor (panel, bottom sheet, page)
+      window.addEventListener('scroll', onViewportChange, true);
+    }, 0);
   }
 
   function closeDataAgePopover() {
+    if (!dataAgePopoverOpen) return;
     dataAgePopoverOpen = false;
+    window.removeEventListener('click', onDocumentClick);
+    window.removeEventListener('keydown', onPopoverKeydown);
+    window.removeEventListener('resize', onViewportChange);
+    window.removeEventListener('scroll', onViewportChange, true);
+  }
+
+  function toggleDataAgePopover(e) {
+    e.stopPropagation();
+    if (dataAgePopoverOpen) closeDataAgePopover();
+    else                    openDataAgePopover();
   }
 
   // Centre of selected playground in WGS84
@@ -169,15 +236,13 @@
 
   onMount(() => {
     window.addEventListener('keydown', handleKeydown);
-    window.addEventListener('click', closeDataAgePopover);
-    return () => {
-      window.removeEventListener('keydown', handleKeydown);
-      window.removeEventListener('click', closeDataAgePopover);
-    };
+    return () => window.removeEventListener('keydown', handleKeydown);
   });
 
   onDestroy(() => {
     overlayFeaturesStore.set({ equipment: [], trees: [] });
+    // Bail out cleanly if unmount happens while popover is open.
+    closeDataAgePopover();
   });
 
   // ── Completeness badge ────────────────────────────────────────────────────
@@ -331,6 +396,8 @@
                 class="data-age-chip"
                 onclick={toggleDataAgePopover}
                 title={$_('details.osmDataAgeTitle')}
+                aria-haspopup="dialog"
+                aria-controls="data-age-popover"
                 aria-expanded={dataAgePopoverOpen}
               >
                 <Info class="h-3 w-3" />
@@ -368,6 +435,8 @@
                 class="data-age-chip"
                 onclick={toggleDataAgePopover}
                 title={$_('details.osmDataAgeTitle')}
+                aria-haspopup="dialog"
+                aria-controls="data-age-popover"
                 aria-expanded={dataAgePopoverOpen}
               >
                 <Info class="h-3 w-3" />
@@ -585,11 +654,13 @@
 
 {#if dataAgePopoverOpen && dataAgeFormatted}
   <div
+    id="data-age-popover"
     class="data-age-popover"
     style={dataAgePopoverStyle}
-    role="tooltip"
+    role="dialog"
+    aria-labelledby="data-age-popover-title"
   >
-    <p class="data-age-popover__title">{$_('details.osmDataAgeTitle')}</p>
+    <p id="data-age-popover-title" class="data-age-popover__title">{$_('details.osmDataAgeTitle')}</p>
     <p class="data-age-popover__body">
       {$_('details.osmDataAgeBody', { values: { age: dataAgeFormatted } })}
     </p>
