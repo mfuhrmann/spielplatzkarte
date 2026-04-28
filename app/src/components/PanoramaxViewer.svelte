@@ -4,7 +4,11 @@
   import MapCompleteLink from './MapCompleteLink.svelte';
 
   /** @type {{ uuids?: string[], mcUrl?: string }} */
-  let { uuids = [], mcUrl = '' } = $props();
+  let { uuids: uuidsProp = [], mcUrl = '' } = $props();
+  // Defensive: a parent passing `uuids={null}` would bypass the destructure
+  // default (which only fires for undefined). The derived form keeps the
+  // rest of the component free of `uuids?.length` checks.
+  const uuids = $derived(uuidsProp ?? []);
 
   const thumbUrl  = uuid => `https://api.panoramax.xyz/api/pictures/${uuid}/thumb.jpg`;
   const viewerUrl = uuid => `https://api.panoramax.xyz/?pic=${uuid}&nav=none&focus=pic`;
