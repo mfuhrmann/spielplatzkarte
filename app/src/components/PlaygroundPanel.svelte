@@ -17,6 +17,7 @@
   import { selection } from '../stores/selection.js';
   import { fetchPlaygroundEquipment, fetchNearbyPOIs, fetchTrees, fetchMeta } from '../lib/api.js';
   import { overlayFeaturesStore } from '../stores/overlayLayer.js';
+  import { groupEquipment } from '../lib/equipmentGrouping.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
   import { poiRadiusM } from '../lib/config.js';
   import { getPlaygroundTitle, getPlaygroundLocation } from '../lib/playgroundHelpers.js';
@@ -40,6 +41,7 @@
 
   // ── Async data ────────────────────────────────────────────────────────────
   let equipmentFeatures = [];
+  let equipmentGroups = [];
   let pois = [];
   let equipmentLoading = false;
   let poisLoading = false;
@@ -172,6 +174,7 @@
     loadData(feature, backendUrl);
   } else {
     equipmentFeatures = [];
+    equipmentGroups = [];
     pois = [];
     overlayFeaturesStore.set({ equipment: [], trees: [] });
   }
@@ -199,11 +202,32 @@
       const geojson = await fetchPlaygroundEquipment(ext, feat.get('osm_id'), url);
       if (gen === loadGen) {
         localEquipment = geojson.features ?? [];
-        equipmentFeatures = localEquipment;
+        // Clear any leftover _groupId tags before re-stamping. The current
+        // fetch path returns fresh objects per call so this is defensive,
+        // but a future caching layer or a hub-mode merge that reuses
+        // feature references would otherwise leak stale group membership
+        // (and silently hide the dot for a now-standalone device).
+        for (const f of localEquipment) {
+          if (f.properties) delete f.properties._groupId;
+        }
+        const { groups, standalone } = groupEquipment(localEquipment);
+        for (const { structure, children } of groups) {
+          for (const child of children) {
+            child.properties._groupId = structure.properties.osm_id;
+          }
+        }
+        equipmentGroups = groups;
+        equipmentFeatures = standalone;
       }
     } catch (err) {
       console.warn('[panel] Equipment load failed:', err);
-      if (gen === loadGen) equipmentFeatures = [];
+      if (gen === loadGen) {
+        equipmentFeatures = [];
+        equipmentGroups = [];
+        // Clear stale equipment from the previous selection's overlay so
+        // the map doesn't keep showing wrong dots on the new playground.
+        overlayFeaturesStore.set({ equipment: [], trees: [] });
+      }
     } finally {
       if (gen === loadGen) equipmentLoading = false;
     }
@@ -602,7 +626,7 @@
               {#if equipmentLoading}
                 <p class="text-sm text-muted-foreground italic py-2">{$_('details.loading')}</p>
               {:else}
-                <EquipmentList features={equipmentFeatures} playgroundAttr={attr} />
+                <EquipmentList features={equipmentFeatures} groups={equipmentGroups} playgroundAttr={attr} />
               {/if}
             </div>
           {/if}

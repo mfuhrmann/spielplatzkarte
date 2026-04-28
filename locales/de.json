@@ -262,7 +262,8 @@
       "tree_evergreen": "Baum",
       "tree": "Baum",
       "waste_basket": "Abfallbehälter"
-    }
+    },
+    "groupParts": "{count, plural, one {# Teil} other {# Teile}}"
   },
   "photos": {
     "none": "Noch keine Fotos für diesen Spielplatz.<br>Warst du schon dort?",
