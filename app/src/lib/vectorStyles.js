@@ -138,8 +138,11 @@ export { clusterRingStyleFn as clusterTierStyleFn } from './clusterStyle.js';
 
 /** Style function for the equipment overlay layer. Never uses icon image files. */
 export function equipmentLayerStyleFn(feature) {
-    if (feature.get('_groupId')) return null;
     const geomType = feature.getGeometry()?.getType();
+    // Suppress only the *point* dots of grouped child devices — the structure
+    // polygon itself still renders, and any non-Point child (e.g. a sandpit
+    // polygon contained inside a structure) keeps its visible geometry.
+    if (feature.get('_groupId') && geomType === 'Point') return null;
     const playground = feature.get('playground');
     const leisure    = feature.get('leisure');
 

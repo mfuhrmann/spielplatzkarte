@@ -1,4 +1,4 @@
-.PHONY: install dev build serve test \
+.PHONY: install dev build serve test test-unit \
         up down import docker-build db-apply db-shell \
         seed-load seed-load2 seed-extract seed-extract2 import2 \
         require-npm require-docker installer lan-url \
@@ -37,8 +37,11 @@ build: require-npm        ## Production build → app/dist/
 serve: require-npm        ## Preview production build locally
 	npm run serve --prefix app
 
-test: require-npm         ## Run Playwright E2E tests
+test: require-npm test-unit  ## Run unit tests + Playwright E2E tests
 	npm test
+
+test-unit: require-npm    ## Run unit tests in app/src/lib/*.test.js
+	npm --prefix app run test:unit
 
 ## ── Docker Compose stack ──────────────────────────────────────────────────────
 

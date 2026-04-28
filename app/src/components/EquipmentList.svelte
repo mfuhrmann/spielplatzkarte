@@ -13,12 +13,19 @@
   /** @type {Object} Playground polygon properties (for playground:<key> fallback) */
   export let playgroundAttr = {};
 
+  // Summary counts include grouped children — a structure with 3 swings is
+  // still 3 swings as far as the user is concerned. The detail rendering
+  // continues to show standalone-only `features` so groups don't double-list.
+  $: countSource = [...features, ...groups.flatMap(g => g.children)];
   $: deviceFeatures  = features.filter(f => f.properties.playground && f.properties.playground !== 'yes');
   $: fitnessFeatures = features.filter(f => f.properties.leisure === 'fitness_station');
   $: pitchFeatures   = features.filter(f => f.properties.leisure === 'pitch');
-  $: benchCount   = features.filter(f => f.properties.amenity === 'bench').length;
-  $: shelterCount = features.filter(f => f.properties.amenity === 'shelter').length;
-  $: picnicCount  = features.filter(f => f.properties.leisure === 'picnic_table').length;
+  $: deviceCount  = countSource.filter(f => f.properties.playground && f.properties.playground !== 'yes' && f.properties.playground !== 'structure').length;
+  $: fitnessCount = countSource.filter(f => f.properties.leisure === 'fitness_station').length;
+  $: pitchCount   = countSource.filter(f => f.properties.leisure === 'pitch').length;
+  $: benchCount   = countSource.filter(f => f.properties.amenity === 'bench').length;
+  $: shelterCount = countSource.filter(f => f.properties.amenity === 'shelter').length;
+  $: picnicCount  = countSource.filter(f => f.properties.leisure === 'picnic_table').length;
 
   // Fallback: playground:<key>=<count|yes> on the polygon itself
   $: fallbackCounts = (() => {
@@ -44,13 +51,21 @@
     return `dev-${f.properties.osm_id ?? Math.random().toString(36).slice(2)}`;
   }
 
-  // Collect all panoramax UUIDs for a structure group (structure first, then children)
+  // Collect ALL panoramax UUIDs for a structure group (structure first, then
+  // children) — keep every `panoramax:N` key per feature, not just the first,
+  // and dedup across the group so a UUID copied to both parent and child
+  // doesn't render twice.
   function groupUuids({ structure, children }) {
     const uuids = [];
+    const seen = new Set();
     const push = props => {
       for (let i = 0; i <= 9; i++) {
         const key = i === 0 ? 'panoramax' : `panoramax:${i}`;
-        if (props[key]) { uuids.push(props[key]); break; }
+        const v = props[key];
+        if (v && !seen.has(v)) {
+          seen.add(v);
+          uuids.push(v);
+        }
       }
     };
     push(structure.properties);
@@ -70,13 +85,14 @@
     {@html $_('equipment.mapcompleteHint', { values: { link: '<a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a>' } })}
   </p>
 {:else}
-  <!-- Summary counts -->
+  <!-- Summary counts (count includes grouped children, so a structure with
+       3 swings shows "3 swings" rather than "0 swings + 1 structure group"). -->
   <ul class="summary-list">
-    {#if deviceFeatures.length}
-      <li>{$_('equipment.deviceCount', { values: { count: deviceFeatures.length } })}</li>
+    {#if deviceCount}
+      <li>{$_('equipment.deviceCount', { values: { count: deviceCount } })}</li>
     {/if}
-    {#if fitnessFeatures.length}
-      <li>{$_('equipment.fitnessCount', { values: { count: fitnessFeatures.length } })}</li>
+    {#if fitnessCount}
+      <li>{$_('equipment.fitnessCount', { values: { count: fitnessCount } })}</li>
     {/if}
     {#if benchCount}
       <li>{$_('equipment.benches', { values: { count: benchCount } })}</li>
@@ -93,32 +109,49 @@
   {#if groups.length}
     <ul class="mb-0 device-list">
       {#each groups as group (group.structure.properties.osm_id)}
-        {@const structKey = 'structure'}
-        {@const structName = group.structure.properties.name || $_('equipment.devices.structure', { default: objDevices[structKey]?.name_de ?? structKey })}
+        {@const structName = group.structure.properties.name || $_('equipment.devices.structure')}
         {@const structColor = objColors['structure_parts'] ?? objColors['fallback']}
         {@const groupId = `grp-${group.structure.properties.osm_id}`}
+        {@const detailId = `detail-${groupId}`}
         {@const uuids = groupUuids(group)}
         {@const structDetail = getEquipmentAttributesFromProps(group.structure.properties, $_)}
+        <!--
+          When the structure has no own panoramax photo and there are
+          aggregated photos from children, `structDetail.html` is the
+          wikipedia-fallback image (see equipmentAttributes.js: the fallback
+          is emitted only when there's neither attributes nor a photo). The
+          aggregated PanoramaxViewer above already covers the photo slot,
+          so we suppress that fallback to avoid a duplicate empty-state UI.
+          When the html starts with `<ul>` it's real attribute content; keep it.
+        -->
+        {@const showStructHtml = structDetail.html && (
+          structDetail.html.startsWith('<ul>') ||
+          (uuids.length === 0 && !structDetail.panoramaxUuid)
+        )}
         <li>
-          <button type="button" class="device-toggle" onclick={() => toggleItem(groupId)}>
+          <button
+            type="button"
+            class="device-toggle"
+            onclick={() => toggleItem(groupId)}
+            aria-expanded={openItems.has(groupId)}
+            aria-controls={detailId}
+          >
             <span style="color:{structColor}">●</span> {structName}
             <span class="group-badge">{$_('equipment.groupParts', { values: { count: group.children.length } })}</span>
-            <span class="bi {openItems.has(groupId) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
+            <span class="bi {openItems.has(groupId) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron" aria-hidden="true"></span>
           </button>
           {#if openItems.has(groupId)}
-            <div class="device-detail">
+            <div class="device-detail" id={detailId}>
               <PanoramaxViewer {uuids} mcUrl={structDetail.mcUrl} />
-              {#if structDetail.html}
+              {#if showStructHtml}
                 {@html structDetail.html}
               {/if}
               <ul class="group-children">
                 {#each group.children as child (child.properties.osm_id)}
                   {@const childKey = child.properties.playground}
                   {@const childName = childKey
-                    ? $_('equipment.devices.' + childKey, { default: objDevices[childKey]?.name_de ?? childKey })
-                    : child.properties.leisure === 'fitness_station'
-                      ? $_('equipment.fitnessDefault')
-                      : childKey ?? '?'}
+                    ? $_('equipment.devices.' + childKey, { default: childKey })
+                    : '?'}
                   {@const childCat = childKey ? (objDevices[childKey]?.category ?? 'fallback') : 'fallback'}
                   {@const childColor = objColors[childCat] ?? objColors['fallback']}
                   <li><span style="color:{childColor}">◦</span> {childName}</li>

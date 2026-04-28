@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "serve": "vite preview"
+    "serve": "vite preview",
+    "test:unit": "node src/lib/equipmentGrouping.test.js"
   },
   "dependencies": {
     "bootstrap": "^5.3.8",
