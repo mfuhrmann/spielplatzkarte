@@ -467,7 +467,8 @@
     "unknownObject": "Unbekanntes Objekt",
     "devicePhoto": "Foto dieses Geräts",
     "deviceSymbol": "Symbolbild",
-    "addPhoto": "Foto hinzufügen"
+    "addPhoto": "Foto hinzufügen",
+    "editInMapComplete": "In MapComplete bearbeiten"
   },
   "reviews": {
     "loading": "Wird geladen …",

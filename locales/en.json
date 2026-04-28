@@ -467,7 +467,8 @@
     "unknownObject": "Unknown object",
     "devicePhoto": "Photo of this device",
     "deviceSymbol": "Example image",
-    "addPhoto": "Add photo"
+    "addPhoto": "Add photo",
+    "editInMapComplete": "Edit in MapComplete"
   },
   "reviews": {
     "loading": "Loading …",

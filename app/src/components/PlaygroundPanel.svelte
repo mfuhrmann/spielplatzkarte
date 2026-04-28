@@ -11,7 +11,7 @@
   import { onMount, onDestroy } from 'svelte';
   import OpeningHours from 'opening_hours';
   import { transform } from 'ol/proj';
-  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Pencil, Clock, ExternalLink, Image, Package, Navigation, Star, Info } from 'lucide-svelte';
+  import { X, Share2, Check, ChevronDown, ChevronUp, ChevronRight, Clock, Image, Package, Navigation, Star, Info } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
 
   import { selection } from '../stores/selection.js';
@@ -22,6 +22,7 @@
   import { getPlaygroundTitle, getPlaygroundLocation } from '../lib/playgroundHelpers.js';
   import { cn } from '../lib/utils.js';
   import EquipmentList from './EquipmentList.svelte';
+  import MapCompleteLink from './MapCompleteLink.svelte';
   import POIPanel from './POIPanel.svelte';
   import PanoramaxViewer from './PanoramaxViewer.svelte';
   import ReviewsPanel from './ReviewsPanel.svelte';
@@ -554,6 +555,11 @@
         </div>
       {/if}
 
+      <!-- MapComplete edit link -->
+      <div class="mb-3">
+        <MapCompleteLink href={mcUrl} label={$_('popup.editInMapComplete')} />
+      </div>
+
       <!-- Accordion Sections -->
       <div class="border-t border-border">
         <!-- Photos -->
@@ -776,24 +782,6 @@
   .section-btn:hover {
     color: #374151;
     background: #fafafa;
-  }
-
-  .panel-edit-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: #9ca3af;
-    text-decoration: none;
-    margin-bottom: 1rem;
-    transition: color 0.15s;
-  }
-
-  .panel-edit-link:hover {
-    color: #374151;
   }
 
   .panel-icon-btn {

@@ -1,9 +1,14 @@
 <script>
   import { onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
+  import MapCompleteLink from './MapCompleteLink.svelte';
 
   /** @type {{ uuids?: string[], mcUrl?: string }} */
-  let { uuids = [], mcUrl = '' } = $props();
+  let { uuids: uuidsProp = [], mcUrl = '' } = $props();
+  // Defensive: a parent passing `uuids={null}` would bypass the destructure
+  // default (which only fires for undefined). The derived form keeps the
+  // rest of the component free of `uuids?.length` checks.
+  const uuids = $derived(uuidsProp ?? []);
 
   const thumbUrl  = uuid => `https://api.panoramax.xyz/api/pictures/${uuid}/thumb.jpg`;
   const viewerUrl = uuid => `https://api.panoramax.xyz/?pic=${uuid}&nav=none&focus=pic`;
@@ -55,9 +60,7 @@
   <div class="text-center py-2">
     <span class="bi bi-camera" style="font-size:1.8rem; color:#d1d5db;"></span>
     <p class="text-muted mt-1 mb-2" style="font-size:smaller;">{$_('panoramax.noPhotos')}</p>
-    <a href={mcUrl} target="_blank" rel="noopener" class="mc-add-link small">
-      <span class="bi bi-camera-fill"></span> {$_('popup.addPhoto')}
-    </a>
+    <MapCompleteLink href={mcUrl} label={$_('popup.addPhoto')} />
   </div>
 {:else}
   <!-- Inline viewer: selected photo as clickable iframe -->
@@ -92,9 +95,7 @@
   {/if}
 
   <p class="mt-1 mb-0">
-    <a href={mcUrl} target="_blank" rel="noopener" class="mc-add-link small">
-      <span class="bi bi-camera-fill"></span> {$_('popup.addPhoto')}
-    </a>
+    <MapCompleteLink href={mcUrl} label={$_('popup.addPhoto')} />
   </p>
 
 {/if}
@@ -241,6 +242,4 @@
   }
   .close-btn:hover { background: #f3f4f6; color: #111827; }
 
-  .mc-add-link { color: #6c757d; text-decoration: none; }
-  .mc-add-link:hover { color: #343a40; text-decoration: underline; }
 </style>
