@@ -50,7 +50,7 @@ export function attachTieredOrchestrator({
   let abort = null;
   let useLegacy = false; // sticky: once a tier RPC 404s, route to legacy for the rest of the session
 
-  async function orchestrate() {
+  async function orchestrate(filters = null) {
     const view = map.getView();
     const zoom = view.getZoom();
     const tier = useLegacy ? 'polygon' : tierForZoom(zoom);
@@ -68,7 +68,7 @@ export function attachTieredOrchestrator({
         if (signal.aborted) return;
         fillPolygonSource(polygonSource, geojson);
       } else if (tier === 'cluster') {
-        const buckets = await fetchPlaygroundClusters(Math.floor(zoom), extent3857, baseUrl, signal);
+        const buckets = await fetchPlaygroundClusters(Math.floor(zoom), extent3857, baseUrl, signal, filters);
         if (signal.aborted) return;
         fillClusterSource(clusterSource, buckets);
       } else {
@@ -100,10 +100,15 @@ export function attachTieredOrchestrator({
   // Initial load runs immediately, not debounced.
   orchestrate();
 
-  return () => {
-    debounced.cancel?.();
-    if (abort) abort.abort();
-    map.un('moveend', debounced);
+  return {
+    detach() {
+      debounced.cancel?.();
+      if (abort) abort.abort();
+      map.un('moveend', debounced);
+    },
+    rerun(filters = null) {
+      orchestrate(filters);
+    },
   };
 }
 
