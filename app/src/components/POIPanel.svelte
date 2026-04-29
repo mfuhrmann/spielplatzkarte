@@ -87,14 +87,25 @@
             {name}{#if hint}<span class="text-muted ms-1" style="font-size:0.7rem;">({hint})</span>{/if}
           </span>
           <span class="ms-2 text-nowrap">
-            <a href={geoUrl} class="text-muted text-decoration-none" style="font-size:smaller;"
-               title={$_('poi.openNavApp')}>{formatDistance(poi.dist)} ↗</a>
+            <a href={geoUrl} class="text-muted text-decoration-none link-mobile-only" style="font-size:smaller;"
+               title={$_('poi.openNavApp')}>{formatDistance(poi.dist)} 🧭</a>
             <a href={osmUrl} target="_blank" rel="noopener"
-               class="text-muted text-decoration-none ms-1" style="font-size:smaller;"
-               title={$_('poi.openInBrowser')}>🗺</a>
+               class="text-muted text-decoration-none ms-1 link-desktop-only" style="font-size:smaller;"
+               title={$_('poi.openInBrowser')}>{formatDistance(poi.dist)} 🧭</a>
           </span>
         </div>
       {/each}
     </div>
   {/each}
 {/if}
+
+<style>
+  /* geo: links open mobile nav apps (CoMaps, GMaps app) — hide on desktop */
+  .link-mobile-only  { display: inline; }
+  .link-desktop-only { display: none;   }
+
+  @media (min-width: 1024px) {
+    .link-mobile-only  { display: none;   }
+    .link-desktop-only { display: inline; }
+  }
+</style>

@@ -64,14 +64,17 @@
     "backToMap": "Back to map"
   },
   "completeness": {
-    "complete": "Photos, name & details available",
-    "partial": "Partially mapped",
-    "missing": "No data yet",
+    "legendTitle": "Data Quality",
+    "complete": "high",
+    "partial": "medium",
+    "missing": "low",
     "dotComplete": "Data complete",
     "dotPartial": "Partially mapped",
     "dotMissing": "No data",
-    "badgeComplete": "Complete",
-    "restrictedHint": "hatched = not public"
+    "badgeComplete": "Data Quality",
+    "badgePartial": "Data Quality",
+    "badgeMissing": "Data Quality",
+    "restrictedHint": "not public"
   },
   "accordion": {
     "photos": "Photos",

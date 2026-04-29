@@ -278,8 +278,8 @@
   };
   const COMPLETENESS_KEY = {
     complete: 'completeness.badgeComplete',
-    partial:  'completeness.partial',
-    missing:  'completeness.dotMissing',
+    partial:  'completeness.badgePartial',
+    missing:  'completeness.badgeMissing',
   };
   $: completenessLevel = attr ? playgroundCompleteness(attr) : null;
   $: completeness = completenessLevel
@@ -876,17 +876,17 @@
   }
 
   .status-pill {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 6px 10px;
-    border-radius: 8px;
+    padding: 3px 10px;
+    border-radius: 9999px;
     font-size: 12px;
-    font-weight: 500;
-    flex: 1;
+    font-weight: 600;
+    white-space: nowrap;
   }
-  .status-pill--open   { background: #ecfdf5; color: #065f46; }
-  .status-pill--closed { background: #fef2f2; color: #b91c1c; }
+  .status-pill--open   { background: #ecfdf5; border: 1px solid rgba(16, 185, 129, 0.4); color: #065f46; }
+  .status-pill--closed { background: #fef2f2; border: 1px solid rgba(239, 68, 68, 0.4);  color: #b91c1c; }
 
   .status-dot {
     width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;

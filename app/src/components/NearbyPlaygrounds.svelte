@@ -27,6 +27,7 @@
   let items = [];
   let loading = true;
   const geojsonFormat = new GeoJSON();
+  let selectAbort = null; // cancels any in-flight hydration when a new suggestion is tapped
 
   $: if (lat != null && lon != null) {
     load(lat, lon);
@@ -62,6 +63,10 @@
   }
 
   async function selectSuggestion(item) {
+    if (selectAbort) selectAbort.abort();
+    selectAbort = new AbortController();
+    const { signal } = selectAbort;
+
     const source = $playgroundSourceStore;
     let feature = source?.getFeatures().find(f => f.get('osm_id') === item.osm_id);
     const backendUrl = item._backendUrl ?? defaultBackendUrl;
@@ -73,7 +78,8 @@
     // feature in-source) route to the right backend in hub mode.
     if (!feature && source) {
       try {
-        const json = await fetchPlaygroundByOsmId(item.osm_id, backendUrl);
+        const json = await fetchPlaygroundByOsmId(item.osm_id, backendUrl, signal);
+        if (signal.aborted) return;
         if (json) {
           const olFeatures = geojsonFormat.readFeatures(
             { type: 'FeatureCollection', features: [json] },
@@ -84,10 +90,12 @@
           feature = olFeatures[0];
         }
       } catch (err) {
+        if (err.name === 'AbortError') return;
         console.warn('[nearby] hydration failed:', err);
       }
     }
 
+    if (signal.aborted) return;
     if (feature) {
       selection.select(feature, feature.get('_backendUrl') ?? backendUrl);
     }
@@ -103,7 +111,7 @@
     <div class="nearby-loading">{$_('nearby.empty')}</div>
   {:else}
     <ul class="nearby-list">
-      {#each items as item}
+      {#each items.slice(0, 5) as item}
         <li>
           <button class="nearby-item" onclick={() => selectSuggestion(item)}>
             <span class="dot {completenessClass(item.tags)}"></span>
