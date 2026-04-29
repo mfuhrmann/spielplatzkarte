@@ -411,13 +411,13 @@
           ondismiss={dismissNearby}
         />
       {/if}
-      {#if !$hasSelection}
+      {#if !isMobile && !$hasSelection}
         <CompletenessLegend />
       {/if}
     </div>
 
+    <!-- On mobile: pencil (info) on top, filter below — avoids clashing with search bar -->
     <div class="controls-top-right">
-      <FilterPanel />
       <button
         class="control-btn"
         onclick={() => dataModalOpen = true}
@@ -426,6 +426,7 @@
       >
         <Pencil class="h-5 w-5" />
       </button>
+      <FilterPanel />
     </div>
 
     <div class="controls-bottom-right">
@@ -449,6 +450,12 @@
         </button>
       </div>
     </div>
+
+    {#if isMobile && !$hasSelection}
+      <div class="legend-mobile">
+        <CompletenessLegend />
+      </div>
+    {/if}
 
     {#if instancePanel}
       <div class="instance-slot">
@@ -680,17 +687,29 @@
     .search-area {
       top: 0.75rem;
       left: 0.75rem;
-      right: 0.75rem;
+      /* Leave room for the stacked top-right buttons (40px wide + gaps). */
+      right: calc(0.75rem + 40px + 0.5rem);
     }
 
     .controls-top-right {
       top: 0.75rem;
       right: 0.75rem;
+      /* Stack vertically on mobile so they don't overlap the search bar. */
+      flex-direction: column;
     }
 
     .controls-bottom-right {
       bottom: 10rem;
       right: 0.75rem;
+    }
+
+    /* Legend moved out of the search column on mobile — sits below the
+       bottom-right control cluster, aligned to the same right edge. */
+    .legend-mobile {
+      position: absolute;
+      bottom: 2rem;
+      right: 0.75rem;
+      z-index: 100;
     }
   }
 

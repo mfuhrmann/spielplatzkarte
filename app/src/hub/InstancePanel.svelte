@@ -116,11 +116,13 @@
       </span>
     {:else}
       <Globe class="pill__icon" aria-hidden="true" />
-      <span class="pill__text">
+      <!-- Full label on desktop, count-only on mobile to save space -->
+      <span class="pill__text pill__text--full">
         {$_('hub.regionCount', { values: { count: regionCount } })}
         <span class="pill__sep">·</span>
         {$_('hub.playgroundCount', { values: { count: playgroundCount } })}
       </span>
+      <span class="pill__text pill__text--compact" aria-hidden="true">{playgroundCount}</span>
     {/if}
   </button>
 </div>
@@ -188,5 +190,18 @@
 
   .pill__sep {
     color: #adb5bd;
+  }
+
+  .pill__text--compact {
+    display: none;
+  }
+
+  @media (max-width: 1023px) {
+    .pill__text--full {
+      display: none;
+    }
+    .pill__text--compact {
+      display: inline;
+    }
   }
 </style>

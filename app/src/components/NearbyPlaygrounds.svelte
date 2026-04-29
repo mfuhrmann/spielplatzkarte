@@ -1,7 +1,9 @@
 <script>
   import GeoJSON from 'ol/format/GeoJSON.js';
+  import { get } from 'svelte/store';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { selection } from '../stores/selection.js';
+  import { mapStore } from '../stores/map.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
   import { fetchPlaygroundByOsmId } from '../lib/api.js';
   import { _ } from 'svelte-i18n';
@@ -90,6 +92,18 @@
 
     if (feature) {
       selection.select(feature, feature.get('_backendUrl') ?? backendUrl);
+      const map = get(mapStore);
+      if (map) {
+        const geom = feature.getGeometry();
+        if (geom) {
+          const isMobile = window.innerWidth < 1024;
+          map.getView().fit(geom.getExtent(), {
+            padding: isMobile ? [100, 20, 250, 20] : [40, 40, 40, 420],
+            maxZoom: 19,
+            duration: 400,
+          });
+        }
+      }
     }
     if (ondismiss) ondismiss();
   }
@@ -103,7 +117,7 @@
     <div class="nearby-loading">{$_('nearby.empty')}</div>
   {:else}
     <ul class="nearby-list">
-      {#each items as item}
+      {#each items.slice(0, 5) as item}
         <li>
           <button class="nearby-item" onclick={() => selectSuggestion(item)}>
             <span class="dot {completenessClass(item.tags)}"></span>

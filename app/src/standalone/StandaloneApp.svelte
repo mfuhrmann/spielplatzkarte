@@ -24,6 +24,8 @@
   import { debounce } from '../lib/utils.js';
   import { mapStore } from '../stores/map.js';
   import { filterStore } from '../stores/filters.js';
+  import { activeTierStore } from '../stores/tier.js';
+  import { selection } from '../stores/selection.js';
 
   // Standalone owns two VectorSources — one per tier. The orchestrator
   // populates the active one on every debounced moveend; Map.svelte toggles
@@ -31,6 +33,13 @@
   const playgroundSource = new VectorSource(); // polygon tier (zoom > clusterMaxZoom)
   const clusterSource    = new VectorSource(); // cluster tier (zoom ≤ clusterMaxZoom)
   let detachOrchestrator = null;
+
+  // Deselect the playground when the user zooms out past the cluster threshold.
+  let prevTier = null;
+  const detachTierDeselect = activeTierStore.subscribe(tier => {
+    if (prevTier === 'polygon' && tier === 'cluster') selection.clear();
+    prevTier = tier;
+  });
 
   // Standalone pitches (leisure=pitch outside any playground) — own layer,
   // attached to the map when it becomes available and refreshed on moveend.
@@ -179,6 +188,7 @@
   $: if (pitchLayer) pitchLayer.setVisible($filterStore.standalonePitches);
 
   onDestroy(() => {
+    detachTierDeselect();
     if (detachMapSub)      detachMapSub();
     if (detachPitchLayer)  detachPitchLayer();
     if (detachOrchestrator) detachOrchestrator();
