@@ -74,7 +74,7 @@
     "badgeComplete": "Data Quality",
     "badgePartial": "Data Quality",
     "badgeMissing": "Data Quality",
-    "restrictedHint": "hatched = not public"
+    "restrictedHint": "not public"
   },
   "accordion": {
     "photos": "Photos",

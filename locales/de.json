@@ -74,7 +74,7 @@
     "badgeComplete": "Datenqualität",
     "badgePartial": "Datenqualität",
     "badgeMissing": "Datenqualität",
-    "restrictedHint": "schraffiert = nicht öffentlich"
+    "restrictedHint": "nicht öffentlich"
   },
   "accordion": {
     "photos": "Bilder",
