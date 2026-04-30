@@ -8,11 +8,11 @@ One region, one database. `APP_MODE=standalone` (the default).
                   ┌─────────────────────────────────────────────────────┐
                   │                   Production                        │
                   │                                                     │
-  Browser ──────► nginx ──────► PostgREST ──────► PostgreSQL/PostGIS   │
-  (your phone      (serves        (turns SQL          (holds all the    │
-   or laptop)      the app,       functions into      OSM playground    │
-                   proxies API    HTTP endpoints)     data)             │
-                   requests)                                            │
+  Browser ──────► | nginx ──────► PostgREST ──────► PostgreSQL/PostGIS  │
+  (your phone     | (serves        (turns SQL          (holds all the   │
+   or laptop)     | the app,       functions into      OSM playground   │
+                  | proxies API    HTTP endpoints)     data)            │
+                  | requests)                                           │
                   └─────────────────────────────────────────────────────┘
 ```
 
