@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://mfuhrmann.github.io/spieli/contributing/add-sport-type/">
+        <link rel="canonical" href="https://mfuhrmann.github.io/spieli/contributing/translation-guide/">
       
       
-        <link rel="prev" href="../add-device/">
+        <link rel="prev" href="../translations/">
       
       
-        <link rel="next" href="../translations/">
+        <link rel="next" href="../../reference/architecture/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>Add a Sport Pitch Type - spieli</title>
+        <title>Translation Guide - spieli</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#add-a-sport-pitch-type" class="md-skip">
+        <a href="#translating-spieli" class="md-skip">
           Skip to content
         </a>
       
@@ -108,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Add a Sport Pitch Type
+              Translation Guide
             
           </span>
         </div>
@@ -674,30 +674,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Add a Sport Pitch Type
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../add-sport-type/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -706,71 +686,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#step-1-find-the-osm-tag-value" class="md-nav__link">
-    <span class="md-ellipsis">
-      Step 1 — Find the OSM tag value
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-2-add-the-translation-keys" class="md-nav__link">
-    <span class="md-ellipsis">
-      Step 2 — Add the translation keys
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-3-handle-multi-value-sport-tags-no-extra-work-needed" class="md-nav__link">
-    <span class="md-ellipsis">
-      Step 3 — Handle multi-value sport tags (no extra work needed)
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-4-verify-locally" class="md-nav__link">
-    <span class="md-ellipsis">
-      Step 4 — Verify locally
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-5-commit-and-open-a-pr" class="md-nav__link">
-    <span class="md-ellipsis">
-      Step 5 — Commit and open a PR
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -801,10 +716,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../translation-guide/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Translation Guide
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -813,6 +748,89 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-spieli" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is spieli?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-translate" class="md-nav__link">
+    <span class="md-ellipsis">
+      How to translate
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-to-translate" class="md-nav__link">
+    <span class="md-ellipsis">
+      What to translate
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plural-forms" class="md-nav__link">
+    <span class="md-ellipsis">
+      Plural forms
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#things-to-keep-as-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      Things to keep as-is
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-does-my-translation-go-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      When does my translation go live?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Questions?
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1093,45 +1111,63 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#step-1-find-the-osm-tag-value" class="md-nav__link">
+  <a href="#what-is-spieli" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 1 — Find the OSM tag value
+      What is spieli?
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2-add-the-translation-keys" class="md-nav__link">
+  <a href="#how-to-translate" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 2 — Add the translation keys
+      How to translate
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-3-handle-multi-value-sport-tags-no-extra-work-needed" class="md-nav__link">
+  <a href="#what-to-translate" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 3 — Handle multi-value sport tags (no extra work needed)
+      What to translate
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-4-verify-locally" class="md-nav__link">
+  <a href="#plural-forms" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 4 — Verify locally
+      Plural forms
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-5-commit-and-open-a-pr" class="md-nav__link">
+  <a href="#things-to-keep-as-is" class="md-nav__link">
     <span class="md-ellipsis">
-      Step 5 — Commit and open a PR
+      Things to keep as-is
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-does-my-translation-go-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      When does my translation go live?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Questions?
     </span>
   </a>
   
@@ -1152,7 +1188,7 @@
                   
 
   
-    <a href="https://github.com/mfuhrmann/spieli/edit/main/docs/contributing/add-sport-type.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/mfuhrmann/spieli/edit/main/docs/contributing/translation-guide.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1160,55 +1196,62 @@
   
 
 
-<h1 id="add-a-sport-pitch-type">Add a Sport Pitch Type<a class="headerlink" href="#add-a-sport-pitch-type" title="Permanent link">&para;</a></h1>
-<p>Playground maps often include sports pitches — football fields, basketball courts, skate parks, BMX tracks, and many more. Each pitch type is identified by the OSM <code>sport</code> tag on a <code>leisure=pitch</code> feature. Adding a new sport type means adding translations to both locale files so the equipment list renders a readable label instead of the raw OSM tag value.</p>
-<h2 id="step-1-find-the-osm-tag-value">Step 1 — Find the OSM tag value<a class="headerlink" href="#step-1-find-the-osm-tag-value" title="Permanent link">&para;</a></h2>
-<p>OSM uses the tag <code>sport=&lt;value&gt;</code> on <code>leisure=pitch</code> features. The full list of documented values is at:</p>
+<h1 id="translating-spieli">Translating spieli<a class="headerlink" href="#translating-spieli" title="Permanent link">&para;</a></h1>
+<p>Thanks for helping translate spieli! This guide explains everything you need to know.</p>
+<h2 id="what-is-spieli">What is spieli?<a class="headerlink" href="#what-is-spieli" title="Permanent link">&para;</a></h2>
+<p>spieli is a free, interactive playground map based on OpenStreetMap data.
+Your translation makes it accessible to communities in your language.</p>
+<h2 id="how-to-translate">How to translate<a class="headerlink" href="#how-to-translate" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Create a free account on <a href="https://hosted.weblate.org">hosted.weblate.org</a></li>
+<li>Open the <strong>spieli</strong> project and pick your language</li>
+<li>Click any untranslated string and type your translation</li>
+<li>Save — that's it. No GitHub account needed.</li>
+</ol>
+<h2 id="what-to-translate">What to translate<a class="headerlink" href="#what-to-translate" title="Permanent link">&para;</a></h2>
+<p>Most strings are short UI labels like buttons, tooltips, and status messages:</p>
+<table>
+<thead>
+<tr>
+<th>English</th>
+<th>Example translation (DE)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Show my location</code></td>
+<td><code>Meinen Standort anzeigen</code></td>
+</tr>
+<tr>
+<td><code>Filter</code></td>
+<td><code>Filter</code></td>
+</tr>
+<tr>
+<td><code>Reset all</code></td>
+<td><code>Alle zurücksetzen</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="plural-forms">Plural forms<a class="headerlink" href="#plural-forms" title="Permanent link">&para;</a></h2>
+<p>Some strings contain a count, like:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>{count, plural, one {# bench} other {# benches}}
+</code></pre></div>
+<p>Keep the <code>{count, plural, ...}</code> wrapper and translate only the text inside:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>{count, plural, one {# Sitzbank} other {# Sitzbänke}}
+</code></pre></div>
+<p>If your language has more than two plural forms (e.g. Polish, Czech),
+Weblate will show you the correct number of fields automatically.</p>
+<h2 id="things-to-keep-as-is">Things to keep as-is<a class="headerlink" href="#things-to-keep-as-is" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="https://wiki.openstreetmap.org/wiki/Key:sport">wiki.openstreetmap.org/wiki/Key:sport</a></li>
-<li><a href="https://wiki.openstreetmap.org/wiki/Tag:leisure%3Dpitch">wiki.openstreetmap.org/wiki/Tag:leisure%3Dpitch</a></li>
+<li>Placeholders like <code>{regionName}</code>, <code>{count}</code>, <code>{name}</code> — do not translate these</li>
+<li>The <code>{count, plural, one {...} other {...}}</code> structure — only translate the text inside the <code>{}</code></li>
 </ul>
-<p>For example, a roller hockey rink uses <code>sport=roller_hockey</code>.</p>
-<div class="admonition tip">
-<p class="admonition-title">Finding pitches with a specific sport in OSM</p>
-<p>Use <a href="https://overpass-turbo.eu">Overpass Turbo</a> — search for <code>leisure=pitch</code> + <code>sport=roller_hockey</code> (replace with your value) to confirm the tag is used in the wild.</p>
-</div>
-<h2 id="step-2-add-the-translation-keys">Step 2 — Add the translation keys<a class="headerlink" href="#step-2-add-the-translation-keys" title="Permanent link">&para;</a></h2>
-<p>Open <code>locales/en.json</code> and add a new entry under <code>equipment.pitches</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">&quot;pitches&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;soccer&quot;</span><span class="p">:</span><span class="w">        </span><span class="s2">&quot;Football pitch&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;basketball&quot;</span><span class="p">:</span><span class="w">    </span><span class="s2">&quot;Basketball court&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="err">...</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">&quot;roller_hockey&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Roller hockey rink&quot;</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">}</span>
-</code></pre></div>
-<p>The key must exactly match the OSM <code>sport</code> tag value (case-sensitive, underscores preserved).</p>
-<p>Then open <code>locales/de.json</code> and add the German translation at the same path:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">&quot;pitches&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;soccer&quot;</span><span class="p">:</span><span class="w">        </span><span class="s2">&quot;Bolzplatz&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;basketball&quot;</span><span class="p">:</span><span class="w">    </span><span class="s2">&quot;Basketballfeld&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="err">...</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">&quot;roller_hockey&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Rollhockeyfeld&quot;</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">}</span>
-</code></pre></div>
-<p>Both files must be updated — a key present in one but missing in the other will fall back to the raw OSM value in the missing language.</p>
-<h2 id="step-3-handle-multi-value-sport-tags-no-extra-work-needed">Step 3 — Handle multi-value sport tags (no extra work needed)<a class="headerlink" href="#step-3-handle-multi-value-sport-tags-no-extra-work-needed" title="Permanent link">&para;</a></h2>
-<p>OSM allows semicolon-separated multi-values on <code>sport</code> (e.g. <code>sport=cycling;bmx</code>). The equipment list automatically splits on <code>;</code>, translates each part using the keys above, and joins them with <code>/</code>. Unknown values fall back to the raw OSM string. You only need to add the individual keys — no extra code changes are required.</p>
-<h2 id="step-4-verify-locally">Step 4 — Verify locally<a class="headerlink" href="#step-4-verify-locally" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>make<span class="w"> </span>dev
-</code></pre></div>
-<p>Open the app at <code>http://localhost:5173</code>, navigate to a playground that contains a pitch with your sport tag, and check the equipment list. The pitch should show your translated label instead of the raw tag value.</p>
-<div class="admonition tip">
-<p class="admonition-title">Finding a playground with a specific pitch</p>
-<p>Use <a href="https://overpass-turbo.eu">Overpass Turbo</a> to locate an OSM node or way with <code>leisure=pitch</code> and <code>sport=&lt;your_value&gt;</code>, note its coordinates, and navigate there in the app.</p>
-</div>
-<h2 id="step-5-commit-and-open-a-pr">Step 5 — Commit and open a PR<a class="headerlink" href="#step-5-commit-and-open-a-pr" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>feat/add-roller-hockey-sport
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>git<span class="w"> </span>add<span class="w"> </span>locales/en.json<span class="w"> </span>locales/de.json
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat(i18n): add roller_hockey sport pitch translation&quot;</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span>feat/add-roller-hockey-sport
-</code></pre></div>
-<p>Then open a pull request on GitHub. See <a href="https://github.com/mfuhrmann/spieli/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a> for the full PR walkthrough.</p>
+<h2 id="when-does-my-translation-go-live">When does my translation go live?<a class="headerlink" href="#when-does-my-translation-go-live" title="Permanent link">&para;</a></h2>
+<p>A language appears in the app once it reaches <strong>80% completion</strong>.
+Until then your work is saved and visible to other translators.</p>
+<h2 id="questions">Questions?<a class="headerlink" href="#questions" title="Permanent link">&para;</a></h2>
+<p>Open an issue at <a href="https://github.com/mfuhrmann/spieli">github.com/mfuhrmann/spieli</a>
+or leave a comment directly in Weblate.</p>
 
 
 
