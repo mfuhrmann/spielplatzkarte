@@ -41,7 +41,7 @@
     },
     {
       icon: '🏥', label: $_('poi.categories.emergency'),
-      match: f => f.emergency === 'yes' || f['healthcare:speciality'] === 'emergency',
+      match: f => (f.emergency === 'yes' && ['hospital', 'clinic', 'doctors'].includes(f.amenity)) || f['healthcare:speciality'] === 'emergency',
       fallback: $_('poi.fallbacks.emergency'),
     },
   ];
