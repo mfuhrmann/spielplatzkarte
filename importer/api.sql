@@ -875,7 +875,7 @@ AS $$
       AND (
         p.amenity IN ('toilets', 'ice_cream')
         OR (p.amenity IN ('cafe', 'restaurant') AND p.tags->'cuisine' ~* 'ice_cream')
-        OR (p.tags->'emergency' = 'yes'         AND p.tags->'emergency' != 'fire_hydrant')
+        OR (p.tags->'emergency' = 'yes'         AND p.amenity IN ('hospital', 'clinic', 'doctors'))
         OR p.tags->'healthcare:speciality' = 'emergency'
         OR p.highway = 'bus_stop'
         OR p.shop IN ('chemist', 'supermarket', 'convenience')
