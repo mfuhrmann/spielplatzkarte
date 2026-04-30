@@ -535,6 +535,39 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#joining-an-existing-hub" class="md-nav__link">
+    <span class="md-ellipsis">
+      Joining an existing Hub
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Joining an existing Hub">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backend-operator-you" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backend operator (you)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hub-operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hub operator
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1155,6 +1188,39 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#joining-an-existing-hub" class="md-nav__link">
+    <span class="md-ellipsis">
+      Joining an existing Hub
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Joining an existing Hub">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backend-operator-you" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backend operator (you)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hub-operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hub operator
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1254,6 +1320,48 @@
 <li><a href="../../ops/configuration/">Configuration reference</a> — all available environment variables</li>
 <li><a href="../../ops/troubleshooting/">Troubleshooting</a> — common problems and fixes</li>
 </ul>
+<hr />
+<h2 id="joining-an-existing-hub">Joining an existing Hub<a class="headerlink" href="#joining-an-existing-hub" title="Permanent link">&para;</a></h2>
+<p>If someone is running a spieli Hub and you want your region to appear on it, you need to stand up a data-node and send them your API URL. The hub operator then adds you to their <code>registry.json</code>.</p>
+<h3 id="backend-operator-you">Backend operator (you)<a class="headerlink" href="#backend-operator-you" title="Permanent link">&para;</a></h3>
+<p><strong>1. Run the installer</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh<span class="w"> </span>-o<span class="w"> </span>install.sh
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>bash<span class="w"> </span>install.sh
+</code></pre></div>
+<p>When prompted for deployment mode, choose:</p>
+<ul>
+<li><strong><code>data-node-ui</code></strong> — easiest path; nginx is included and adds CORS headers automatically.</li>
+<li><strong><code>data-node</code></strong> — db + PostgREST only, no nginx. Choose this if you run your own reverse proxy and will add CORS headers yourself.</li>
+</ul>
+<p>Enter your OSM relation ID and Geofabrik PBF URL when asked, and run the import.</p>
+<p><strong>2. Expose <code>/api/</code> over HTTPS</strong></p>
+<p>Put an HTTPS-terminating reverse proxy (nginx, Caddy, Traefik, …) in front of your stack. The Hub's browser clients fetch your <code>/api/</code> cross-origin, so HTTPS and CORS are both required.</p>
+<ul>
+<li>With <code>data-node-ui</code>: CORS is already configured in the shipped nginx — nothing extra to do.</li>
+<li>With <code>data-node</code>: add <code>Access-Control-Allow-Origin: *</code> (and <code>Access-Control-Allow-Methods</code>, <code>Access-Control-Allow-Headers</code>) to your proxy's <code>/api/</code> location block.</li>
+</ul>
+<p><strong>3. Verify</strong></p>
+<p>From a different machine:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>curl<span class="w"> </span>-i<span class="w"> </span>https://your-city.example.com/api/rpc/get_meta
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># expect: 200 OK, JSON body, and Access-Control-Allow-Origin: * in the response headers</span>
+</code></pre></div>
+<p><strong>4. Send the hub operator your API URL</strong>: <code>https://your-city.example.com/api</code></p>
+<hr />
+<h3 id="hub-operator">Hub operator<a class="headerlink" href="#hub-operator" title="Permanent link">&para;</a></h3>
+<p>Add the new backend to <code>registry.json</code> (the file your Hub serves at <code>/registry.json</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;instances&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;slug&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;existing-region&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://existing.example.com/api&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Existing Region&quot;</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;slug&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;new-city&quot;</span><span class="p">,</span><span class="w">        </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://your-city.example.com/api&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;New City&quot;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="p">}</span>
+</code></pre></div>
+<p>The Hub re-reads <code>registry.json</code> every 5 minutes — no restart needed.</p>
+<div class="admonition tip">
+<p class="admonition-title">Choosing a slug</p>
+<p>The <code>slug</code> is optional but recommended — it makes deep-links shareable and stable (e.g. <code>https://hub.example.com/#new-city/W123456</code>). Use lowercase ASCII letters, digits, and hyphens only.</p>
+</div>
+<p>For the full federation walkthrough including topology diagrams and verification steps, see <a href="../../ops/federated-deployment/">Federated Deployment</a>.</p>
 
 
 
