@@ -1,135 +1,148 @@
 {
-  "appTitle": "Parques infantiles – {{regionName}}",
-  "search": {
-    "placeholder": "Buscar …",
-    "found": "\"{{query}}\" en {{location}}",
-    "foundGeneric": "\"{{query}}\" encontrado",
-    "notFound": "¡No se encontraron resultados!",
-    "ariaLabel": "Location search",
-    "clearLabel": "Clear search"
-  },
-  "nav": {
-    "addData": "Contribuir",
-    "about": "Acerca de",
-    "menu": "Menú"
-  },
-  "info": {
-    "hint": "Toca un parque para ver detalles",
-    "shareBtn": "Compartir parque",
-    "osmBtn": "Ver en OpenStreetMap",
-    "closeBtn": "Cerrar",
-    "backToMap": "Volver al mapa"
-  },
-  "completeness": {
-    "complete": "Fotos, nombre y detalles disponibles",
-    "partial": "Parcialmente mapeado",
-    "missing": "Sin datos aún"
-  },
-  "accordion": {
-    "photos": "Fotos",
-    "equipment": "Equipamiento",
-    "shadow": "Sombra",
-    "surroundings": "Entorno",
-    "reviews": "Reseñas",
-    "completeness": "Completitud de datos"
-  },
-  "location": {
-    "btn": "Mi ubicación",
-    "yourLocation": "tu ubicación",
-    "am": "near {name}",
-    "anDer": "near {name}",
-    "near": "near {name}"
-  },
-  "nearby": {
-    "title": "Cerca de {{label}}",
-    "defaultName": "Parque infantil",
-    "thisLocation": "esta ubicación"
-  },
-  "equipment": {
-    "fitnessDefault": "Aparato de fitness",
-    "addHint": "Equipos aún no mapeados individualmente – ¡ayuda! 👇",
-    "addLink": "Añadir equipo",
-    "mapcompleteHint": "Help map equipment on {link}."
-  },
-  "photos": {
-    "none": "Aún no hay fotos de este parque.<br>¿Has estado allí?",
-    "addLink": "Añadir foto",
-    "enlarge": "Clic para ampliar",
-    "thumbnail": "Foto {{n}}"
-  },
-  "poi": {
-    "errorLoad": "No se pudieron cargar los datos del entorno.",
-    "alwaysOpen": "Siempre abierto",
-    "open": "Abierto",
-    "openUntil": "Abierto hasta {{time}}",
-    "closed": "Cerrado",
-    "opensAt": "Abre {{day}} a las {{time}}",
-    "openingHours": "Horario",
-    "today": "Hoy",
-    "tomorrow": "Mañana",
-    "categories": {
-      "toilets": "Aseos",
-      "busStops": "Paradas de autobús",
-      "iceCream": "Helados",
-      "shopping": "Compras",
-      "drugstore": "Droguерía",
-      "emergency": "Urgencias"
+    "appTitle": "Parques infantiles – {{regionName}}",
+    "search": {
+        "placeholder": "Buscar …",
+        "found": "\"{{query}}\" en {{location}}",
+        "foundGeneric": "\"{{query}}\" encontrado",
+        "notFound": "¡No se encontraron resultados!",
+        "ariaLabel": "Location search",
+        "clearLabel": "Clear search"
     },
-    "fallbacks": {
-      "toilets": "Aseo público",
-      "busStops": "Parada de autobús",
-      "iceCream": "Heladería",
-      "shopping": "Tienda",
-      "drugstore": "Droguерía",
-      "emergency": "Hospital"
-    }
-  },
-  "modal": {
-    "closeBtn": "Cerrar",
-    "backToMap": "Volver al mapa",
-    "streetPhoto": "Foto de calle",
-    "prevPhoto": "Foto anterior",
-    "nextPhoto": "Foto siguiente",
-    "addData": {
-      "osm": {
-        "label": "OpenStreetMap",
-        "text": "Los datos provienen de {{osmLink}} — un mapa mundial libre y colaborativo creado por millones de voluntarios. Solo lo que ha sido mapeado aparece aquí.",
-        "wikiUrl": "https://es.wikipedia.org/wiki/OpenStreetMap"
-      },
-      "contribute": {
-        "label": "Contribuir a los parques",
-        "text": "Cualquiera puede contribuir. Un buen punto de partida es {{learnOsmLink}}. Las etiquetas relevantes están documentadas en el {{wikiLink}} y en la página sobre {{equipmentLink}}.",
-        "learnOsmUrl": "https://learnosm.org/es/beginner/",
-        "wikiLabel": "wiki de OSM",
-        "equipmentLabel": "el mapeo de equipos individuales"
-      },
-      "photos": {
-        "label": "Añadir fotos",
-        "text": "Las fotos se pueden subir directamente a través de {{mapcompleteLink}} — abre un parque y haz clic en \"Añadir foto\". Las fotos son proporcionadas por {{panoramaxLink}}."
-      },
-      "community": {
-        "label": "Comunidad",
-        "text": "¿Preguntas o quieres participar? La comunidad OSM local se puede contactar a través de {{chatLink}}.",
-        "chatLabel": "chat de la comunidad OSM local"
-      }
+    "nav": {
+        "addData": "Contribuir",
+        "about": "Acerca de",
+        "menu": "Menú"
     },
-    "about": {
-      "history": {
-        "label": "Historia",
-        "text": "El mapa de parques fue creado por {{authorLink}} como proyecto final de un {{courseLink}} — originalmente centrado en Berlín. Con el tiempo se desarrolló en un mapa genérico utilizable para cualquier región OSM.",
-        "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
-        "courseLabel": "curso de SIG y cartografía web"
-      },
-      "project": {
-        "label": "El proyecto",
-        "text": "El mapa de parques es un mapa web libre e interactivo basado en datos de {{osmLink}}. No contiene datos propietarios, no requiere inicio de sesión y no rastrea usuarios. Quien mejora los datos en OSM mejora automáticamente este mapa.",
-        "osmWikiUrl": "https://es.wikipedia.org/wiki/OpenStreetMap"
-      },
-      "source": {
-        "label": "Código fuente",
-        "text": "El proyecto es de código abierto y {{repoLink}}.",
-        "repoLabel": "disponible públicamente"
-      }
+    "info": {
+        "hint": "Toca un parque para ver detalles",
+        "shareBtn": "Compartir parque",
+        "osmBtn": "Ver en OpenStreetMap",
+        "closeBtn": "Cerrar",
+        "backToMap": "Volver al mapa"
+    },
+    "completeness": {
+        "complete": "Fotos, nombre y detalles disponibles",
+        "partial": "Parcialmente mapeado",
+        "missing": "Sin datos aún"
+    },
+    "accordion": {
+        "photos": "Fotos",
+        "equipment": "Equipamiento",
+        "shadow": "Sombra",
+        "surroundings": "Entorno",
+        "reviews": "Reseñas",
+        "completeness": "Completitud de datos"
+    },
+    "location": {
+        "btn": "Mi ubicación",
+        "yourLocation": "tu ubicación",
+        "am": "near {name}",
+        "anDer": "near {name}",
+        "near": "near {name}"
+    },
+    "nearby": {
+        "title": "Cerca de {{label}}",
+        "defaultName": "Parque infantil",
+        "thisLocation": "esta ubicación"
+    },
+    "equipment": {
+        "fitnessDefault": "Aparato de fitness",
+        "addHint": "Equipos aún no mapeados individualmente – ¡ayuda! 👇",
+        "addLink": "Añadir equipo",
+        "mapcompleteHint": "Help map equipment on {link}."
+    },
+    "photos": {
+        "none": "Aún no hay fotos de este parque.<br>¿Has estado allí?",
+        "addLink": "Añadir foto",
+        "enlarge": "Clic para ampliar",
+        "thumbnail": "Foto {{n}}"
+    },
+    "poi": {
+        "errorLoad": "No se pudieron cargar los datos del entorno.",
+        "alwaysOpen": "Siempre abierto",
+        "open": "Abierto",
+        "openUntil": "Abierto hasta {{time}}",
+        "closed": "Cerrado",
+        "opensAt": "Abre {{day}} a las {{time}}",
+        "openingHours": "Horario",
+        "today": "Hoy",
+        "tomorrow": "Mañana",
+        "categories": {
+            "toilets": "Aseos",
+            "busStops": "Paradas de autobús",
+            "iceCream": "Helados",
+            "shopping": "Compras",
+            "drugstore": "Droguерía",
+            "emergency": "Urgencias"
+        },
+        "fallbacks": {
+            "toilets": "Aseo público",
+            "busStops": "Parada de autobús",
+            "iceCream": "Heladería",
+            "shopping": "Tienda",
+            "drugstore": "Droguерía",
+            "emergency": "Hospital"
+        }
+    },
+    "modal": {
+        "closeBtn": "Cerrar",
+        "backToMap": "Volver al mapa",
+        "streetPhoto": "Foto de calle",
+        "prevPhoto": "Foto anterior",
+        "nextPhoto": "Foto siguiente",
+        "addData": {
+            "osm": {
+                "label": "OpenStreetMap",
+                "text": "Los datos provienen de {{osmLink}} — un mapa mundial libre y colaborativo creado por millones de voluntarios. Solo lo que ha sido mapeado aparece aquí.",
+                "wikiUrl": "https://es.wikipedia.org/wiki/OpenStreetMap"
+            },
+            "contribute": {
+                "label": "Contribuir a los parques",
+                "text": "Cualquiera puede contribuir. Un buen punto de partida es {{learnOsmLink}}. Las etiquetas relevantes están documentadas en el {{wikiLink}} y en la página sobre {{equipmentLink}}.",
+                "learnOsmUrl": "https://learnosm.org/es/beginner/",
+                "wikiLabel": "wiki de OSM",
+                "equipmentLabel": "el mapeo de equipos individuales"
+            },
+            "photos": {
+                "label": "Añadir fotos",
+                "text": "Las fotos se pueden subir directamente a través de {{mapcompleteLink}} — abre un parque y haz clic en \"Añadir foto\". Las fotos son proporcionadas por {{panoramaxLink}}."
+            },
+            "community": {
+                "label": "Comunidad",
+                "text": "¿Preguntas o quieres participar? La comunidad OSM local se puede contactar a través de {{chatLink}}.",
+                "chatLabel": "chat de la comunidad OSM local"
+            }
+        },
+        "about": {
+            "history": {
+                "label": "Historia",
+                "text": "El mapa de parques fue creado por {{authorLink}} como proyecto final de un {{courseLink}} — originalmente centrado en Berlín. Con el tiempo se desarrolló en un mapa genérico utilizable para cualquier región OSM.",
+                "courseUrl": "https://gis-trainer.com/de/gis_webmapping.php",
+                "courseLabel": "curso de SIG y cartografía web"
+            },
+            "project": {
+                "label": "El proyecto",
+                "text": "El mapa de parques es un mapa web libre e interactivo basado en datos de {{osmLink}}. No contiene datos propietarios, no requiere inicio de sesión y no rastrea usuarios. Quien mejora los datos en OSM mejora automáticamente este mapa.",
+                "osmWikiUrl": "https://es.wikipedia.org/wiki/OpenStreetMap"
+            },
+            "source": {
+                "label": "Código fuente",
+                "text": "El proyecto es de código abierto y {{repoLink}}.",
+                "repoLabel": "disponible públicamente"
+            }
+        }
+    },
+    "locate": {
+        "title": "Muestra mi ubicación"
+    },
+    "filter": {
+        "layers": "Capas",
+        "standalonePitches": "Canchas (afuera de los parques infantiles)"
+    },
+    "hover": {
+        "tagWater": "Agua",
+        "tagBaby": "Bebé",
+        "tagTrees": "Arboles",
+        "tagAccessible": "Accesible"
     }
-  }
 }
