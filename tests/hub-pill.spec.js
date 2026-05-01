@@ -77,4 +77,16 @@ test.describe('Hub instance pill + drawer', () => {
     await page.locator('canvas').click({ position: { x: 400, y: 300 } });
     await expect(page.locator('.drawer[role="dialog"]')).toHaveCount(0);
   });
+
+  test('drawer shows version badge when meta includes version', async ({ page }) => {
+    await page.goto('/');
+    const pill = page.locator('.instance-slot .pill');
+    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+
+    await pill.click();
+
+    const badges = page.locator('.drawer[role="dialog"] .instance-badge');
+    await expect(badges).toHaveCount(2);
+    await expect(badges.first()).toContainText('0.2.1');
+  });
 });

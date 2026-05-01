@@ -58,6 +58,7 @@ down: require-docker      ## Stop and remove containers
 	docker compose down
 
 import: require-docker    ## Download PBF and import OSM data into PostGIS (run once or to refresh)
+	SPIELI_VERSION=$$(node -e "process.stdout.write(require('./app/package.json').version)") \
 	docker compose --profile data-node run --rm --build importer
 
 docker-build: require-docker  ## Rebuild and restart the Svelte app container (Dockerfile.app)
@@ -71,7 +72,8 @@ db-apply: require-docker  ## Apply importer/api.sql to the running database and 
 	PG_MAX_PARALLEL_WORKERS_PER_GATHER=$${PG_MAX_PARALLEL_WORKERS_PER_GATHER:-2} \
 	PG_MAX_PARALLEL_MAINTENANCE_WORKERS=$${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-2} \
 	PG_MAINTENANCE_WORK_MEM=$${PG_MAINTENANCE_WORK_MEM:-256MB} \
-	PG_WORK_MEM=$${PG_WORK_MEM:-32MB} && \
+	PG_WORK_MEM=$${PG_WORK_MEM:-32MB} \
+	SPIELI_VERSION=$$(node -e "process.stdout.write(require('./app/package.json').version)") && \
 	set +a && \
 	for v in PG_MAX_PARALLEL_WORKERS PG_MAX_PARALLEL_WORKERS_PER_GATHER PG_MAX_PARALLEL_MAINTENANCE_WORKERS; do \
 	    eval "val=\$$$$v"; \
@@ -84,10 +86,10 @@ db-apply: require-docker  ## Apply importer/api.sql to the running database and 
 	if [ "$$PG_MAX_PARALLEL_WORKERS_PER_GATHER" -gt "$$PG_MAX_PARALLEL_WORKERS" ] || [ "$$PG_MAX_PARALLEL_MAINTENANCE_WORKERS" -gt "$$PG_MAX_PARALLEL_WORKERS" ]; then \
 	    echo "PG_MAX_PARALLEL_WORKERS_PER_GATHER and PG_MAX_PARALLEL_MAINTENANCE_WORKERS must each be ≤ PG_MAX_PARALLEL_WORKERS ($$PG_MAX_PARALLEL_WORKERS)" >&2; exit 1; \
 	fi && \
-	envsubst '$$OSM_RELATION_ID $$PG_MAX_PARALLEL_WORKERS $$PG_MAX_PARALLEL_WORKERS_PER_GATHER $$PG_MAX_PARALLEL_MAINTENANCE_WORKERS $$PG_MAINTENANCE_WORK_MEM $$PG_WORK_MEM' \
+	envsubst '$$OSM_RELATION_ID $$PG_MAX_PARALLEL_WORKERS $$PG_MAX_PARALLEL_WORKERS_PER_GATHER $$PG_MAX_PARALLEL_MAINTENANCE_WORKERS $$PG_MAINTENANCE_WORK_MEM $$PG_WORK_MEM $$SPIELI_VERSION' \
 	< importer/api.sql | grep -E '^ALTER SYSTEM' | \
 	docker compose exec -T db psql -U osm -d osm && \
-	envsubst '$$OSM_RELATION_ID $$PG_MAX_PARALLEL_WORKERS $$PG_MAX_PARALLEL_WORKERS_PER_GATHER $$PG_MAX_PARALLEL_MAINTENANCE_WORKERS $$PG_MAINTENANCE_WORK_MEM $$PG_WORK_MEM' \
+	envsubst '$$OSM_RELATION_ID $$PG_MAX_PARALLEL_WORKERS $$PG_MAX_PARALLEL_WORKERS_PER_GATHER $$PG_MAX_PARALLEL_MAINTENANCE_WORKERS $$PG_MAINTENANCE_WORK_MEM $$PG_WORK_MEM $$SPIELI_VERSION' \
 	< importer/api.sql | grep -v '^ALTER SYSTEM' | \
 	docker compose exec -T db psql -U osm -d osm --single-transaction
 	docker compose exec db psql -U osm -d osm -c "NOTIFY pgrst, 'reload schema';"
@@ -101,6 +103,7 @@ seed-load: require-docker ## Load dev fixture DB (4 sample Fulda playgrounds) �
 	docker compose exec db psql -U osm -d osm -c "NOTIFY pgrst, 'reload schema';" 2>/dev/null || true
 
 import2: require-docker ## Import Hessen PBF into second backend (Neuhof, relation 454881)
+	SPIELI_VERSION=$$(node -e "process.stdout.write(require('./app/package.json').version)") \
 	docker compose run --rm --build importer2
 
 seed-load2: require-docker ## Load dev fixture DB2 (5 sample Neuhof playgrounds) — skips full OSM import

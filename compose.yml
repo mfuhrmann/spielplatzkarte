@@ -55,6 +55,7 @@ services:
       PG_MAX_PARALLEL_MAINTENANCE_WORKERS: ${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-4}
       PG_MAINTENANCE_WORK_MEM:             ${PG_MAINTENANCE_WORK_MEM:-512MB}
       PG_WORK_MEM:                         ${PG_WORK_MEM:-128MB}
+      SPIELI_VERSION:                      ${SPIELI_VERSION:-unknown}
     volumes:
       - pbf_cache:/data
     profiles: [import]    # not started by "docker compose up"
@@ -117,6 +118,7 @@ services:
       PG_MAX_PARALLEL_MAINTENANCE_WORKERS: ${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-4}
       PG_MAINTENANCE_WORK_MEM:             ${PG_MAINTENANCE_WORK_MEM:-512MB}
       PG_WORK_MEM:                         ${PG_WORK_MEM:-128MB}
+      SPIELI_VERSION:                      ${SPIELI_VERSION:-unknown}
     volumes:
       - pbf_cache:/data
     profiles: [import2]
