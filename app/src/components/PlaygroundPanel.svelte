@@ -724,6 +724,7 @@
     display: none;
     flex-direction: column;
     border-right: 1px solid #e5e7eb;
+    touch-action: pan-y;
     color-scheme: light;
 
     /* Force light theme variables */
