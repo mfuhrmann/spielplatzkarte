@@ -32,7 +32,7 @@ Multiple regional instances can be aggregated into a single **Hub** map — see 
 |---|---|
 | Deploy spieli for my region | [Quick Start](getting-started/quick-start.md) |
 | Deploy from source | [Manual Deploy](ops/manual-deploy.md) |
-| Connect my backend to an existing Hub | [Federated Deployment](ops/federated-deployment.md) |
+| Connect my backend to an existing Hub | [Quick Start → Joining an existing Hub](getting-started/quick-start.md#joining-an-existing-hub) |
 
 ## Using the map
 
