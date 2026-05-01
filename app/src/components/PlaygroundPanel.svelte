@@ -911,7 +911,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    flex-wrap: wrap;
   }
 
   .status-pill {
@@ -923,6 +922,12 @@
     font-size: 12px;
     font-weight: 600;
     white-space: nowrap;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .status-pill span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .status-pill--open   { background: #ecfdf5; border: 1px solid rgba(16, 185, 129, 0.4); color: #065f46; }
   .status-pill--closed { background: #fef2f2; border: 1px solid rgba(239, 68, 68, 0.4);  color: #b91c1c; }
