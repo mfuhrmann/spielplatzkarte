@@ -77,7 +77,8 @@
   }
 
   $: devicesByType  = groupByType(deviceFeatures,  f => f.properties.playground);
-  $: fitnessByType  = groupByType(fitnessFeatures, f => f.properties.fitness_station ?? '');
+  $: fitnessByType  = groupByType(fitnessFeatures, () => 'fitness_station');
+  $: pitchesByType  = groupByType(pitchFeatures,   f => f.properties.sport ?? '');
 
   // Collect ALL panoramax UUIDs for a structure group (structure first, then
   // children) — keep every `panoramax:N` key per feature, not just the first,
@@ -251,23 +252,18 @@
         {/if}
       {/each}
 
-      {#each fitnessByType as { items, collapsed } (items[0].properties.fitness_station ?? '')}
-        {@const fsType = items[0].properties.fitness_station}
-        {@const name = fsType
-          ? $_('equipment.fitness.' + fsType, { default: objFitnessStation[fsType] ?? $_('equipment.fitnessDefault') })
-          : $_('equipment.fitnessDefault')}
+      {#each fitnessByType as { items, collapsed } ('fitness_station')}
         {@const color = objColors['activity'] ?? objColors['fallback']}
         {#if collapsed}
-          {@const groupId = `fit-${fsType ?? 'unknown'}`}
           {@const uuids = collectUuids(items)}
           {@const firstDetail = getEquipmentAttributesFromProps(items[0].properties, $_)}
           <li>
-            <button type="button" class="device-toggle" onclick={() => toggleItem(groupId)}
-              aria-expanded={openItems.has(groupId)}>
-              <span style="color:{color}">●</span> {items.length}× {name}
-              <span class="bi {openItems.has(groupId) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
+            <button type="button" class="device-toggle" onclick={() => toggleItem('fit-group')}
+              aria-expanded={openItems.has('fit-group')}>
+              <span style="color:{color}">●</span> {items.length}× {$_('equipment.fitnessDefault')}
+              <span class="bi {openItems.has('fit-group') ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
             </button>
-            {#if openItems.has(groupId)}
+            {#if openItems.has('fit-group')}
               <div class="device-detail">
                 {#if uuids.length}
                   <PanoramaxViewer {uuids} mcUrl={firstDetail.mcUrl} />
@@ -279,6 +275,10 @@
           </li>
         {:else}
           {#each items as f (f.properties.osm_id)}
+            {@const fsType = f.properties.fitness_station}
+            {@const name = fsType
+              ? $_('equipment.fitness.' + fsType, { default: objFitnessStation[fsType] ?? $_('equipment.fitnessDefault') })
+              : $_('equipment.fitnessDefault')}
             {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
             {@const id = uid(f)}
             <li>
@@ -308,40 +308,61 @@
         {/if}
       {/each}
 
-      {#each pitchFeatures as f (f.properties.osm_id)}
-        {@const sport = f.properties.sport ?? ''}
+      {#each pitchesByType as { items, collapsed } (items[0].properties.sport ?? '')}
+        {@const sport = items[0].properties.sport ?? ''}
         {@const label = sport
-          ? sport.split(';').map(s => $_(
-              'equipment.pitches.' + s.trim(),
-              { default: s.trim() }
-            )).join(' / ')
+          ? sport.split(';').map(s => $_('equipment.pitches.' + s.trim(), { default: s.trim() })).join(' / ')
           : $_('equipment.pitchDefault')}
         {@const color = objColors['fallback']}
-        {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
-        {@const id = uid(f)}
-        <li>
-          {#if detail.html || detail.panoramaxUuid}
-            <button type="button" class="device-toggle" onclick={() => toggleItem(id)}>
-              <span style="color:{color}">●</span> {label}
-              <span class="bi {openItems.has(id) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
+        {#if collapsed}
+          {@const groupId = `pitch-${sport}`}
+          {@const uuids = collectUuids(items)}
+          {@const firstDetail = getEquipmentAttributesFromProps(items[0].properties, $_)}
+          <li>
+            <button type="button" class="device-toggle" onclick={() => toggleItem(groupId)}
+              aria-expanded={openItems.has(groupId)}>
+              <span style="color:{color}">●</span> {items.length}× {label}
+              <span class="bi {openItems.has(groupId) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
             </button>
-            {#if openItems.has(id)}
+            {#if openItems.has(groupId)}
               <div class="device-detail">
-                {#if detail.panoramaxUuid}
-                  <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
-                    <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="photo-thumb" />
-                    <span class="photo-label"><span class="bi bi-camera"></span> {$_('popup.devicePhoto')}</span>
-                  </button>
+                {#if uuids.length}
+                  <PanoramaxViewer {uuids} mcUrl={firstDetail.mcUrl} />
                 {:else}
-                  <MapCompleteLink href={detail.mcUrl} label={$_('popup.addPhoto')} />
+                  <MapCompleteLink href={firstDetail.mcUrl} label={$_('popup.addPhoto')} />
                 {/if}
-                {@html detail.html}
               </div>
             {/if}
-          {:else}
-            <span style="color:{color}">●</span> {label}
-          {/if}
-        </li>
+          </li>
+        {:else}
+          {#each items as f (f.properties.osm_id)}
+            {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
+            {@const id = uid(f)}
+            <li>
+              {#if detail.html || detail.panoramaxUuid}
+                <button type="button" class="device-toggle" onclick={() => toggleItem(id)}>
+                  <span style="color:{color}">●</span> {label}
+                  <span class="bi {openItems.has(id) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
+                </button>
+                {#if openItems.has(id)}
+                  <div class="device-detail">
+                    {#if detail.panoramaxUuid}
+                      <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
+                        <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="photo-thumb" />
+                        <span class="photo-label"><span class="bi bi-camera"></span> {$_('popup.devicePhoto')}</span>
+                      </button>
+                    {:else}
+                      <MapCompleteLink href={detail.mcUrl} label={$_('popup.addPhoto')} />
+                    {/if}
+                    {@html detail.html}
+                  </div>
+                {/if}
+              {:else}
+                <span style="color:{color}">●</span> {label}
+              {/if}
+            </li>
+          {/each}
+        {/if}
       {/each}
     </ul>
 
