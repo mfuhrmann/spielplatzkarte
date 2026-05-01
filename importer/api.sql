@@ -1093,7 +1093,8 @@ AS $$
     -- backend serves (PBF replication timestamp); `osm_data_age_seconds`
     -- is the user-facing "how old is this data?" derived value.
     'osm_data_timestamp',    (SELECT osm_data_timestamp FROM import_status),
-    'osm_data_age_seconds',  (SELECT EXTRACT(EPOCH FROM (now() - osm_data_timestamp))::int FROM import_status)
+    'osm_data_age_seconds',  (SELECT EXTRACT(EPOCH FROM (now() - osm_data_timestamp))::int FROM import_status),
+    'version',               '${SPIELI_VERSION}'
   );
 $$;
 
