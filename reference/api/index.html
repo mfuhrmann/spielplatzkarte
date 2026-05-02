@@ -2087,8 +2087,9 @@
 <a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">  </span><span class="nt">&quot;data_age_seconds&quot;</span><span class="p">:</span><span class="w">     </span><span class="mi">86400</span><span class="p">,</span>
 <a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">  </span><span class="nt">&quot;osm_data_timestamp&quot;</span><span class="p">:</span><span class="w">   </span><span class="s2">&quot;2026-04-29T21:00:00Z&quot;</span><span class="p">,</span>
 <a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">  </span><span class="nt">&quot;osm_data_age_seconds&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">108000</span><span class="p">,</span>
-<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="w">  </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w">              </span><span class="s2">&quot;0.4.1&quot;</span>
-<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="p">}</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="w">  </span><span class="nt">&quot;importing&quot;</span><span class="p">:</span><span class="w">            </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="w">  </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w">              </span><span class="s2">&quot;0.4.1&quot;</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="p">}</span>
 </code></pre></div>
 <p><strong>Field notes:</strong></p>
 <table>
@@ -2126,6 +2127,10 @@
 <tr>
 <td><code>osm_data_age_seconds</code></td>
 <td>Seconds since <code>osm_data_timestamp</code>. <code>null</code> when <code>osm_data_timestamp</code> is null.</td>
+</tr>
+<tr>
+<td><code>importing</code></td>
+<td><code>true</code> while <code>osm2pgsql</code> is actively running (data partially rebuilt); <code>false</code> at all other times. <code>false</code> on older backends that pre-date this field. The Hub drawer shows an "updating" badge while this is <code>true</code>.</td>
 </tr>
 <tr>
 <td><code>version</code></td>

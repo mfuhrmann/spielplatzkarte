@@ -853,6 +853,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#hub-drawer-shows-updating-badge-that-never-clears" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hub drawer shows "updating" badge that never clears
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1534,6 +1543,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#hub-drawer-shows-updating-badge-that-never-clears" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hub drawer shows "updating" badge that never clears
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1665,6 +1683,21 @@
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="se">\q</span>
 </code></pre></div>
 <p>Or simply recreate the data volume after a re-import — the volume will start clean.</p>
+<hr />
+<h2 id="hub-drawer-shows-updating-badge-that-never-clears">Hub drawer shows "updating" badge that never clears<a class="headerlink" href="#hub-drawer-shows-updating-badge-that-never-clears" title="Permanent link">&para;</a></h2>
+<p><strong>Symptom:</strong> One or more backends in the Hub instance drawer permanently show an "updating" badge, even though no import is running.</p>
+<p><strong>Cause:</strong> The <code>importing</code> flag in <code>api.import_status</code> was left <code>true</code> by an importer that was killed with SIGKILL (bypasses the EXIT trap) or crashed before the trap could fire.</p>
+<p><strong>Self-healing:</strong> The importer clears the flag automatically at startup. Restarting the container is usually enough:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>importer
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># or, in daemon mode, the container is already running — it will clear the flag</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># on its next scheduled run</span>
+</code></pre></div>
+<p><strong>Manual fix</strong> (if you need it cleared immediately without waiting for a restart):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># From the data-node host</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>osm<span class="w"> </span>-d<span class="w"> </span>osm<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>-c<span class="w"> </span><span class="s2">&quot;UPDATE api.import_status SET importing = false WHERE id = 1;&quot;</span>
+</code></pre></div>
+<p>The Hub will pick up the corrected value on its next poll cycle (within 60 seconds).</p>
 
 
 
