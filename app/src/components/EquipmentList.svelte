@@ -13,13 +13,20 @@
   /** @type {Object} Playground polygon properties (for playground:<key> fallback) */
   export let playgroundAttr = {};
 
+  // osm2pgsql emits one row per outer ring for multipolygon features, so the
+  // same osm_id can appear multiple times in the API response.  Deduplicate
+  // before filtering to prevent the same pitch/device from rendering twice.
+  $: uniqueFeatures = features.filter(
+    (f, idx, arr) => arr.findIndex(g => g.properties.osm_id === f.properties.osm_id) === idx
+  );
+
   // Summary counts include grouped children — a structure with 3 swings is
   // still 3 swings as far as the user is concerned. The detail rendering
-  // continues to show standalone-only `features` so groups don't double-list.
-  $: countSource = [...features, ...groups.flatMap(g => g.children)];
-  $: deviceFeatures  = features.filter(f => f.properties.playground && f.properties.playground !== 'yes');
-  $: fitnessFeatures = features.filter(f => f.properties.leisure === 'fitness_station');
-  $: pitchFeatures   = features.filter(f => f.properties.leisure === 'pitch');
+  // continues to show standalone-only `uniqueFeatures` so groups don't double-list.
+  $: countSource = [...uniqueFeatures, ...groups.flatMap(g => g.children)];
+  $: deviceFeatures  = uniqueFeatures.filter(f => f.properties.playground && f.properties.playground !== 'yes');
+  $: fitnessFeatures = uniqueFeatures.filter(f => f.properties.leisure === 'fitness_station');
+  $: pitchFeatures   = uniqueFeatures.filter(f => f.properties.leisure === 'pitch');
   $: deviceCount  = countSource.filter(f => f.properties.playground && f.properties.playground !== 'yes' && f.properties.playground !== 'structure').length;
   $: fitnessCount = countSource.filter(f => f.properties.leisure === 'fitness_station').length;
   $: pitchCount   = countSource.filter(f => f.properties.leisure === 'pitch').length;
@@ -78,7 +85,6 @@
 
   $: devicesByType  = groupByType(deviceFeatures,  f => f.properties.playground);
   $: fitnessByType  = groupByType(fitnessFeatures, () => 'fitness_station');
-  $: pitchesByType  = groupByType(pitchFeatures,   f => f.properties.sport ?? '');
 
   // Collect ALL panoramax UUIDs for a structure group (structure first, then
   // children) — keep every `panoramax:N` key per feature, not just the first,
@@ -208,7 +214,7 @@
           <li>
             <button type="button" class="device-toggle" onclick={() => toggleItem(groupId)}
               aria-expanded={openItems.has(groupId)}>
-              <span style="color:{color}">●</span> {items.length}× {name}
+              <span style="color:{color}">●</span> <span class="item-count">{items.length}×</span> {name}
               <span class="bi {openItems.has(groupId) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
             </button>
             {#if openItems.has(groupId)}
@@ -260,7 +266,7 @@
           <li>
             <button type="button" class="device-toggle" onclick={() => toggleItem('fit-group')}
               aria-expanded={openItems.has('fit-group')}>
-              <span style="color:{color}">●</span> {items.length}× {$_('equipment.fitnessDefault')}
+              <span style="color:{color}">●</span> <span class="item-count">{items.length}×</span> {$_('equipment.fitnessDefault')}
               <span class="bi {openItems.has('fit-group') ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
             </button>
             {#if openItems.has('fit-group')}
@@ -308,62 +314,40 @@
         {/if}
       {/each}
 
-      {#each pitchesByType as { items, collapsed } (items[0].properties.sport ?? '')}
-        {@const sport = items[0].properties.sport ?? ''}
-        {@const label = sport
-          ? sport.split(';').map(s => $_('equipment.pitches.' + s.trim(), { default: s.trim() })).join(' / ')
-          : $_('equipment.pitchDefault')}
-        {@const color = objColors['fallback']}
-        {#if collapsed}
-          {@const groupId = `pitch-${sport}`}
-          {@const uuids = collectUuids(items)}
-          {@const firstDetail = getEquipmentAttributesFromProps(items[0].properties, $_)}
-          <li>
-            <button type="button" class="device-toggle" onclick={() => toggleItem(groupId)}
-              aria-expanded={openItems.has(groupId)}>
-              <span style="color:{color}">●</span> {items.length}× {label}
-              <span class="bi {openItems.has(groupId) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
-            </button>
-            {#if openItems.has(groupId)}
-              <div class="device-detail">
-                {#if uuids.length}
-                  <PanoramaxViewer {uuids} mcUrl={firstDetail.mcUrl} />
-                {:else}
-                  <MapCompleteLink href={firstDetail.mcUrl} label={$_('popup.addPhoto')} />
-                {/if}
-              </div>
-            {/if}
-          </li>
-        {:else}
-          {#each items as f (f.properties.osm_id)}
-            {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
-            {@const id = uid(f)}
-            <li>
-              {#if detail.html || detail.panoramaxUuid}
-                <button type="button" class="device-toggle" onclick={() => toggleItem(id)}>
-                  <span style="color:{color}">●</span> {label}
-                  <span class="bi {openItems.has(id) ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
-                </button>
-                {#if openItems.has(id)}
-                  <div class="device-detail">
-                    {#if detail.panoramaxUuid}
-                      <button type="button" class="photo-thumb-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
-                        <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="photo-thumb" />
-                        <span class="photo-label"><span class="bi bi-camera"></span> {$_('popup.devicePhoto')}</span>
-                      </button>
-                    {:else}
-                      <MapCompleteLink href={detail.mcUrl} label={$_('popup.addPhoto')} />
-                    {/if}
-                    {@html detail.html}
-                  </div>
-                {/if}
-              {:else}
-                <span style="color:{color}">●</span> {label}
-              {/if}
-            </li>
-          {/each}
-        {/if}
-      {/each}
+      {#if pitchFeatures.length}
+        <li>
+          <button type="button" class="device-toggle" onclick={() => toggleItem('pitches')}
+            aria-expanded={openItems.has('pitches')}>
+            <span style="color:{objColors['fallback']}">●</span>
+            <span class="item-count">{pitchFeatures.length}×</span>
+            {$_('equipment.pitchDefault')}
+            <span class="bi {openItems.has('pitches') ? 'bi-chevron-up' : 'bi-chevron-down'} device-chevron"></span>
+          </button>
+          {#if openItems.has('pitches')}
+            <ul class="group-children">
+              {#each pitchFeatures as f (f.properties.osm_id)}
+                {@const sports = (f.properties.sport ?? '').split(';').map(s => s.trim()).filter(Boolean)}
+                {@const label = sports.length
+                  ? sports.map(s => $_('equipment.pitches.' + s, { default: s })).join(' / ')
+                  : $_('equipment.pitchDefault')}
+                {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
+                <li class="pitch-sub">
+                  <span class="pitch-sub-row">
+                    <span style="color:{objColors['fallback']}">◦</span>
+                    {label}
+                    <MapCompleteLink href={detail.mcUrl} label="" />
+                  </span>
+                  {#if detail.panoramaxUuid}
+                    <button type="button" class="pitch-photo-btn" onclick={() => modalUuid = detail.panoramaxUuid} title={$_('popup.devicePhoto')}>
+                      <img src={thumbUrl(detail.panoramaxUuid)} alt={$_('modal.streetPhoto')} class="pitch-photo-thumb" />
+                    </button>
+                  {/if}
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </li>
+      {/if}
     </ul>
 
   <!-- Fallback: playground:<key> tags on the polygon itself -->
@@ -375,7 +359,7 @@
         {@const color = objColors[cat] ?? objColors['fallback']}
         <li>
           <span style="color:{color}">●</span>
-          {count > 1 ? `${count}× ` : ''}{name}
+          {#if count > 1}<span class="item-count">{count}×</span> {/if}{name}
         </li>
       {/each}
     </ul>
@@ -411,6 +395,10 @@
     color: #6b7280;
     margin-left: 0.3rem;
   }
+  .item-count {
+    font-size: 0.72rem;
+    color: #6b7280;
+  }
   .group-children {
     list-style: none;
     padding-left: 0.8rem;
@@ -419,6 +407,25 @@
     color: #374151;
   }
   .group-children li { margin-bottom: 0.15rem; }
+  .pitch-sub-row { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; }
+  .pitch-photo-btn {
+    display: block;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    margin-top: 0.2rem;
+    margin-left: 0.9rem;
+  }
+  .pitch-photo-btn:hover .pitch-photo-thumb { opacity: 0.85; }
+  .pitch-photo-thumb {
+    width: 100%;
+    max-width: 120px;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    border-radius: 4px;
+    display: block;
+  }
   .summary-list { font-size: 13px; color: #1f2937; }
   .device-list { padding-left: 0; list-style: none; font-size: 13px; color: #1f2937; }
   .device-list li { margin-bottom: 0.25rem; }
