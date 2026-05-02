@@ -27,7 +27,6 @@
   import POIPanel from './POIPanel.svelte';
   import PanoramaxViewer from './PanoramaxViewer.svelte';
   import ReviewsPanel from './ReviewsPanel.svelte';
-  import AgeChip from './AgeChip.svelte';
   import Badge from './ui/Badge.svelte';
   import Button from './ui/Button.svelte';
 
@@ -501,19 +500,14 @@
         <p class="text-sm text-muted-foreground italic mb-3">{part}</p>
       {/each}
 
-      <!-- Opening Hours + Age inline -->
-      {#if openingHoursInfo || attr.min_age || attr.max_age}
+      <!-- Opening Hours -->
+      {#if openingHoursInfo}
         <div class="status-row mb-4">
-          {#if openingHoursInfo}
-            <div class="status-pill" class:status-pill--open={openingHoursInfo.open} class:status-pill--closed={!openingHoursInfo.open}>
-              <span class="status-dot" class:status-dot--open={openingHoursInfo.open} class:status-dot--closed={!openingHoursInfo.open}></span>
-              <Clock class="h-3.5 w-3.5 shrink-0" />
-              <span>{openingHoursInfo.text}</span>
-            </div>
-          {/if}
-          {#if attr.min_age || attr.max_age}
-            <AgeChip minAge={attr.min_age ? Number(attr.min_age) : null} maxAge={attr.max_age ? Number(attr.max_age) : null} />
-          {/if}
+          <div class="status-pill" class:status-pill--open={openingHoursInfo.open} class:status-pill--closed={!openingHoursInfo.open}>
+            <span class="status-dot" class:status-dot--open={openingHoursInfo.open} class:status-dot--closed={!openingHoursInfo.open}></span>
+            <Clock class="h-3.5 w-3.5 shrink-0" />
+            <span>{openingHoursInfo.text}</span>
+          </div>
         </div>
       {/if}
 
