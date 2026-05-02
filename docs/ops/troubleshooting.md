@@ -170,9 +170,17 @@ Or simply recreate the data volume after a re-import — the volume will start c
 
 **Symptom:** One or more backends in the Hub instance drawer permanently show an "updating" badge, even though no import is running.
 
-**Cause:** The `importing` flag in `api.import_status` was left `true` by an importer that was killed with SIGKILL (bypasses the EXIT trap) or crashed in a way that prevented the trap from firing.
+**Cause:** The `importing` flag in `api.import_status` was left `true` by an importer that was killed with SIGKILL (bypasses the EXIT trap) or crashed before the trap could fire.
 
-**Fix:** Connect to the affected data-node's database and clear the flag manually:
+**Self-healing:** The importer clears the flag automatically at startup. Restarting the container is usually enough:
+
+```bash
+docker compose restart importer
+# or, in daemon mode, the container is already running — it will clear the flag
+# on its next scheduled run
+```
+
+**Manual fix** (if you need it cleared immediately without waiting for a restart):
 
 ```bash
 # From the data-node host

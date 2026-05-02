@@ -135,4 +135,40 @@ test.describe('Hub instance pill + drawer', () => {
     await expect(drawer).toBeVisible();
     await expect(drawer.locator('.instance-badge--importing')).toHaveCount(0);
   });
+
+  test('updating badge clears when next federation-status poll reports importing: false', async ({ page }) => {
+    // 1-second poll interval so we don't wait long for the second fetch.
+    await injectHubConfig(page, { hubPollInterval: 1 });
+
+    let callCount = 0;
+    await page.route('**/federation-status.json', route => {
+      callCount++;
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          generated_at: new Date().toISOString(),
+          poll_interval_seconds: 1,
+          backends: {
+            'slug-a': { url: '/api-a', up: true, importing: callCount === 1 },
+            'slug-b': { url: '/api-b', up: true, importing: false },
+          },
+        }),
+      });
+    });
+
+    await page.goto('/');
+    const pill = page.locator('.instance-slot .pill');
+    await expect(pill).toContainText(/2\s+(Regionen|regions)/, { timeout: 8000 });
+
+    await pill.click();
+    const drawer = page.locator('.drawer[role="dialog"]');
+    await expect(drawer).toBeVisible();
+
+    const itemA = drawer.locator('.instance-item').filter({ hasText: 'Instanz A' });
+    // First poll: importing=true → badge visible
+    await expect(itemA.locator('.instance-badge--importing')).toBeVisible();
+    // Second poll (≤ 1 s): importing=false → badge gone
+    await expect(itemA.locator('.instance-badge--importing')).toHaveCount(0, { timeout: 5000 });
+  });
 });
