@@ -8,7 +8,7 @@
 
 - [x] 2.1 Add a POSIX EXIT trap in `importer/import.sh` that runs `psql … UPDATE api.import_status SET importing = false WHERE id = 1`
 - [x] 2.2 Insert a `psql … UPDATE api.import_status SET importing = true WHERE id = 1` call immediately before the `osm2pgsql` invocation
-- [ ] 2.3 Confirm the trap fires on both clean exit and simulated error (`kill -TERM`)
+- [x] 2.3 Confirm the trap fires on both clean exit and simulated error (`kill -TERM`)
 
 ## 3. Importer script — daemon mode and startup grace check
 
@@ -16,7 +16,7 @@
 - [x] 3.2 Add startup grace check: query `api.import_status.last_import_at`; if within the configured interval, compute next scheduled time and sleep until then; if absent or overdue, proceed immediately. Handle DB unavailability with a short retry loop (max 30 s) before falling back to "run immediately".
 - [x] 3.3 Add daemon loop: if `REIMPORT_INTERVAL_MIN_DAYS` and `REIMPORT_INTERVAL_MAX_DAYS` are set, after a successful import sleep for a uniformly random duration between the bounds, then loop back to `run_import`. On a failed run, sleep for a short retry interval (≤ 1 hour) before retrying.
 - [x] 3.4 Ensure daemon mode never exits with code 0 between runs (loop is infinite); exit code propagates only on unexpected crash.
-- [ ] 3.5 Verify one-shot behaviour is unchanged when interval vars are absent
+- [x] 3.5 Verify one-shot behaviour is unchanged when interval vars are absent
 
 ## 4. Hub poll pipeline
 
