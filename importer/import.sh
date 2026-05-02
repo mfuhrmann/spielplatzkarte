@@ -262,6 +262,9 @@ run_import() (
     psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
         -c "UPDATE api.import_status SET importing = true WHERE id = 1" \
         2>/dev/null || true
+    # In POSIX sh, EXIT trap does not fire on SIGTERM/SIGINT — add explicit
+    # signal handlers that call exit so the EXIT trap below runs on container stop.
+    trap 'exit' TERM INT
     trap '_clear_importing' EXIT
 
     echo "[importer] Starting osm2pgsql import on $IMPORT_PBF..."
@@ -350,6 +353,11 @@ if [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" ];
     # ── Daemon mode ─────────────────────────────────────────────────────────── #
     echo "[importer] Daemon mode: interval ${REIMPORT_INTERVAL_MIN_DAYS}–${REIMPORT_INTERVAL_MAX_DAYS} days."
 
+    # Clear any stuck importing flag left by a previously SIGKILL'd container.
+    # POSIX sh EXIT traps don't fire on SIGKILL, so this startup reset is the
+    # reliable fallback. Ignored if the DB isn't up yet (|| true).
+    _clear_importing
+
     # Startup grace check: if a recent import is on record in the DB, sleep
     # until the next scheduled time rather than importing immediately. This
     # prevents an unplanned full re-import every time the container is
@@ -390,5 +398,7 @@ if [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" ];
     done
 else
     # ── One-shot mode (default, backward-compatible) ─────────────────────── #
+    # Clear any stuck importing flag from a previously crashed container.
+    _clear_importing
     run_import
 fi
