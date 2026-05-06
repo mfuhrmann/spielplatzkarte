@@ -1113,6 +1113,14 @@ AS $$
                                WHEN '${PRIVACY_URL}' <> '' THEN '${PRIVACY_URL}'
                                WHEN '${SITE_URL}' <> ''    THEN '${SITE_URL}' || '/datenschutz'
                                ELSE NULL
+                             END,
+    -- true when legal content is stored in api.legal_content (data-node path).
+    -- Hub uses this to decide whether to show § / 🔒 icons even when impressum_url / privacy_url are null.
+    -- to_regclass guard: returns false on older backends where the table doesn't exist yet.
+    'has_legal',             CASE
+                               WHEN to_regclass('api.legal_content') IS NOT NULL
+                               THEN EXISTS(SELECT 1 FROM api.legal_content)
+                               ELSE false
                              END
   );
 $$;

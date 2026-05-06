@@ -176,7 +176,7 @@ test.describe('Hub — drawer legal icons', () => {
     await expect(drawer.locator('button[title="Impressum"]')).toHaveCount(0);
   });
 
-  test('get_legal fallback: null URL triggers fetch and shows iframe modal', async ({ page }) => {
+  test('icons absent when both URLs null and has_legal false', async ({ page }) => {
     await injectHubConfig(page);
     await stubHubRegistry(page, { instanceA, instanceB });
     await stubFederationStatus(page, {
@@ -186,12 +186,33 @@ test.describe('Hub — drawer legal icons', () => {
           up: true,
           impressum_url: null,
           privacy_url: null,
+          has_legal: false,
+          last_success: new Date().toISOString(),
+        },
+      },
+    });
+    await page.goto('/');
+    const drawer = await openDrawer(page);
+    await expect(drawer.locator('button[title="Impressum"]')).toHaveCount(0);
+    await expect(drawer.locator('button[title="Datenschutz"]')).toHaveCount(0);
+  });
+
+  test('§ and 🔒 icons visible when has_legal true with null URLs (data-node)', async ({ page }) => {
+    await injectHubConfig(page);
+    await stubHubRegistry(page, { instanceA, instanceB });
+    await stubFederationStatus(page, {
+      backends: {
+        'slug-a': {
+          url: '/api-a',
+          up: true,
+          impressum_url: null,
+          privacy_url: null,
+          has_legal: true,
           last_success: new Date().toISOString(),
         },
       },
     });
 
-    // Stub get_legal to return content (data-node scenario)
     await page.route('**/api-a/rpc/get_legal**', route =>
       route.fulfill({
         status: 200,
@@ -203,8 +224,12 @@ test.describe('Hub — drawer legal icons', () => {
     await page.goto('/');
     const drawer = await openDrawer(page);
 
-    // With both URLs null, icons are hidden — this test verifies that
-    // the data-node path (no icon shown) gracefully handles null.
-    await expect(drawer.locator('button[title="Impressum"]')).toHaveCount(0);
+    // Both icons must appear even though URLs are null (content lives in get_legal RPC)
+    await expect(drawer.locator('button[title="Impressum"]').first()).toBeVisible();
+    await expect(drawer.locator('button[title="Datenschutz"]').first()).toBeVisible();
+
+    // Click § → openLegal() fetches get_legal → LegalContentModal opens
+    await drawer.locator('button[title="Impressum"]').first().click();
+    await expect(page.locator('iframe')).toBeVisible({ timeout: 5000 });
   });
 });

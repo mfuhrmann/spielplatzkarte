@@ -58,6 +58,14 @@ services:
       # When unset (default) the importer runs once and exits (one-shot mode).
       REIMPORT_INTERVAL_MIN_DAYS: ${REIMPORT_INTERVAL_MIN_DAYS:-}
       REIMPORT_INTERVAL_MAX_DAYS: ${REIMPORT_INTERVAL_MAX_DAYS:-}
+      IMPRESSUM_NAME:             ${IMPRESSUM_NAME:-}
+      IMPRESSUM_ORG:              ${IMPRESSUM_ORG:-}
+      IMPRESSUM_ADDRESS:          ${IMPRESSUM_ADDRESS:-}
+      IMPRESSUM_EMAIL:            ${IMPRESSUM_EMAIL:-}
+      IMPRESSUM_PHONE:            ${IMPRESSUM_PHONE:-}
+      IMPRESSUM_URL:              ${IMPRESSUM_URL:-}
+      PRIVACY_URL:                ${PRIVACY_URL:-}
+      SITE_URL:                   ${SITE_URL:-}
     volumes:
       - pbf_cache:/data
     # on-failure: retries crashed imports; exits-0 (one-shot success) are not restarted.

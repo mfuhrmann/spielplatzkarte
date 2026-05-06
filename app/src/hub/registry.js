@@ -150,6 +150,7 @@ export function createRegistry() {
           importing:        false, // true while osm2pgsql is actively running
           impressumUrl:     null,
           privacyUrl:       null,
+          hasLegal:         false,
         }));
         notify();
 
@@ -200,6 +201,7 @@ export function createRegistry() {
           importing:          entry.importing ?? false,
           impressumUrl:       entry.impressum_url ?? null,
           privacyUrl:         entry.privacy_url  ?? null,
+          hasLegal:           entry.has_legal     ?? false,
         });
       }
     });

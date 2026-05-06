@@ -133,7 +133,7 @@
           <div class="instance-row">
             <span class="instance-name">{b.name}</span>
             <div class="instance-row-end">
-              {#if b.impressumUrl !== null}
+              {#if b.impressumUrl !== null || b.hasLegal}
                 <button
                   class="legal-btn"
                   title="Impressum"
@@ -141,7 +141,7 @@
                   onclick={() => handleLegalClick(b, 'impressum')}
                 >§</button>
               {/if}
-              {#if b.privacyUrl !== null}
+              {#if b.privacyUrl !== null || b.hasLegal}
                 <button
                   class="legal-btn"
                   title="Datenschutz"
