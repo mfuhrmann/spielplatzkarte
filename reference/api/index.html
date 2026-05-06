@@ -1218,6 +1218,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#get_legaltype" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_legal(type)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#get_nearest_playgroundslat-lon" class="md-nav__link">
     <span class="md-ellipsis">
       get_nearest_playgrounds(lat, lon)
@@ -1583,6 +1592,15 @@
   <a href="#get_meta" class="md-nav__link">
     <span class="md-ellipsis">
       get_meta()
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#get_legaltype" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_legal(type)
     </span>
   </a>
   
@@ -2088,8 +2106,10 @@
 <a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">  </span><span class="nt">&quot;osm_data_timestamp&quot;</span><span class="p">:</span><span class="w">   </span><span class="s2">&quot;2026-04-29T21:00:00Z&quot;</span><span class="p">,</span>
 <a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">  </span><span class="nt">&quot;osm_data_age_seconds&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">108000</span><span class="p">,</span>
 <a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="w">  </span><span class="nt">&quot;importing&quot;</span><span class="p">:</span><span class="w">            </span><span class="kc">false</span><span class="p">,</span>
-<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="w">  </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w">              </span><span class="s2">&quot;0.4.1&quot;</span>
-<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="p">}</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="w">  </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w">              </span><span class="s2">&quot;0.4.1&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="w">  </span><span class="nt">&quot;impressum_url&quot;</span><span class="p">:</span><span class="w">        </span><span class="s2">&quot;https://spieli.example.com/impressum&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="w">  </span><span class="nt">&quot;privacy_url&quot;</span><span class="p">:</span><span class="w">          </span><span class="s2">&quot;https://spieli.example.com/datenschutz&quot;</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="p">}</span>
 </code></pre></div>
 <p><strong>Field notes:</strong></p>
 <table>
@@ -2136,10 +2156,45 @@
 <td><code>version</code></td>
 <td>spieli version string baked in at import time from <code>package.json</code> (e.g. <code>"0.4.1"</code>). Displayed in the Hub's instance drawer.</td>
 </tr>
+<tr>
+<td><code>impressum_url</code></td>
+<td>Absolute URL of the Impressum page. <code>IMPRESSUM_URL</code> env var takes priority; otherwise constructed from <code>SITE_URL + /impressum</code>. <code>null</code> when neither is configured. Baked in at import time — run <code>make db-apply</code> after changing legal env vars.</td>
+</tr>
+<tr>
+<td><code>privacy_url</code></td>
+<td>Absolute URL of the Datenschutzerklärung. <code>PRIVACY_URL</code> env var takes priority; otherwise <code>SITE_URL + /datenschutz</code>. <code>null</code> when neither is configured.</td>
+</tr>
 </tbody>
 </table>
 <p><strong>Example</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>curl<span class="w"> </span><span class="s1">&#39;https://example.com/api/rpc/get_meta&#39;</span>
+</code></pre></div>
+<hr />
+<h2 id="get_legaltype"><code>get_legal(type)</code><a class="headerlink" href="#get_legaltype" title="Permanent link">&para;</a></h2>
+<p>Returns generated legal HTML for <code>data-node</code> backends (no nginx web UI). The Hub calls this when <code>get_meta()</code> returns a <code>null</code> <code>impressum_url</code> or <code>privacy_url</code>.</p>
+<p><strong>Parameters</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>type</code></td>
+<td><code>text</code></td>
+<td><code>'impressum'</code> or <code>'datenschutz'</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Response</strong> — JSON object or <code>null</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;html&gt;...&lt;/html&gt;&quot;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<p>Returns <code>null</code> (HTTP 200) when no content has been stored for the requested type (i.e. <code>IMPRESSUM_NAME</code> was not set when the container started).</p>
+<p><strong>Example</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>curl<span class="w"> </span><span class="s1">&#39;https://example.com/api/rpc/get_legal?type=impressum&#39;</span>
 </code></pre></div>
 <hr />
 <h2 id="get_nearest_playgroundslat-lon"><code>get_nearest_playgrounds(lat, lon)</code><a class="headerlink" href="#get_nearest_playgroundslat-lon" title="Permanent link">&para;</a></h2>
@@ -2182,19 +2237,19 @@
 </tbody>
 </table>
 <p><strong>Response</strong> — JSON array:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">[</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="p">{</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="nt">&quot;osm_id&quot;</span><span class="p">:</span><span class="w">     </span><span class="mi">37808214</span><span class="p">,</span>
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w">       </span><span class="s2">&quot;Grezzbachpark&quot;</span><span class="p">,</span>
-<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">    </span><span class="nt">&quot;lat&quot;</span><span class="p">:</span><span class="w">        </span><span class="mf">50.5438</span><span class="p">,</span>
-<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">    </span><span class="nt">&quot;lon&quot;</span><span class="p">:</span><span class="w">        </span><span class="mf">9.7096</span><span class="p">,</span>
-<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">    </span><span class="nt">&quot;distance_m&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">342</span><span class="p">,</span>
-<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">    </span><span class="nt">&quot;tags&quot;</span><span class="p">:</span><span class="w">       </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Grezzbachpark&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;operator&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;access&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;yes&quot;</span><span class="w"> </span><span class="p">}</span>
-<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="p">]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="p">[</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="p">{</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">    </span><span class="nt">&quot;osm_id&quot;</span><span class="p">:</span><span class="w">     </span><span class="mi">37808214</span><span class="p">,</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w">       </span><span class="s2">&quot;Grezzbachpark&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">    </span><span class="nt">&quot;lat&quot;</span><span class="p">:</span><span class="w">        </span><span class="mf">50.5438</span><span class="p">,</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">    </span><span class="nt">&quot;lon&quot;</span><span class="p">:</span><span class="w">        </span><span class="mf">9.7096</span><span class="p">,</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">    </span><span class="nt">&quot;distance_m&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">342</span><span class="p">,</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">    </span><span class="nt">&quot;tags&quot;</span><span class="p">:</span><span class="w">       </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Grezzbachpark&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;operator&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;access&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;yes&quot;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="p">]</span>
 </code></pre></div>
 <p><strong>Example</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>curl<span class="w"> </span><span class="s1">&#39;https://example.com/api/rpc/get_nearest_playgrounds?lat=50.54&amp;lon=9.71&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>curl<span class="w"> </span><span class="s1">&#39;https://example.com/api/rpc/get_nearest_playgrounds?lat=50.54&amp;lon=9.71&#39;</span>
 </code></pre></div>
 <hr />
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
