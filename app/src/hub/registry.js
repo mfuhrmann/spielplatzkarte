@@ -148,6 +148,8 @@ export function createRegistry() {
           lastReachable:    null,  // ISO string of last successful hub probe
           observationStale: false,
           importing:        false, // true while osm2pgsql is actively running
+          impressumUrl:     null,
+          privacyUrl:       null,
         }));
         notify();
 
@@ -196,6 +198,8 @@ export function createRegistry() {
           observationStale,
           // false on older backends that don't yet ship the importing field
           importing:          entry.importing ?? false,
+          impressumUrl:       entry.impressum_url ?? null,
+          privacyUrl:         entry.privacy_url  ?? null,
         });
       }
     });
