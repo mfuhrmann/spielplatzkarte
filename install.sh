@@ -417,8 +417,12 @@ if confirm "Start the stack now?"; then
     COMPOSE_PROFILES="$DEPLOY_MODE"
     [[ "$AUTO_UPDATE" == "true" ]] && COMPOSE_PROFILES="${COMPOSE_PROFILES},auto-update"
 
+    PROFILE_ARGS=()
+    IFS=',' read -ra _profiles <<< "$COMPOSE_PROFILES"
+    for _p in "${_profiles[@]}"; do PROFILE_ARGS+=(--profile "$_p"); done
+
     docker compose -f "$DEPLOY_DIR/compose.yml" --env-file "$DEPLOY_DIR/.env" \
-        --profile "$COMPOSE_PROFILES" up -d
+        "${PROFILE_ARGS[@]}" up -d
     success "Stack started."
 
     # ── Run import (data-node and data-node-ui only) ───────────────────────────
