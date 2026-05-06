@@ -337,7 +337,9 @@ Returns instance metadata used by the Hub for federation discovery. Required for
   "osm_data_timestamp":   "2026-04-29T21:00:00Z",
   "osm_data_age_seconds": 108000,
   "importing":            false,
-  "version":              "0.4.1"
+  "version":              "0.4.1",
+  "impressum_url":        "https://spieli.example.com/impressum",
+  "privacy_url":          "https://spieli.example.com/datenschutz"
 }
 ```
 
@@ -354,11 +356,39 @@ Returns instance metadata used by the Hub for federation discovery. Required for
 | `osm_data_age_seconds` | Seconds since `osm_data_timestamp`. `null` when `osm_data_timestamp` is null. |
 | `importing` | `true` while `osm2pgsql` is actively running (data partially rebuilt); `false` at all other times. `false` on older backends that pre-date this field. The Hub drawer shows an "updating" badge while this is `true`. |
 | `version` | spieli version string baked in at import time from `package.json` (e.g. `"0.4.1"`). Displayed in the Hub's instance drawer. |
+| `impressum_url` | Absolute URL of the Impressum page. `IMPRESSUM_URL` env var takes priority; otherwise constructed from `SITE_URL + /impressum`. `null` when neither is configured. Baked in at import time — run `make db-apply` after changing legal env vars. |
+| `privacy_url` | Absolute URL of the Datenschutzerklärung. `PRIVACY_URL` env var takes priority; otherwise `SITE_URL + /datenschutz`. `null` when neither is configured. |
 
 **Example**
 
 ```bash
 curl 'https://example.com/api/rpc/get_meta'
+```
+
+---
+
+## `get_legal(type)`
+
+Returns generated legal HTML for `data-node` backends (no nginx web UI). The Hub calls this when `get_meta()` returns a `null` `impressum_url` or `privacy_url`.
+
+**Parameters**
+
+| Name | Type | Values |
+|---|---|---|
+| `type` | `text` | `'impressum'` or `'datenschutz'` |
+
+**Response** — JSON object or `null`:
+
+```json
+{ "content": "<html>...</html>" }
+```
+
+Returns `null` (HTTP 200) when no content has been stored for the requested type (i.e. `IMPRESSUM_NAME` was not set when the container started).
+
+**Example**
+
+```bash
+curl 'https://example.com/api/rpc/get_legal?type=impressum'
 ```
 
 ---

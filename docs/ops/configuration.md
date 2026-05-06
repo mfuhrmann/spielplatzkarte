@@ -59,6 +59,18 @@ so the budget is the larger of the two plus baseline (~700 MB for
 | `HUB_POLL_INTERVAL` | `300` | hub | Seconds between Hub re-fetches of playground data from all registered instances. Bare integer, no unit suffix. See [Federated Deployment](federated-deployment.md). |
 | `REIMPORT_INTERVAL_MIN_DAYS` | *(unset)* | data-node, data-node-ui | Minimum days between automatic OSM re-imports (daemon mode). Leave unset to run one-shot (import once and exit). Must be set together with `REIMPORT_INTERVAL_MAX_DAYS`. |
 | `REIMPORT_INTERVAL_MAX_DAYS` | *(unset)* | data-node, data-node-ui | Maximum days between automatic OSM re-imports. The importer picks a random interval in `[MIN, MAX]` days after each successful run. Recommended: `2`–`10`. Must be set together with `REIMPORT_INTERVAL_MIN_DAYS`. |
+| `SITE_URL` | *(unset)* | ui, data-node-ui | Public base URL of this instance (e.g. `https://spieli.example.com`). Used to construct absolute `impressum_url` and `privacy_url` in `get_meta()` so the Hub can discover legal pages without an operator-supplied override URL. Leave unset for purely local testing. |
+| `IMPRESSUM_NAME` | *(unset)* | ui, data-node-ui | Full name of the legally responsible person or organisation. Required to generate the Impressum and Datenschutz pages. |
+| `IMPRESSUM_ORG` | *(unset)* | ui, data-node-ui | Organisation name (if different from `IMPRESSUM_NAME`). Optional; omitted from the Impressum when empty. |
+| `IMPRESSUM_ADDRESS` | *(unset)* | ui, data-node-ui | Street address and city (e.g. `Musterstraße 1, 36037 Fulda`). Required alongside `IMPRESSUM_NAME`. |
+| `IMPRESSUM_EMAIL` | *(unset)* | ui, data-node-ui | Contact email address. Required for both Impressum and Datenschutz pages. |
+| `IMPRESSUM_PHONE` | *(unset)* | ui, data-node-ui | Contact phone number. Optional; omitted from the Impressum when empty. |
+| `IMPRESSUM_URL` | *(unset)* | ui, data-node-ui | Override URL for an existing Impressum page (e.g. `https://example.com/impressum`). When set, the generated `impressum.html` is skipped and this URL is used directly in `get_meta()` and `config.js`. |
+| `PRIVACY_URL` | *(unset)* | ui, data-node-ui | Override URL for an existing Datenschutzerklärung page. When set, the generated `datenschutz.html` is skipped. |
+
+> **Legal pages — two-step update.** Changing `IMPRESSUM_*` or `SITE_URL` requires two steps to take full effect:
+> 1. `make docker-build` — rebuilds the app container; `docker-entrypoint.sh` regenerates `impressum.html` / `datenschutz.html` and updates `config.js`.
+> 2. `make db-apply` — re-applies `api.sql` so `get_meta()` returns the updated `impressum_url` / `privacy_url`. Run with the vars exported: `set -a && source .env && set +a && make db-apply`.
 
 ## Compose profiles
 
