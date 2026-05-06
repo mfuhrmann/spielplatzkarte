@@ -32,6 +32,10 @@ export const parentOrigin = c.parentOrigin || '*';
 // Default locale for the UI. When empty, falls back to navigator.language → 'en'.
 export const defaultLocale = c.defaultLocale || '';
 
+// Legal pages — null hides the LegalButton entirely.
+export const impressumUrl = c.impressumUrl || null;
+export const privacyUrl   = c.privacyUrl   || null;
+
 // --- Hub ---
 
 // URL of the registry JSON file listing backends.

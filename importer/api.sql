@@ -1100,11 +1100,67 @@ AS $$
     'osm_data_timestamp',    (SELECT osm_data_timestamp FROM import_status),
     'osm_data_age_seconds',  (SELECT EXTRACT(EPOCH FROM (now() - osm_data_timestamp))::int FROM import_status),
     'importing',             COALESCE((SELECT importing FROM import_status), false),
-    'version',               '${SPIELI_VERSION}'
+    'version',               '${SPIELI_VERSION}',
+    -- Legal URLs: IMPRESSUM_URL / PRIVACY_URL take priority; fall back to SITE_URL+path.
+    -- envsubst fills these placeholders at import time (same pipeline as OSM_RELATION_ID).
+    -- NULL when neither override nor SITE_URL is configured.
+    'impressum_url',         CASE
+                               WHEN '${IMPRESSUM_URL}' <> '' THEN '${IMPRESSUM_URL}'
+                               WHEN '${SITE_URL}' <> ''      THEN '${SITE_URL}' || '/impressum'
+                               ELSE NULL
+                             END,
+    'privacy_url',           CASE
+                               WHEN '${PRIVACY_URL}' <> '' THEN '${PRIVACY_URL}'
+                               WHEN '${SITE_URL}' <> ''    THEN '${SITE_URL}' || '/datenschutz'
+                               ELSE NULL
+                             END,
+    -- true when legal content is stored in api.legal_content (data-node path).
+    -- Hub uses this to decide whether to show § / 🔒 icons even when impressum_url / privacy_url are null.
+    -- to_regclass guard: returns false on older backends where the table doesn't exist yet.
+    'has_legal',             CASE
+                               WHEN to_regclass('api.legal_content') IS NOT NULL
+                               THEN EXISTS(SELECT 1 FROM api.legal_content)
+                               ELSE false
+                             END
   );
 $$;
 
 GRANT EXECUTE ON FUNCTION api.get_meta(bigint) TO web_anon;
+
+-- =========================================================================
+-- 5a. legal_content — stores generated Impressum / Datenschutz HTML for
+--     data-node backends (no nginx webroot). Written by docker-entrypoint.sh
+--     at container startup via psql. Read by get_legal().
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS api.legal_content (
+  type        text        PRIMARY KEY CHECK (type IN ('impressum', 'datenschutz')),
+  content     text        NOT NULL,
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+
+GRANT SELECT ON api.legal_content TO web_anon;
+
+-- =========================================================================
+-- 5b. get_legal(type)
+--     Returns generated legal HTML for data-node backends. The hub calls
+--     this when get_meta() returns null impressum_url / privacy_url.
+-- =========================================================================
+DROP FUNCTION IF EXISTS api.get_legal(text);
+
+CREATE OR REPLACE FUNCTION api.get_legal(type text)
+RETURNS json
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = api
+AS $$
+  SELECT CASE
+    WHEN content IS NOT NULL THEN json_build_object('content', content)
+    ELSE NULL
+  END
+  FROM api.legal_content lc
+  WHERE lc.type = get_legal.type;
+$$;
+
+GRANT EXECUTE ON FUNCTION api.get_legal(text) TO web_anon;
 
 CREATE INDEX IF NOT EXISTS idx_osm_point_natural ON planet_osm_point ("natural") WHERE "natural" IS NOT NULL;
 

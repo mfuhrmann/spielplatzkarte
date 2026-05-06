@@ -295,7 +295,7 @@ run_import() (
     # timestamp").
     TMP_API_SQL=$(mktemp)
     trap 'rm -f "$TMP_API_SQL"; _clear_importing' EXIT
-    envsubst '$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM $SPIELI_VERSION' < /api.sql > "$TMP_API_SQL"
+    envsubst '$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM $SPIELI_VERSION $IMPRESSUM_URL $PRIVACY_URL $SITE_URL' < /api.sql > "$TMP_API_SQL"
     psql -v ON_ERROR_STOP=1 \
         -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
         -f "$TMP_API_SQL"
@@ -335,6 +335,72 @@ run_import() (
             SET last_import_at      = EXCLUDED.last_import_at,
                 osm_data_timestamp  = COALESCE(EXCLUDED.osm_data_timestamp, api.import_status.osm_data_timestamp),
                 importing           = false;"
+
+    # --------------------------------------------------------------------------- #
+    # Write legal content to api.legal_content (data-node: no nginx webroot).
+    # Skipped silently when IMPRESSUM_NAME / IMPRESSUM_ADDRESS are not set.
+    # --------------------------------------------------------------------------- #
+    if [ -n "${IMPRESSUM_NAME:-}" ] && [ -n "${IMPRESSUM_ADDRESS:-}" ]; then
+        _html_escape() { printf '%s' "$1" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g'; }
+        _IMP_NAME=$(    _html_escape "${IMPRESSUM_NAME}")
+        _IMP_ORG=$(     _html_escape "${IMPRESSUM_ORG:-}")
+        _IMP_ADDRESS=$( _html_escape "${IMPRESSUM_ADDRESS}")
+        _IMP_EMAIL=$(   _html_escape "${IMPRESSUM_EMAIL:-}")
+        _IMP_PHONE=$(   _html_escape "${IMPRESSUM_PHONE:-}")
+
+        IMPRESSUM_HTML=$(
+            printf '<!DOCTYPE html>\n<html lang="de">\n<head>\n'
+            printf '  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n'
+            printf '  <title>Impressum</title>\n'
+            printf '  <style>body{font-family:sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#222}h1{font-size:1.6rem}a{color:#1a6b3a}</style>\n'
+            printf '</head>\n<body>\n  <h1>Impressum</h1>\n'
+            printf '  <p>%s</p>\n' "$_IMP_NAME"
+            [ -n "$_IMP_ORG" ]     && printf '  <p>%s</p>\n' "$_IMP_ORG"
+            printf '  <p>%s</p>\n' "$_IMP_ADDRESS"
+            [ -n "$_IMP_EMAIL" ]   && printf '  <p>E-Mail: <a href="mailto:%s">%s</a></p>\n' "$_IMP_EMAIL" "$_IMP_EMAIL"
+            [ -n "$_IMP_PHONE" ]   && printf '  <p>Tel: %s</p>\n' "$_IMP_PHONE"
+            printf '</body>\n</html>\n'
+        )
+        _EMAIL_PART=""
+        [ -n "$_IMP_EMAIL" ] && _EMAIL_PART="<br>E-Mail: <a href=\"mailto:${_IMP_EMAIL}\">${_IMP_EMAIL}</a>"
+        DATENSCHUTZ_HTML=$(printf '%s' "<!DOCTYPE html>
+<html lang=\"de\"><head><meta charset=\"utf-8\">
+<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">
+<title>Datenschutzerklärung</title>
+<style>body{font-family:sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#222}h1{font-size:1.6rem}h2{font-size:1.2rem;margin-top:2rem}a{color:#1a6b3a}</style>
+</head><body>
+<h1>Datenschutzerklärung</h1>
+<h2>Verantwortliche Person</h2>
+<p>${_IMP_NAME}${_EMAIL_PART}</p>
+<h2>Grundsatz</h2>
+<p>Diese Anwendung erhebt keine Nutzerkonten, setzt keine Tracking-Cookies und führt keine Analyse des Nutzerverhaltens durch.</p>
+<h2>Kartendaten</h2>
+<p>Die Anwendung verwendet Geodaten aus <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> (ODbL). Die Daten sind öffentlich zugänglich.</p>
+<h2>Standortsuche (Nominatim)</h2>
+<p>Für die Ortssuche wird die Nominatim-API abgefragt. Dabei wird der Suchbegriff übertragen.</p>
+<h2>Fotos (Panoramax)</h2>
+<p>Sofern Fotos verfügbar sind, werden diese von Panoramax geladen. Es gelten deren Datenschutzbestimmungen.</p>
+<h2>Standortbestimmung</h2>
+<p>Die Standortfunktion wird nur auf ausdrücklichen Wunsch aktiviert und nicht gespeichert.</p>
+<h2>Serverprotokolle</h2>
+<p>Der Betreiber ist für die Protokollierung durch die Hosting-Infrastruktur verantwortlich.</p>
+<h2>Kontakt</h2>
+<p>${_IMP_NAME}${_EMAIL_PART}</p>
+</body></html>")
+
+        # Escape single quotes for embedding in SQL literal (replace ' with '')
+        IMP_SQL=$(printf '%s' "$IMPRESSUM_HTML"   | sed "s/'/''/g")
+        DS_SQL=$(printf  '%s' "$DATENSCHUTZ_HTML" | sed "s/'/''/g")
+
+        psql -v ON_ERROR_STOP=1 \
+            -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+            -c "INSERT INTO api.legal_content (type, content, updated_at) VALUES
+                  ('impressum',   '$IMP_SQL', now()),
+                  ('datenschutz', '$DS_SQL',  now())
+                ON CONFLICT (type) DO UPDATE
+                  SET content = EXCLUDED.content, updated_at = now();"
+        echo "[importer] Legal content written to api.legal_content."
+    fi
 
     # --------------------------------------------------------------------------- #
     # Notify PostgREST to reload its schema cache

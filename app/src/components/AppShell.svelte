@@ -10,9 +10,10 @@
   import EquipmentTooltip from './EquipmentTooltip.svelte';
   import NearbyPlaygrounds from './NearbyPlaygrounds.svelte';
   import DataContributionModal from './DataContributionModal.svelte';
+  import LegalModal from './LegalModal.svelte';
   import CompletenessLegend from './CompletenessLegend.svelte';
   import { onDestroy, onMount } from 'svelte';
-  import { Info, Plus, Minus, ArrowLeft } from 'lucide-svelte';
+  import { Info, Plus, Minus, ArrowLeft, Scale } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
   import GeoJSON from 'ol/format/GeoJSON.js';
   import { mapStore } from '../stores/map.js';
@@ -20,6 +21,7 @@
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { parseHash } from '../lib/deeplink.js';
   import { fetchPlaygroundByOsmId } from '../lib/api.js';
+  import { impressumUrl, privacyUrl } from '../lib/config.js';
 
   /**
    * The OL VectorSource that renders the polygon tier (zoom ≥ 14). The shell
@@ -294,7 +296,8 @@
     };
   });
 
-  let dataModalOpen = false;
+  let dataModalOpen  = false;
+  let legalModalOpen = false;
 
   // Nearest-playground suggestions panel
   let nearbyLocation = null;  // { lat, lon } | null
@@ -460,6 +463,16 @@
       >
         <Info class="h-5 w-5" />
       </button>
+      {#if impressumUrl || privacyUrl}
+        <button
+          class="control-btn"
+          onclick={() => legalModalOpen = true}
+          title="Rechtliches"
+          aria-label="Impressum und Datenschutz"
+        >
+          <Scale class="h-5 w-5" />
+        </button>
+      {/if}
       <FilterPanel />
     </div>
 
@@ -529,6 +542,12 @@
   <DataContributionModal
     bind:open={dataModalOpen}
     chatUrl={dataContribLinks.chatUrl}
+  />
+
+  <LegalModal
+    bind:open={legalModalOpen}
+    {impressumUrl}
+    {privacyUrl}
   />
 </div>
 

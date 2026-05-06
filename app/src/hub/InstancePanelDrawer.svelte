@@ -1,6 +1,7 @@
 <script>
   import { _ } from 'svelte-i18n';
   import { X } from 'lucide-svelte';
+  import LegalContentModal from '../components/LegalContentModal.svelte';
 
   /** @type {Array<{ url: string, name: string, version: string|null, loading: boolean, error: string|null, playgroundCount: number, dataAgeSec: number|null, osmDataAgeSec: number|null, lastReachable: string|null, healthUp: boolean|null, observationStale: boolean }>} */
   export let backends;
@@ -51,6 +52,41 @@
   }
 
   $: observationStaleAny = backends.some(b => b.observationStale);
+
+  let legalModalOpen = false;
+  let legalContent = null;
+  let legalError = null;
+  let legalLoading = false;
+
+  async function openLegal(backendUrl, type) {
+    legalContent = null;
+    legalError = null;
+    legalLoading = true;
+    legalModalOpen = true;
+    try {
+      const res = await fetch(`${backendUrl}/rpc/get_legal?type=${type}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data?.content) {
+        legalContent = data.content;
+      } else {
+        legalError = 'Kein Inhalt verfügbar.';
+      }
+    } catch (e) {
+      legalError = `Fehler beim Laden: ${e.message}`;
+    } finally {
+      legalLoading = false;
+    }
+  }
+
+  function handleLegalClick(b, type) {
+    const url = type === 'impressum' ? b.impressumUrl : b.privacyUrl;
+    if (url) {
+      window.open(url, '_blank', 'noopener');
+    } else {
+      openLegal(b.url, type);
+    }
+  }
 </script>
 
 <div
@@ -96,11 +132,29 @@
         <li class="instance-item">
           <div class="instance-row">
             <span class="instance-name">{b.name}</span>
-            {#if b.importing}
-              <span class="badge instance-badge instance-badge--importing">{$_('hub.importing')}</span>
-            {:else if b.version}
-              <span class="badge instance-badge text-bg-secondary">{b.version}</span>
-            {/if}
+            <div class="instance-row-end">
+              {#if b.impressumUrl !== null || b.hasLegal}
+                <button
+                  class="legal-btn"
+                  title="Impressum"
+                  aria-label="Impressum für {b.name}"
+                  onclick={() => handleLegalClick(b, 'impressum')}
+                >§</button>
+              {/if}
+              {#if b.privacyUrl !== null || b.hasLegal}
+                <button
+                  class="legal-btn"
+                  title="Datenschutz"
+                  aria-label="Datenschutzerklärung für {b.name}"
+                  onclick={() => handleLegalClick(b, 'datenschutz')}
+                >🔒</button>
+              {/if}
+              {#if b.importing}
+                <span class="badge instance-badge instance-badge--importing">{$_('hub.importing')}</span>
+              {:else if b.version}
+                <span class="badge instance-badge text-bg-secondary">{b.version}</span>
+              {/if}
+            </div>
           </div>
 
           {#if b.loading}
@@ -148,6 +202,13 @@
     </ul>
   {/if}
 </div>
+
+<LegalContentModal
+  bind:open={legalModalOpen}
+  content={legalContent}
+  error={legalError}
+  loading={legalLoading}
+/>
 
 <style>
   .drawer {
@@ -246,6 +307,25 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  .instance-row-end {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .legal-btn {
+    background: none;
+    border: none;
+    padding: 0 0.15rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    color: #6b7280;
+    line-height: 1;
+    border-radius: 3px;
+  }
+  .legal-btn:hover { color: #1a6b3a; background: #f0f9f4; }
 
   .instance-badge {
     font-size: 0.65rem;
