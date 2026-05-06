@@ -5,6 +5,7 @@ set -e
 # then starts nginx. Supports APP_MODE=standalone (default) and APP_MODE=hub.
 
 APP_MODE="${APP_MODE:-standalone}"
+WEBROOT="/usr/share/nginx/html"
 
 # Sanitize string values interpolated into JS string literals.
 # Strip anything that isn't safe for the expected value type to prevent
@@ -15,8 +16,30 @@ SAFE_REGISTRY_URL=$(printf '%s'    "${REGISTRY_URL:-}"    | tr -cd 'A-Za-z0-9:/.
 SAFE_WIKI_URL=$(printf '%s'        "${REGION_PLAYGROUND_WIKI_URL:-}" | tr -cd 'A-Za-z0-9:/.+_%~-')
 SAFE_CHAT_URL=$(printf '%s'        "${REGION_CHAT_URL:-}" | tr -cd 'A-Za-z0-9:/.+_%~-')
 
+# Legal URLs — IMPRESSUM_URL / PRIVACY_URL override env vars take priority.
+# If unset, construct from SITE_URL + path (assuming nginx serves the
+# generated files at /impressum and /datenschutz).
+SAFE_SITE_URL=$(printf '%s' "${SITE_URL:-}" | tr -cd 'A-Za-z0-9:/.+_%~-')
+if [ -n "${IMPRESSUM_URL:-}" ]; then
+    SAFE_IMPRESSUM_URL=$(printf '%s' "${IMPRESSUM_URL}" | tr -cd 'A-Za-z0-9:/.+_%~-')
+elif [ -n "$SAFE_SITE_URL" ]; then
+    SAFE_IMPRESSUM_URL="${SAFE_SITE_URL}/impressum"
+else
+    SAFE_IMPRESSUM_URL=""
+fi
+if [ -n "${PRIVACY_URL:-}" ]; then
+    SAFE_PRIVACY_URL=$(printf '%s' "${PRIVACY_URL}" | tr -cd 'A-Za-z0-9:/.+_%~-')
+elif [ -n "$SAFE_SITE_URL" ]; then
+    SAFE_PRIVACY_URL="${SAFE_SITE_URL}/datenschutz"
+else
+    SAFE_PRIVACY_URL=""
+fi
+
+# js_or_null <value> — emits a JS string literal or null.
+js_or_null() { [ -n "$1" ] && printf "'%s'" "$1" || printf 'null'; }
+
 if [ "$APP_MODE" = "hub" ]; then
-    cat > /usr/share/nginx/html/config.js << JSEOF
+    cat > "$WEBROOT/config.js" << JSEOF
 window.APP_CONFIG = {
   appMode:           'hub',
   registryUrl:       '${SAFE_REGISTRY_URL}',
@@ -25,11 +48,13 @@ window.APP_CONFIG = {
   mapMinZoom:        ${MAP_MIN_ZOOM:-4},
   clusterMaxZoom:    ${CLUSTER_MAX_ZOOM:-13},
   macroMaxZoom:      ${MACRO_MAX_ZOOM:-5},
-  parentOrigin:      '${SAFE_PARENT_ORIGIN}'
+  parentOrigin:      '${SAFE_PARENT_ORIGIN}',
+  impressumUrl:      $(js_or_null "$SAFE_IMPRESSUM_URL"),
+  privacyUrl:        $(js_or_null "$SAFE_PRIVACY_URL")
 };
 JSEOF
 else
-    cat > /usr/share/nginx/html/config.js << JSEOF
+    cat > "$WEBROOT/config.js" << JSEOF
 window.APP_CONFIG = {
   appMode:                    'standalone',
   osmRelationId:              ${OSM_RELATION_ID:-62700},
@@ -40,9 +65,44 @@ window.APP_CONFIG = {
   poiRadiusM:                 ${POI_RADIUS_M:-5000},
   apiBaseUrl:                 '${SAFE_API_BASE_URL}',
   clusterMaxZoom:             ${CLUSTER_MAX_ZOOM:-13},
-  parentOrigin:               '${SAFE_PARENT_ORIGIN}'
+  parentOrigin:               '${SAFE_PARENT_ORIGIN}',
+  impressumUrl:               $(js_or_null "$SAFE_IMPRESSUM_URL"),
+  privacyUrl:                 $(js_or_null "$SAFE_PRIVACY_URL")
 };
 JSEOF
+fi
+
+# ── Generate legal pages ───────────────────────────────────────────────────────
+# Sanitize legal contact vars for HTML interpolation (escape < > & ").
+html_escape() { printf '%s' "$1" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g'; }
+
+SAFE_IMP_NAME=$(html_escape "${IMPRESSUM_NAME:-}")
+SAFE_IMP_ORG=$(html_escape "${IMPRESSUM_ORG:-}")
+SAFE_IMP_ADDRESS=$(html_escape "${IMPRESSUM_ADDRESS:-}")
+SAFE_IMP_EMAIL=$(html_escape "${IMPRESSUM_EMAIL:-}")
+SAFE_IMP_PHONE=$(html_escape "${IMPRESSUM_PHONE:-}")
+
+if [ -z "${IMPRESSUM_URL:-}" ] && [ -n "$SAFE_IMP_NAME" ] && [ -n "$SAFE_IMP_ADDRESS" ]; then
+    {
+        printf '<!DOCTYPE html>\n<html lang="de">\n<head>\n'
+        printf '  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
+        printf '  <title>Impressum</title>\n'
+        printf '  <style>body{font-family:sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#222}h1{font-size:1.6rem}a{color:#1a6b3a}</style>\n'
+        printf '</head>\n<body>\n  <h1>Impressum</h1>\n'
+        printf '  <p>%s</p>\n' "$SAFE_IMP_NAME"
+        [ -n "$SAFE_IMP_ORG" ]     && printf '  <p>%s</p>\n' "$SAFE_IMP_ORG"
+        printf '  <p>%s</p>\n' "$SAFE_IMP_ADDRESS"
+        [ -n "$SAFE_IMP_EMAIL" ]   && printf '  <p>E-Mail: <a href="mailto:%s">%s</a></p>\n' "$SAFE_IMP_EMAIL" "$SAFE_IMP_EMAIL"
+        [ -n "$SAFE_IMP_PHONE" ]   && printf '  <p>Tel: %s</p>\n' "$SAFE_IMP_PHONE"
+        printf '</body>\n</html>\n'
+    } > "$WEBROOT/impressum.html"
+fi
+
+if [ -z "${PRIVACY_URL:-}" ] && [ -n "$SAFE_IMP_NAME" ] && [ -f /datenschutz.template.html ]; then
+    sed \
+        -e "s/{{IMPRESSUM_NAME}}/$SAFE_IMP_NAME/g" \
+        -e "s/{{IMPRESSUM_EMAIL}}/$SAFE_IMP_EMAIL/g" \
+        /datenschutz.template.html > "$WEBROOT/datenschutz.html"
 fi
 
 # Write placeholder federation-status.json and metrics so nginx can serve
@@ -52,7 +112,6 @@ fi
 # gauge — operators alerting on `time() - spielplatz_poll_generated_timestamp > N`
 # need a real value during the boot window, otherwise a crashed cron during
 # startup cannot be distinguished from a healthy hub before its first tick.
-WEBROOT="/usr/share/nginx/html"
 INIT_TS_ISO=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 INIT_TS_UNIX=$(date -u +%s)
 if [ ! -f "$WEBROOT/federation-status.json" ]; then

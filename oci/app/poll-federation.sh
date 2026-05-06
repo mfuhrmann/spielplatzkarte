@@ -92,6 +92,8 @@ while IFS="	" read -r SLUG URL; do
     OSM_DATA_TIMESTAMP_JSON="null"
     OSM_DATA_AGE_SECONDS="null"
     IMPORTING="false"
+    IMPRESSUM_URL_VAL="null"
+    PRIVACY_URL_VAL="null"
     if [ "$UP" = "1" ] && [ -f "$META_TMP" ]; then
         RAW=$(cat "$META_TMP")
         # api.get_meta returns a JSON object directly (PostgREST scalar-RPC),
@@ -105,6 +107,9 @@ while IFS="	" read -r SLUG URL; do
         OSM_DATA_AGE_RAW=$(printf '%s' "$RAW" | jq -r '.osm_data_age_seconds // empty' 2>/dev/null)
         # `// false` defaults absent/null field to false (pre-importing-flag backends).
         IMPORTING=$(printf '%s' "$RAW" | jq '.importing // false' 2>/dev/null || echo false)
+        # `// null` defaults absent legal URL fields to null (older backends).
+        IMPRESSUM_URL_VAL=$(printf '%s' "$RAW" | jq '.impressum_url // null' 2>/dev/null || echo null)
+        PRIVACY_URL_VAL=$(printf '%s' "$RAW" | jq '.privacy_url // null' 2>/dev/null || echo null)
         if [ -n "$LAST_IMPORT_AT" ]; then
             LAST_IMPORT_AT_JSON=$(printf '%s' "$LAST_IMPORT_AT" | jq -Rs .)
         fi
@@ -144,7 +149,9 @@ while IFS="	" read -r SLUG URL; do
     BACKENDS_JSON="${BACKENDS_JSON}\"data_age_seconds\":${DATA_AGE_SECONDS},"
     BACKENDS_JSON="${BACKENDS_JSON}\"osm_data_timestamp\":${OSM_DATA_TIMESTAMP_JSON},"
     BACKENDS_JSON="${BACKENDS_JSON}\"osm_data_age_seconds\":${OSM_DATA_AGE_SECONDS},"
-    BACKENDS_JSON="${BACKENDS_JSON}\"importing\":${IMPORTING}"
+    BACKENDS_JSON="${BACKENDS_JSON}\"importing\":${IMPORTING},"
+    BACKENDS_JSON="${BACKENDS_JSON}\"impressum_url\":${IMPRESSUM_URL_VAL},"
+    BACKENDS_JSON="${BACKENDS_JSON}\"privacy_url\":${PRIVACY_URL_VAL}"
     BACKENDS_JSON="${BACKENDS_JSON}}"
 
     # Append Prometheus metrics. Prometheus disallows `"` and `\` inside
