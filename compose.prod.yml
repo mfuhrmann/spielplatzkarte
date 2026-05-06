@@ -111,6 +111,14 @@ services:
       API_BASE_URL:               ${API_BASE_URL:-/api}
       REGISTRY_URL:               ${REGISTRY_URL:-/registry.json}
       HUB_POLL_INTERVAL:          ${HUB_POLL_INTERVAL:-300}
+      SITE_URL:                   ${SITE_URL:-}
+      IMPRESSUM_NAME:             ${IMPRESSUM_NAME:-}
+      IMPRESSUM_ORG:              ${IMPRESSUM_ORG:-}
+      IMPRESSUM_ADDRESS:          ${IMPRESSUM_ADDRESS:-}
+      IMPRESSUM_EMAIL:            ${IMPRESSUM_EMAIL:-}
+      IMPRESSUM_PHONE:            ${IMPRESSUM_PHONE:-}
+      IMPRESSUM_URL:              ${IMPRESSUM_URL:-}
+      PRIVACY_URL:                ${PRIVACY_URL:-}
     restart: on-failure
 
 volumes:

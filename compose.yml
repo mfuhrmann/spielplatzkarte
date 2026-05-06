@@ -158,6 +158,14 @@ services:
       MAP_MIN_ZOOM:                ${MAP_MIN_ZOOM:-10}
       POI_RADIUS_M:                ${POI_RADIUS_M:-5000}
       API_BASE_URL:                /api
+      SITE_URL:                    ${SITE_URL:-}
+      IMPRESSUM_NAME:              ${IMPRESSUM_NAME:-}
+      IMPRESSUM_ORG:               ${IMPRESSUM_ORG:-}
+      IMPRESSUM_ADDRESS:           ${IMPRESSUM_ADDRESS:-}
+      IMPRESSUM_EMAIL:             ${IMPRESSUM_EMAIL:-}
+      IMPRESSUM_PHONE:             ${IMPRESSUM_PHONE:-}
+      IMPRESSUM_URL:               ${IMPRESSUM_URL:-}
+      PRIVACY_URL:                 ${PRIVACY_URL:-}
     restart: unless-stopped
 
 volumes:
