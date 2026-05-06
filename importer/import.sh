@@ -361,6 +361,8 @@ run_import() (
             [ -n "$_IMP_PHONE" ]   && printf '  <p>Tel: %s</p>\n' "$_IMP_PHONE"
             printf '</body>\n</html>\n'
         )
+        _EMAIL_PART=""
+        [ -n "$_IMP_EMAIL" ] && _EMAIL_PART="<br>E-Mail: <a href=\"mailto:${_IMP_EMAIL}\">${_IMP_EMAIL}</a>"
         DATENSCHUTZ_HTML=$(printf '%s' "<!DOCTYPE html>
 <html lang=\"de\"><head><meta charset=\"utf-8\">
 <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">
@@ -369,7 +371,7 @@ run_import() (
 </head><body>
 <h1>Datenschutzerklärung</h1>
 <h2>Verantwortliche Person</h2>
-<p>${_IMP_NAME}<br>E-Mail: <a href=\"mailto:${_IMP_EMAIL}\">${_IMP_EMAIL}</a></p>
+<p>${_IMP_NAME}${_EMAIL_PART}</p>
 <h2>Grundsatz</h2>
 <p>Diese Anwendung erhebt keine Nutzerkonten, setzt keine Tracking-Cookies und führt keine Analyse des Nutzerverhaltens durch.</p>
 <h2>Kartendaten</h2>
@@ -383,7 +385,7 @@ run_import() (
 <h2>Serverprotokolle</h2>
 <p>Der Betreiber ist für die Protokollierung durch die Hosting-Infrastruktur verantwortlich.</p>
 <h2>Kontakt</h2>
-<p>${_IMP_NAME}<br>E-Mail: <a href=\"mailto:${_IMP_EMAIL}\">${_IMP_EMAIL}</a></p>
+<p>${_IMP_NAME}${_EMAIL_PART}</p>
 </body></html>")
 
         # Escape single quotes for embedding in SQL literal (replace ' with '')

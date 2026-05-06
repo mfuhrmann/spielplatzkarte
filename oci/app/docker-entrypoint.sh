@@ -98,10 +98,13 @@ if [ -z "${IMPRESSUM_URL:-}" ] && [ -n "$SAFE_IMP_NAME" ] && [ -n "$SAFE_IMP_ADD
     } > "$WEBROOT/impressum.html"
 fi
 
-if [ -z "${PRIVACY_URL:-}" ] && [ -n "$SAFE_IMP_NAME" ] && [ -f /datenschutz.template.html ]; then
+if [ -z "${PRIVACY_URL:-}" ] && [ -n "$SAFE_IMP_NAME" ] && [ -n "$SAFE_IMP_EMAIL" ] && [ -f /datenschutz.template.html ]; then
+    # Escape & and / so they are literal in the sed replacement position.
+    SAFE_IMP_NAME_FOR_SED=$(printf '%s'  "$SAFE_IMP_NAME"  | sed 's/[\/&]/\\&/g')
+    SAFE_IMP_EMAIL_FOR_SED=$(printf '%s' "$SAFE_IMP_EMAIL" | sed 's/[\/&]/\\&/g')
     sed \
-        -e "s/{{IMPRESSUM_NAME}}/$SAFE_IMP_NAME/g" \
-        -e "s/{{IMPRESSUM_EMAIL}}/$SAFE_IMP_EMAIL/g" \
+        -e "s/{{IMPRESSUM_NAME}}/$SAFE_IMP_NAME_FOR_SED/g" \
+        -e "s/{{IMPRESSUM_EMAIL}}/$SAFE_IMP_EMAIL_FOR_SED/g" \
         /datenschutz.template.html > "$WEBROOT/datenschutz.html"
 fi
 
