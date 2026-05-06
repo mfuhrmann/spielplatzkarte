@@ -212,6 +212,66 @@ if [[ "$DEPLOY_MODE" != "ui" ]]; then
     fi
 fi
 
+# ── Legal pages (Impressum / Datenschutzerklärung) ────────────────────────────
+# Applicable to all deployment modes:
+#   data-node     — importer writes contact details to api.legal_content
+#   ui            — docker-entrypoint generates impressum.html + datenschutz.html
+#   data-node-ui  — both of the above
+
+IMPRESSUM_NAME=""
+IMPRESSUM_ORG=""
+IMPRESSUM_ADDRESS=""
+IMPRESSUM_EMAIL=""
+IMPRESSUM_PHONE=""
+IMPRESSUM_URL=""
+PRIVACY_URL=""
+SITE_URL=""
+LEGAL_CHOICE=""
+
+printf "\n${BOLD}── Legal pages (Impressum / Datenschutzerklärung) ──────────────${RESET}\n"
+printf "German law (TMG §5) and GDPR require an Impressum and privacy statement.\n"
+printf "spieli can generate them from contact details, or link to pages you already host.\n\n"
+
+if confirm "Configure legal pages now?"; then
+    printf "\n"
+    printf "  ${BOLD}1)${RESET} Generate pages from contact details (recommended)\n"
+    printf "  ${BOLD}2)${RESET} Link to existing pages I already host\n"
+    printf "  ${BOLD}3)${RESET} Skip — I will configure this manually in .env later\n\n"
+    while true; do
+        printf "${BOLD}Legal pages option${RESET} [1-3]: "
+        read -r LEGAL_CHOICE
+        case "$LEGAL_CHOICE" in
+            1|2|3) break ;;
+            *) warn "Please enter 1, 2, or 3." ;;
+        esac
+    done
+
+    case "$LEGAL_CHOICE" in
+        1)
+            printf "\nContact details for the responsible person (TMG §5):\n\n"
+            ask          IMPRESSUM_NAME    "Full name of responsible person (e.g. Max Mustermann)"
+            ask_optional IMPRESSUM_ORG     "Organisation / association name (optional)"
+            ask          IMPRESSUM_ADDRESS "Street address (e.g. Musterstraße 1, 36037 Fulda)"
+            ask          IMPRESSUM_EMAIL   "Contact email address"
+            ask_optional IMPRESSUM_PHONE   "Contact phone number (optional)"
+            ask_optional SITE_URL          "Public URL of this instance (e.g. https://spieli.example.com)"
+            success "Legal contact details set — pages will be generated at startup."
+            ;;
+        2)
+            printf "\nURLs of your existing legal pages:\n\n"
+            ask_optional IMPRESSUM_URL "Impressum URL (e.g. https://example.com/impressum)"
+            ask_optional PRIVACY_URL   "Datenschutzerklärung URL (e.g. https://example.com/datenschutz)"
+            ask_optional SITE_URL      "Public URL of this instance (e.g. https://spieli.example.com)"
+            success "Legal override URLs set."
+            ;;
+        3)
+            warn "Skipping legal configuration — add IMPRESSUM_* vars to .env to enable later."
+            ;;
+    esac
+else
+    warn "Skipping legal configuration — add IMPRESSUM_* vars to .env to enable later."
+fi
+
 # ── Generate password (data-node and data-node-ui only) ───────────────────────
 
 if [[ "$DEPLOY_MODE" != "ui" ]]; then
@@ -274,6 +334,22 @@ success "Files downloaded."
     printf "# Set to the Hub's full origin (e.g. https://hub.example.com) when embedding\n"
     printf "# this instance in a spieli Hub. Leave empty for standalone deployments.\n"
     printf "# PARENT_ORIGIN=\n\n"
+
+    printf "# ── Legal pages (Impressum / Datenschutzerklärung) ─────────────\n"
+    printf "# SITE_URL: public base URL — used to build impressum_url/privacy_url in get_meta().\n"
+    printf "SITE_URL=%s\n" "$SITE_URL"
+    if [[ -n "$IMPRESSUM_URL" || -n "$PRIVACY_URL" ]]; then
+        printf "# Override: link to existing external legal pages.\n"
+        printf "IMPRESSUM_URL=%s\n" "$IMPRESSUM_URL"
+        printf "PRIVACY_URL=%s\n\n" "$PRIVACY_URL"
+    else
+        printf "# Contact details for generated Impressum and Datenschutz pages.\n"
+        printf "IMPRESSUM_NAME=%s\n"    "$IMPRESSUM_NAME"
+        printf "IMPRESSUM_ORG=%s\n"     "$IMPRESSUM_ORG"
+        printf "IMPRESSUM_ADDRESS=%s\n" "$IMPRESSUM_ADDRESS"
+        printf "IMPRESSUM_EMAIL=%s\n"   "$IMPRESSUM_EMAIL"
+        printf "IMPRESSUM_PHONE=%s\n\n" "$IMPRESSUM_PHONE"
+    fi
 
     if [[ "$DEPLOY_MODE" != "data-node" ]]; then
         printf "# ── Optional: infrastructure ────────────────────────────────────\n"
