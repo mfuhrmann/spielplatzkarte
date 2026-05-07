@@ -1,4 +1,6 @@
 <script>
+  import { _ } from 'svelte-i18n';
+
   export let open = false;
   /** @type {string | null} */
   export let content = null;
@@ -25,14 +27,14 @@
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="modal-backdrop" onclick={onBackdropClick}>
-    <div class="modal-box" role="dialog" aria-modal="true" aria-label="Rechtliche Information">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-label={$_('legal.contentTitle')}>
       <div class="modal-header">
-        <span class="modal-title">Rechtliche Information</span>
-        <button type="button" class="close-btn" onclick={close} aria-label="Schließen">✕</button>
+        <span class="modal-title">{$_('legal.contentTitle')}</span>
+        <button type="button" class="close-btn" onclick={close} aria-label={$_('hub.closeBtn')}>✕</button>
       </div>
       <div class="modal-body">
         {#if loading}
-          <p class="status-msg">Wird geladen…</p>
+          <p class="status-msg">{$_('legal.loading')}</p>
         {:else if error}
           <p class="status-msg status-msg--error">{error}</p>
         {:else if info}
@@ -41,7 +43,7 @@
           <iframe
             srcdoc={content}
             sandbox="allow-same-origin"
-            title="Rechtliche Information"
+            title={$_('legal.contentTitle')}
             class="content-frame"
           ></iframe>
         {/if}

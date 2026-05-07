@@ -369,6 +369,20 @@
     "W": "W",
     "NW": "NW"
   },
+  "legal": {
+    "title": "Rechtliches",
+    "buttonLabel": "Impressum und Datenschutz",
+    "impressum": "Impressum",
+    "datenschutz": "Datenschutzerklärung",
+    "contentTitle": "Rechtliche Information",
+    "loading": "Wird geladen…",
+    "noContent": "Kein Inhalt verfügbar.",
+    "loadError": "Fehler beim Laden: {message}",
+    "impressumFor": "Impressum für {name}",
+    "datenschutzFor": "Datenschutzerklärung für {name}",
+    "noneFor": "Keine rechtlichen Angaben für {name} verfügbar.",
+    "none": "Keine rechtlichen Angaben verfügbar."
+  },
   "hub": {
     "title": "spieli Hub",
     "registryError": "Registry nicht erreichbar",

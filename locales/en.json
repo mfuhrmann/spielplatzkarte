@@ -369,6 +369,20 @@
     "W": "W",
     "NW": "NW"
   },
+  "legal": {
+    "title": "Legal",
+    "buttonLabel": "Imprint and Privacy",
+    "impressum": "Imprint",
+    "datenschutz": "Privacy policy",
+    "contentTitle": "Legal information",
+    "loading": "Loading…",
+    "noContent": "No content available.",
+    "loadError": "Error loading: {message}",
+    "impressumFor": "Imprint for {name}",
+    "datenschutzFor": "Privacy policy for {name}",
+    "noneFor": "No legal information available for {name}.",
+    "none": "No legal information available."
+  },
   "hub": {
     "title": "spieli Hub",
     "registryError": "Registry unreachable",

@@ -15,7 +15,7 @@ test.describe('Standalone — LegalButton', () => {
     await injectApiConfig(page);
     await stubApiRoutes(page);
     await page.goto('/');
-    await expect(page.locator('button[aria-label="Impressum und Datenschutz"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('button[aria-label="Imprint and Privacy"]')).toBeVisible({ timeout: 5000 });
   });
 
   test('button visible and opens modal when impressumUrl is set', async ({ page }) => {
@@ -23,15 +23,15 @@ test.describe('Standalone — LegalButton', () => {
     await stubApiRoutes(page);
     await page.goto('/');
 
-    const btn = page.locator('button[aria-label="Impressum und Datenschutz"]');
+    const btn = page.locator('button[aria-label="Imprint and Privacy"]');
     await expect(btn).toBeVisible({ timeout: 5000 });
     await btn.click();
 
-    const modal = page.locator('[role="dialog"]').filter({ hasText: 'Rechtliches' });
+    const modal = page.locator('[role="dialog"]').filter({ hasText: 'Legal' });
     await expect(modal).toBeVisible();
-    await expect(modal.locator('a', { hasText: 'Impressum' })).toBeVisible();
+    await expect(modal.locator('a', { hasText: 'Imprint' })).toBeVisible();
     // privacyUrl is null → Datenschutz link must not appear
-    await expect(modal.locator('a', { hasText: 'Datenschutzerklärung' })).toHaveCount(0);
+    await expect(modal.locator('a', { hasText: 'Privacy policy' })).toHaveCount(0);
   });
 
   test('button visible and opens modal when privacyUrl is set', async ({ page }) => {
@@ -39,14 +39,14 @@ test.describe('Standalone — LegalButton', () => {
     await stubApiRoutes(page);
     await page.goto('/');
 
-    const btn = page.locator('button[aria-label="Impressum und Datenschutz"]');
+    const btn = page.locator('button[aria-label="Imprint and Privacy"]');
     await expect(btn).toBeVisible({ timeout: 5000 });
     await btn.click();
 
-    const modal = page.locator('[role="dialog"]').filter({ hasText: 'Rechtliches' });
+    const modal = page.locator('[role="dialog"]').filter({ hasText: 'Legal' });
     await expect(modal).toBeVisible();
-    await expect(modal.locator('a', { hasText: 'Datenschutzerklärung' })).toBeVisible();
-    await expect(modal.locator('a', { hasText: 'Impressum' })).toHaveCount(0);
+    await expect(modal.locator('a', { hasText: 'Privacy policy' })).toBeVisible();
+    await expect(modal.locator('a', { hasText: 'Imprint' })).toHaveCount(0);
   });
 
   test('both links visible when both URLs set', async ({ page }) => {
@@ -57,10 +57,10 @@ test.describe('Standalone — LegalButton', () => {
     await stubApiRoutes(page);
     await page.goto('/');
 
-    await page.locator('button[aria-label="Impressum und Datenschutz"]').click();
-    const modal = page.locator('[role="dialog"]').filter({ hasText: 'Rechtliches' });
-    await expect(modal.locator('a', { hasText: 'Impressum' })).toHaveCount(1);
-    await expect(modal.locator('a', { hasText: 'Datenschutzerklärung' })).toHaveCount(1);
+    await page.locator('button[aria-label="Imprint and Privacy"]').click();
+    const modal = page.locator('[role="dialog"]').filter({ hasText: 'Legal' });
+    await expect(modal.locator('a', { hasText: 'Imprint' })).toHaveCount(1);
+    await expect(modal.locator('a', { hasText: 'Privacy policy' })).toHaveCount(1);
   });
 
   test('Impressum link has correct href and target=_blank', async ({ page }) => {
@@ -68,8 +68,8 @@ test.describe('Standalone — LegalButton', () => {
     await stubApiRoutes(page);
     await page.goto('/');
 
-    await page.locator('button[aria-label="Impressum und Datenschutz"]').click();
-    const link = page.locator('[role="dialog"] a', { hasText: 'Impressum' });
+    await page.locator('button[aria-label="Imprint and Privacy"]').click();
+    const link = page.locator('[role="dialog"] a', { hasText: 'Imprint' });
     await expect(link).toHaveAttribute('href', 'https://example.com/impressum');
     await expect(link).toHaveAttribute('target', '_blank');
   });
@@ -79,10 +79,10 @@ test.describe('Standalone — LegalButton', () => {
     await stubApiRoutes(page);
     await page.goto('/');
 
-    await page.locator('button[aria-label="Impressum und Datenschutz"]').click();
-    await expect(page.locator('[role="dialog"]').filter({ hasText: 'Rechtliches' })).toBeVisible();
+    await page.locator('button[aria-label="Imprint and Privacy"]').click();
+    await expect(page.locator('[role="dialog"]').filter({ hasText: 'Legal' })).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.locator('[role="dialog"]').filter({ hasText: 'Rechtliches' })).toHaveCount(0);
+    await expect(page.locator('[role="dialog"]').filter({ hasText: 'Legal' })).toHaveCount(0);
   });
 });
 
@@ -124,10 +124,10 @@ test.describe('Hub — drawer legal icons', () => {
     });
     await page.goto('/');
     const drawer = await openDrawer(page);
-    const btn = drawer.locator('button[title="Impressum"]').first();
+    const btn = drawer.locator('button[title="Imprint"]').first();
     await expect(btn).toBeVisible();
     await btn.click();
-    await expect(page.locator('[role="dialog"]').filter({ hasText: 'Keine rechtlichen Angaben' })).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[role="dialog"]').filter({ hasText: 'No legal information available' })).toBeVisible({ timeout: 3000 });
   });
 
   test('§ icon visible when impressum_url set; click opens new tab', async ({ page, context }) => {
@@ -147,7 +147,7 @@ test.describe('Hub — drawer legal icons', () => {
     await page.goto('/');
     const drawer = await openDrawer(page);
 
-    const impressumBtn = drawer.locator('button[title="Impressum"]').first();
+    const impressumBtn = drawer.locator('button[title="Imprint"]').first();
     await expect(impressumBtn).toBeVisible();
 
     // Clicking should open a new tab (window.open)
@@ -175,8 +175,8 @@ test.describe('Hub — drawer legal icons', () => {
     });
     await page.goto('/');
     const drawer = await openDrawer(page);
-    await expect(drawer.locator('button[title="Datenschutz"]').first()).toBeVisible();
-    await expect(drawer.locator('button[title="Impressum"]').first()).toBeVisible();
+    await expect(drawer.locator('button[title="Privacy policy"]').first()).toBeVisible();
+    await expect(drawer.locator('button[title="Imprint"]').first()).toBeVisible();
   });
 
   test('icons always present; click shows "keine Angaben" when both URLs null and has_legal false', async ({ page }) => {
@@ -196,10 +196,10 @@ test.describe('Hub — drawer legal icons', () => {
     });
     await page.goto('/');
     const drawer = await openDrawer(page);
-    await expect(drawer.locator('button[title="Impressum"]').first()).toBeVisible();
-    await expect(drawer.locator('button[title="Datenschutz"]').first()).toBeVisible();
-    await drawer.locator('button[title="Impressum"]').first().click();
-    await expect(page.locator('[role="dialog"]').filter({ hasText: 'Keine rechtlichen Angaben' })).toBeVisible({ timeout: 3000 });
+    await expect(drawer.locator('button[title="Imprint"]').first()).toBeVisible();
+    await expect(drawer.locator('button[title="Privacy policy"]').first()).toBeVisible();
+    await drawer.locator('button[title="Imprint"]').first().click();
+    await expect(page.locator('[role="dialog"]').filter({ hasText: 'No legal information available' })).toBeVisible({ timeout: 3000 });
   });
 
   test('§ and 🔒 icons visible when has_legal true with null URLs (data-node)', async ({ page }) => {
@@ -230,11 +230,11 @@ test.describe('Hub — drawer legal icons', () => {
     const drawer = await openDrawer(page);
 
     // Both icons must appear even though URLs are null (content lives in get_legal RPC)
-    await expect(drawer.locator('button[title="Impressum"]').first()).toBeVisible();
-    await expect(drawer.locator('button[title="Datenschutz"]').first()).toBeVisible();
+    await expect(drawer.locator('button[title="Imprint"]').first()).toBeVisible();
+    await expect(drawer.locator('button[title="Privacy policy"]').first()).toBeVisible();
 
     // Click § → openLegal() fetches get_legal → LegalContentModal opens
-    await drawer.locator('button[title="Impressum"]').first().click();
+    await drawer.locator('button[title="Imprint"]').first().click();
     await expect(page.locator('iframe')).toBeVisible({ timeout: 5000 });
   });
 });
