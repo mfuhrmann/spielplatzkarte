@@ -72,10 +72,10 @@
       if (data?.content) {
         legalContent = data.content;
       } else {
-        legalError = 'Kein Inhalt verfügbar.';
+        legalError = $_('legal.noContent');
       }
     } catch (e) {
-      legalError = `Fehler beim Laden: ${e.message}`;
+      legalError = $_('legal.loadError', { values: { message: e.message } });
     } finally {
       legalLoading = false;
     }
@@ -90,7 +90,7 @@
     } else {
       legalContent = null;
       legalError = null;
-      legalInfo = `Keine rechtlichen Angaben für ${b.name} verfügbar.`;
+      legalInfo = $_('legal.noneFor', { values: { name: b.name } });
       legalLoading = false;
       legalModalOpen = true;
     }
@@ -143,14 +143,14 @@
             <div class="instance-row-end">
               <button
                 class="legal-btn"
-                title="Impressum"
-                aria-label="Impressum für {b.name}"
+                title={$_('legal.impressum')}
+                aria-label={$_('legal.impressumFor', { values: { name: b.name } })}
                 onclick={() => handleLegalClick(b, 'impressum')}
               >§</button>
               <button
                 class="legal-btn"
-                title="Datenschutz"
-                aria-label="Datenschutzerklärung für {b.name}"
+                title={$_('legal.datenschutz')}
+                aria-label={$_('legal.datenschutzFor', { values: { name: b.name } })}
                 onclick={() => handleLegalClick(b, 'datenschutz')}
               >🔒</button>
               {#if b.importing}

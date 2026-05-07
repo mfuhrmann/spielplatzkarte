@@ -466,8 +466,8 @@
       <button
         class="control-btn"
         onclick={() => legalModalOpen = true}
-        title="Rechtliches"
-        aria-label="Impressum und Datenschutz"
+        title={$_('legal.title')}
+        aria-label={$_('legal.buttonLabel')}
       >
         <Scale class="h-5 w-5" />
       </button>

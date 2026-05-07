@@ -1,4 +1,6 @@
 <script>
+  import { _ } from 'svelte-i18n';
+
   /** @type {string | null} */
   export let impressumUrl = null;
   /** @type {string | null} */
@@ -24,19 +26,19 @@
   <div class="modal-backdrop" onclick={onBackdropClick}>
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="legal-title">
       <div class="modal-header">
-        <h5 class="modal-title" id="legal-title">Rechtliches</h5>
-        <button type="button" class="close-btn" onclick={close} aria-label="Schließen">✕</button>
+        <h5 class="modal-title" id="legal-title">{$_('legal.title')}</h5>
+        <button type="button" class="close-btn" onclick={close} aria-label={$_('hub.closeBtn')}>✕</button>
       </div>
       <div class="modal-body">
         <div class="links">
           {#if impressumUrl}
-            <a href={impressumUrl} target="_blank" rel="noopener">Impressum ↗</a>
+            <a href={impressumUrl} target="_blank" rel="noopener">{$_('legal.impressum')} ↗</a>
           {/if}
           {#if privacyUrl}
-            <a href={privacyUrl} target="_blank" rel="noopener">Datenschutzerklärung ↗</a>
+            <a href={privacyUrl} target="_blank" rel="noopener">{$_('legal.datenschutz')} ↗</a>
           {/if}
           {#if !impressumUrl && !privacyUrl}
-            <p class="no-legal">Keine rechtlichen Angaben verfügbar.</p>
+            <p class="no-legal">{$_('legal.none')}</p>
           {/if}
         </div>
       </div>
