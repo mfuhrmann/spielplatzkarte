@@ -11,11 +11,11 @@ import {
 // ── Standalone mode ───────────────────────────────────────────────────────────
 
 test.describe('Standalone — LegalButton', () => {
-  test('button absent when both URLs null', async ({ page }) => {
+  test('button always present even when both URLs null', async ({ page }) => {
     await injectApiConfig(page);
     await stubApiRoutes(page);
     await page.goto('/');
-    await expect(page.locator('button[aria-label="Impressum und Datenschutz"]')).toHaveCount(0);
+    await expect(page.locator('button[aria-label="Impressum und Datenschutz"]')).toBeVisible({ timeout: 5000 });
   });
 
   test('button visible and opens modal when impressumUrl is set', async ({ page }) => {
@@ -114,7 +114,7 @@ async function openDrawer(page) {
 }
 
 test.describe('Hub — drawer legal icons', () => {
-  test('§ icon absent when impressum_url null', async ({ page }) => {
+  test('§ icon always present; click shows "keine Angaben" when impressum_url null', async ({ page }) => {
     await injectHubConfig(page);
     await stubHubRegistry(page, { instanceA, instanceB });
     await stubFederationStatus(page, {
@@ -124,7 +124,10 @@ test.describe('Hub — drawer legal icons', () => {
     });
     await page.goto('/');
     const drawer = await openDrawer(page);
-    await expect(drawer.locator('button[title="Impressum"]')).toHaveCount(0);
+    const btn = drawer.locator('button[title="Impressum"]').first();
+    await expect(btn).toBeVisible();
+    await btn.click();
+    await expect(page.locator('[role="dialog"]').filter({ hasText: 'Keine rechtlichen Angaben' })).toBeVisible({ timeout: 3000 });
   });
 
   test('§ icon visible when impressum_url set; click opens new tab', async ({ page, context }) => {
@@ -173,10 +176,10 @@ test.describe('Hub — drawer legal icons', () => {
     await page.goto('/');
     const drawer = await openDrawer(page);
     await expect(drawer.locator('button[title="Datenschutz"]').first()).toBeVisible();
-    await expect(drawer.locator('button[title="Impressum"]')).toHaveCount(0);
+    await expect(drawer.locator('button[title="Impressum"]').first()).toBeVisible();
   });
 
-  test('icons absent when both URLs null and has_legal false', async ({ page }) => {
+  test('icons always present; click shows "keine Angaben" when both URLs null and has_legal false', async ({ page }) => {
     await injectHubConfig(page);
     await stubHubRegistry(page, { instanceA, instanceB });
     await stubFederationStatus(page, {
@@ -193,8 +196,10 @@ test.describe('Hub — drawer legal icons', () => {
     });
     await page.goto('/');
     const drawer = await openDrawer(page);
-    await expect(drawer.locator('button[title="Impressum"]')).toHaveCount(0);
-    await expect(drawer.locator('button[title="Datenschutz"]')).toHaveCount(0);
+    await expect(drawer.locator('button[title="Impressum"]').first()).toBeVisible();
+    await expect(drawer.locator('button[title="Datenschutz"]').first()).toBeVisible();
+    await drawer.locator('button[title="Impressum"]').first().click();
+    await expect(page.locator('[role="dialog"]').filter({ hasText: 'Keine rechtlichen Angaben' })).toBeVisible({ timeout: 3000 });
   });
 
   test('§ and 🔒 icons visible when has_legal true with null URLs (data-node)', async ({ page }) => {

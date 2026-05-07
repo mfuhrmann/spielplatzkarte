@@ -463,16 +463,14 @@
       >
         <Info class="h-5 w-5" />
       </button>
-      {#if impressumUrl || privacyUrl}
-        <button
-          class="control-btn"
-          onclick={() => legalModalOpen = true}
-          title="Rechtliches"
-          aria-label="Impressum und Datenschutz"
-        >
-          <Scale class="h-5 w-5" />
-        </button>
-      {/if}
+      <button
+        class="control-btn"
+        onclick={() => legalModalOpen = true}
+        title="Rechtliches"
+        aria-label="Impressum und Datenschutz"
+      >
+        <Scale class="h-5 w-5" />
+      </button>
       <FilterPanel />
     </div>
 

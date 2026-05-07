@@ -4,6 +4,8 @@
   export let content = null;
   /** @type {string | null} */
   export let error = null;
+  /** @type {string | null} */
+  export let info = null;
   export let loading = false;
 
   function close() { open = false; }
@@ -33,6 +35,8 @@
           <p class="status-msg">Wird geladen…</p>
         {:else if error}
           <p class="status-msg status-msg--error">{error}</p>
+        {:else if info}
+          <p class="status-msg">{info}</p>
         {:else if content}
           <iframe
             srcdoc={content}

@@ -109,22 +109,26 @@ nginx SHALL serve the generated legal pages at `/impressum` and `/datenschutz` a
 - **THEN** the DB CHECK constraint prevents storage of that type
 - **AND** no content is returned
 
-### Requirement: Standalone app exposes LegalButton when legal content is available
+### Requirement: Standalone app always exposes LegalButton
 
-The standalone frontend SHALL render a legal attribution button that opens an Impressum / Datenschutz modal, hidden when neither URL is configured, so users can reach the legal pages without guessing the URL.
+The standalone frontend SHALL always render a legal attribution button that opens an Impressum / Datenschutz modal, so users can always reach legal pages. The entrypoint always provides at least relative `/impressum` and `/datenschutz` URLs, so the button is always present in production.
 
-#### Scenario: LegalButton appears when impressumUrl is set in config
+#### Scenario: LegalButton always visible
+
+- **GIVEN** the standalone app loads
+- **THEN** the LegalButton (Scale icon) is always visible on the map, regardless of URL config
+
+#### Scenario: LegalButton opens modal with configured links
 
 - **GIVEN** `impressumUrl` is non-null in `window.APP_CONFIG`
-- **WHEN** the standalone app loads
-- **THEN** the LegalButton (ⓘ or §) is visible on the map
-- **AND** clicking it opens a modal containing a link to `impressumUrl` opening in a new tab
+- **WHEN** the LegalButton is clicked
+- **THEN** a modal appears containing a link to `impressumUrl` opening in a new tab
 
-#### Scenario: LegalButton is absent when both URLs are null
+#### Scenario: Modal shows neutral message when both URLs null
 
 - **GIVEN** both `impressumUrl` and `privacyUrl` are null in `window.APP_CONFIG`
-- **WHEN** the standalone app loads
-- **THEN** no LegalButton is rendered
+- **WHEN** the LegalModal opens
+- **THEN** a neutral "Keine rechtlichen Angaben verfügbar" message is shown
 
 #### Scenario: Modal shows only configured links
 
@@ -144,15 +148,21 @@ The hub SHALL render legal attribution icons next to each backend in the instanc
 - **THEN** a § icon is visible next to the backend name
 - **AND** clicking it opens the URL in a new browser tab
 
-#### Scenario: § icon absent when impressum_url is null
+#### Scenario: § and 🔒 icons always visible per backend
 
-- **GIVEN** `"impressum_url": null` in `get_meta()`
-- **WHEN** the hub drawer renders the backend row
-- **THEN** no § icon is rendered for that backend
+- **GIVEN** any backend in the hub drawer
+- **THEN** both § and 🔒 icons are always rendered next to the backend name
+
+#### Scenario: § icon click shows neutral message when no legal data available
+
+- **GIVEN** `"impressum_url": null` and `"has_legal": false` for a backend
+- **WHEN** the user clicks the § icon
+- **THEN** a modal appears with a neutral "Keine rechtlichen Angaben für <name> verfügbar" message
 
 #### Scenario: Clicking § on data-node fetches and renders get_legal content
 
 - **GIVEN** `"impressum_url": null` in `get_meta()` (data-node, no web UI)
+- **AND** `"has_legal": true` (backend has `legal_content` table populated)
 - **AND** `get_legal?type=impressum` returns `{ "content": "<html>..." }`
 - **WHEN** the user clicks the § icon
 - **THEN** the hub fetches `get_legal?type=impressum` from the backend
