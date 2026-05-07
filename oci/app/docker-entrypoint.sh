@@ -25,14 +25,14 @@ if [ -n "${IMPRESSUM_URL:-}" ]; then
 elif [ -n "$SAFE_SITE_URL" ]; then
     SAFE_IMPRESSUM_URL="${SAFE_SITE_URL}/impressum"
 else
-    SAFE_IMPRESSUM_URL=""
+    SAFE_IMPRESSUM_URL="/impressum"
 fi
 if [ -n "${PRIVACY_URL:-}" ]; then
     SAFE_PRIVACY_URL=$(printf '%s' "${PRIVACY_URL}" | tr -cd 'A-Za-z0-9:/.+_%~-')
 elif [ -n "$SAFE_SITE_URL" ]; then
     SAFE_PRIVACY_URL="${SAFE_SITE_URL}/datenschutz"
 else
-    SAFE_PRIVACY_URL=""
+    SAFE_PRIVACY_URL="/datenschutz"
 fi
 
 # js_or_null <value> — emits a JS string literal or null.
@@ -82,30 +82,55 @@ SAFE_IMP_ADDRESS=$(html_escape "${IMPRESSUM_ADDRESS:-}")
 SAFE_IMP_EMAIL=$(html_escape "${IMPRESSUM_EMAIL:-}")
 SAFE_IMP_PHONE=$(html_escape "${IMPRESSUM_PHONE:-}")
 
-if [ -z "${IMPRESSUM_URL:-}" ] && [ -n "$SAFE_IMP_NAME" ] && [ -n "$SAFE_IMP_ADDRESS" ]; then
-    {
-        printf '<!DOCTYPE html>\n<html lang="de">\n<head>\n'
-        printf '  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
-        printf '  <title>Impressum</title>\n'
-        printf '  <style>body{font-family:sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#222}h1{font-size:1.6rem}a{color:#1a6b3a}</style>\n'
-        printf '</head>\n<body>\n  <h1>Impressum</h1>\n'
-        printf '  <p>%s</p>\n' "$SAFE_IMP_NAME"
-        [ -n "$SAFE_IMP_ORG" ]     && printf '  <p>%s</p>\n' "$SAFE_IMP_ORG"
-        printf '  <p>%s</p>\n' "$SAFE_IMP_ADDRESS"
-        [ -n "$SAFE_IMP_EMAIL" ]   && printf '  <p>E-Mail: <a href="mailto:%s">%s</a></p>\n' "$SAFE_IMP_EMAIL" "$SAFE_IMP_EMAIL"
-        [ -n "$SAFE_IMP_PHONE" ]   && printf '  <p>Tel: %s</p>\n' "$SAFE_IMP_PHONE"
-        printf '</body>\n</html>\n'
-    } > "$WEBROOT/impressum.html"
+if [ -z "${IMPRESSUM_URL:-}" ]; then
+    if [ -n "$SAFE_IMP_NAME" ] && [ -n "$SAFE_IMP_ADDRESS" ]; then
+        {
+            printf '<!DOCTYPE html>\n<html lang="de">\n<head>\n'
+            printf '  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
+            printf '  <title>Impressum</title>\n'
+            printf '  <style>body{font-family:sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#222}h1{font-size:1.6rem}a{color:#1a6b3a}</style>\n'
+            printf '</head>\n<body>\n  <h1>Impressum</h1>\n'
+            printf '  <p>%s</p>\n' "$SAFE_IMP_NAME"
+            [ -n "$SAFE_IMP_ORG" ]     && printf '  <p>%s</p>\n' "$SAFE_IMP_ORG"
+            printf '  <p>%s</p>\n' "$SAFE_IMP_ADDRESS"
+            [ -n "$SAFE_IMP_EMAIL" ]   && printf '  <p>E-Mail: <a href="mailto:%s">%s</a></p>\n' "$SAFE_IMP_EMAIL" "$SAFE_IMP_EMAIL"
+            [ -n "$SAFE_IMP_PHONE" ]   && printf '  <p>Tel: %s</p>\n' "$SAFE_IMP_PHONE"
+            printf '</body>\n</html>\n'
+        } > "$WEBROOT/impressum.html"
+    else
+        {
+            printf '<!DOCTYPE html>\n<html lang="de">\n<head>\n'
+            printf '  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
+            printf '  <title>Impressum</title>\n'
+            printf '  <style>body{font-family:sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#222}h1{font-size:1.6rem}</style>\n'
+            printf '</head>\n<body>\n  <h1>Impressum</h1>\n'
+            printf '  <p>Kontaktdaten des Betreibers wurden noch nicht konfiguriert.</p>\n'
+            printf '</body>\n</html>\n'
+        } > "$WEBROOT/impressum.html"
+    fi
 fi
 
-if [ -z "${PRIVACY_URL:-}" ] && [ -n "$SAFE_IMP_NAME" ] && [ -n "$SAFE_IMP_EMAIL" ] && [ -f /datenschutz.template.html ]; then
-    # Escape & and / so they are literal in the sed replacement position.
-    SAFE_IMP_NAME_FOR_SED=$(printf '%s'  "$SAFE_IMP_NAME"  | sed 's/[\/&]/\\&/g')
-    SAFE_IMP_EMAIL_FOR_SED=$(printf '%s' "$SAFE_IMP_EMAIL" | sed 's/[\/&]/\\&/g')
-    sed \
-        -e "s/{{IMPRESSUM_NAME}}/$SAFE_IMP_NAME_FOR_SED/g" \
-        -e "s/{{IMPRESSUM_EMAIL}}/$SAFE_IMP_EMAIL_FOR_SED/g" \
-        /datenschutz.template.html > "$WEBROOT/datenschutz.html"
+if [ -z "${PRIVACY_URL:-}" ]; then
+    if [ -n "$SAFE_IMP_NAME" ] && [ -n "$SAFE_IMP_EMAIL" ] && [ -f /datenschutz.template.html ]; then
+        # Escape & and / so they are literal in the sed replacement position.
+        SAFE_IMP_NAME_FOR_SED=$(printf '%s'  "$SAFE_IMP_NAME"  | sed 's/[\/&]/\\&/g')
+        SAFE_IMP_EMAIL_FOR_SED=$(printf '%s' "$SAFE_IMP_EMAIL" | sed 's/[\/&]/\\&/g')
+        sed \
+            -e "s/{{IMPRESSUM_NAME}}/$SAFE_IMP_NAME_FOR_SED/g" \
+            -e "s/{{IMPRESSUM_EMAIL}}/$SAFE_IMP_EMAIL_FOR_SED/g" \
+            /datenschutz.template.html > "$WEBROOT/datenschutz.html"
+    else
+        {
+            printf '<!DOCTYPE html>\n<html lang="de">\n<head>\n'
+            printf '  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
+            printf '  <title>Datenschutzerkl\303\244rung</title>\n'
+            printf '  <style>body{font-family:sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#222}h1{font-size:1.6rem}</style>\n'
+            printf '</head>\n<body>\n'
+            printf '  <h1>Datenschutzerkl\303\244rung</h1>\n'
+            printf '  <p>Die Datenschutzerkl\303\244rung des Betreibers wurde noch nicht konfiguriert.</p>\n'
+            printf '</body>\n</html>\n'
+        } > "$WEBROOT/datenschutz.html"
+    fi
 fi
 
 # Write placeholder federation-status.json and metrics so nginx can serve
