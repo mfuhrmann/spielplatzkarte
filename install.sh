@@ -340,15 +340,15 @@ success "Files downloaded."
     printf "SITE_URL=%s\n" "$SITE_URL"
     if [[ -n "$IMPRESSUM_URL" || -n "$PRIVACY_URL" ]]; then
         printf "# Override: link to existing external legal pages.\n"
-        printf "IMPRESSUM_URL=%s\n" "$IMPRESSUM_URL"
-        printf "PRIVACY_URL=%s\n\n" "$PRIVACY_URL"
+        printf 'IMPRESSUM_URL="%s"\n' "$IMPRESSUM_URL"
+        printf 'PRIVACY_URL="%s"\n\n' "$PRIVACY_URL"
     else
         printf "# Contact details for generated Impressum and Datenschutz pages.\n"
-        printf "IMPRESSUM_NAME=%s\n"    "$IMPRESSUM_NAME"
-        printf "IMPRESSUM_ORG=%s\n"     "$IMPRESSUM_ORG"
-        printf "IMPRESSUM_ADDRESS=%s\n" "$IMPRESSUM_ADDRESS"
-        printf "IMPRESSUM_EMAIL=%s\n"   "$IMPRESSUM_EMAIL"
-        printf "IMPRESSUM_PHONE=%s\n\n" "$IMPRESSUM_PHONE"
+        printf 'IMPRESSUM_NAME="%s"\n'    "$IMPRESSUM_NAME"
+        printf 'IMPRESSUM_ORG="%s"\n'     "$IMPRESSUM_ORG"
+        printf 'IMPRESSUM_ADDRESS="%s"\n' "$IMPRESSUM_ADDRESS"
+        printf 'IMPRESSUM_EMAIL="%s"\n'   "$IMPRESSUM_EMAIL"
+        printf 'IMPRESSUM_PHONE="%s"\n\n' "$IMPRESSUM_PHONE"
     fi
 
     if [[ "$DEPLOY_MODE" != "data-node" ]]; then

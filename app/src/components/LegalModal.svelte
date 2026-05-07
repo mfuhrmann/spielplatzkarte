@@ -35,6 +35,9 @@
           {#if privacyUrl}
             <a href={privacyUrl} target="_blank" rel="noopener">Datenschutzerklärung ↗</a>
           {/if}
+          {#if !impressumUrl && !privacyUrl}
+            <p class="no-legal">Keine rechtlichen Angaben verfügbar.</p>
+          {/if}
         </div>
       </div>
       <div class="modal-footer">
@@ -97,6 +100,7 @@
     text-decoration: none;
   }
   .links a:hover { color: #1a6b3a; text-decoration: underline; }
+  .no-legal { font-size: 0.875rem; color: #6c757d; margin: 0; }
 
   .modal-footer {
     padding: 0.5rem 1rem;

@@ -56,11 +56,13 @@
   let legalModalOpen = false;
   let legalContent = null;
   let legalError = null;
+  let legalInfo = null;
   let legalLoading = false;
 
   async function openLegal(backendUrl, type) {
     legalContent = null;
     legalError = null;
+    legalInfo = null;
     legalLoading = true;
     legalModalOpen = true;
     try {
@@ -87,7 +89,8 @@
       openLegal(b.url, type);
     } else {
       legalContent = null;
-      legalError = 'Keine rechtlichen Angaben verfügbar.';
+      legalError = null;
+      legalInfo = `Keine rechtlichen Angaben für ${b.name} verfügbar.`;
       legalLoading = false;
       legalModalOpen = true;
     }
@@ -208,6 +211,7 @@
   bind:open={legalModalOpen}
   content={legalContent}
   error={legalError}
+  info={legalInfo}
   loading={legalLoading}
 />
 
