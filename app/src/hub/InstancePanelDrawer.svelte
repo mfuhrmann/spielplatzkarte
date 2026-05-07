@@ -83,8 +83,13 @@
     const url = type === 'impressum' ? b.impressumUrl : b.privacyUrl;
     if (url) {
       window.open(url, '_blank', 'noopener');
-    } else {
+    } else if (b.hasLegal) {
       openLegal(b.url, type);
+    } else {
+      legalContent = null;
+      legalError = 'Keine rechtlichen Angaben verfügbar.';
+      legalLoading = false;
+      legalModalOpen = true;
     }
   }
 </script>
@@ -133,22 +138,18 @@
           <div class="instance-row">
             <span class="instance-name">{b.name}</span>
             <div class="instance-row-end">
-              {#if b.impressumUrl !== null || b.hasLegal}
-                <button
-                  class="legal-btn"
-                  title="Impressum"
-                  aria-label="Impressum für {b.name}"
-                  onclick={() => handleLegalClick(b, 'impressum')}
-                >§</button>
-              {/if}
-              {#if b.privacyUrl !== null || b.hasLegal}
-                <button
-                  class="legal-btn"
-                  title="Datenschutz"
-                  aria-label="Datenschutzerklärung für {b.name}"
-                  onclick={() => handleLegalClick(b, 'datenschutz')}
-                >🔒</button>
-              {/if}
+              <button
+                class="legal-btn"
+                title="Impressum"
+                aria-label="Impressum für {b.name}"
+                onclick={() => handleLegalClick(b, 'impressum')}
+              >§</button>
+              <button
+                class="legal-btn"
+                title="Datenschutz"
+                aria-label="Datenschutzerklärung für {b.name}"
+                onclick={() => handleLegalClick(b, 'datenschutz')}
+              >🔒</button>
               {#if b.importing}
                 <span class="badge instance-badge instance-badge--importing">{$_('hub.importing')}</span>
               {:else if b.version}
