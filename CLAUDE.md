@@ -156,6 +156,12 @@ The `playground_stats` materialised view is rebuilt with each `make db-apply` an
 
 Run `make db-apply` after modifying `api.sql` to apply changes without a full re-import.
 
+**After any change to `importer/api.sql` or `db/init.sql`, verify with a fresh-volume import:**
+```bash
+make down && docker volume rm spieli_pgdata spieli_pgdata2 && make up
+```
+This catches ordering bugs (e.g. a function referencing a table defined later in the file) that `make db-apply` on an existing volume silently passes.
+
 ### Styles (`app/src/lib/vectorStyles.js`)
 
 - `playgroundStyleFn` — playground polygon fill/stroke, colour-coded by completeness
