@@ -68,7 +68,7 @@
 export const objDevices = {
     slide: {
         name_de: "Rutsche",
-        image: "File:Accessibleplay-Slide.jpg",
+        image: "File:Playground Slide Metal.jpg",
         category: "stationary",
         filterable: true,
         filter_attr: ["length", "height"],
@@ -81,7 +81,7 @@ export const objDevices = {
     },
     springy: {
         name_de: "Federwipptier",
-        image: "File:Springy horse.jpg",
+        image: "File:Playground springs in Obermenzing 02.jpg",
         category: "stationary",
     },
     structure: {
@@ -605,7 +605,7 @@ export const objFeatures = {
         name_de: "Tischtennisplatte",
         icon: "table_tennis",
         size: 12,
-        image: "File:Table tennis court.jpg",
+        image: "File:Outdoor table tennis - geograph.org.uk - 7959772.jpg",
     },
     soccer: {
         tags: {
@@ -615,7 +615,7 @@ export const objFeatures = {
         name_de: "Bolzplatz",
         icon: "soccer",
         size: 12,
-        image: "File:Erding Bolzplatz Feldkirchener Str.jpg",
+        image: "File:Erlebnisspielplatz Marsbachtal Bolzplatz mit Kleintoren.jpg",
     },
     basketball: {
         tags: {
