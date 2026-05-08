@@ -1033,6 +1033,19 @@ ALTER TABLE api.import_status
 GRANT SELECT ON api.import_status TO web_anon;
 
 -- =========================================================================
+-- 5a. legal_content — stores generated Impressum / Datenschutz HTML for
+--     data-node backends (no nginx webroot). Written by docker-entrypoint.sh
+--     at container startup via psql. Read by get_legal().
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS api.legal_content (
+  type        text        PRIMARY KEY CHECK (type IN ('impressum', 'datenschutz')),
+  content     text        NOT NULL,
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+
+GRANT SELECT ON api.legal_content TO web_anon;
+
+-- =========================================================================
 -- 5. get_meta(relation_id)
 --    Returns instance metadata for federation (Hub discovery).
 --    Includes the OSM relation name, playground count, and bounding box.
@@ -1126,19 +1139,6 @@ AS $$
 $$;
 
 GRANT EXECUTE ON FUNCTION api.get_meta(bigint) TO web_anon;
-
--- =========================================================================
--- 5a. legal_content — stores generated Impressum / Datenschutz HTML for
---     data-node backends (no nginx webroot). Written by docker-entrypoint.sh
---     at container startup via psql. Read by get_legal().
--- =========================================================================
-CREATE TABLE IF NOT EXISTS api.legal_content (
-  type        text        PRIMARY KEY CHECK (type IN ('impressum', 'datenschutz')),
-  content     text        NOT NULL,
-  updated_at  timestamptz NOT NULL DEFAULT now()
-);
-
-GRANT SELECT ON api.legal_content TO web_anon;
 
 -- =========================================================================
 -- 5b. get_legal(type)
