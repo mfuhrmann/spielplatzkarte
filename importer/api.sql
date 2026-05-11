@@ -103,6 +103,7 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     -- MAX() because hstore lacks a < ordering operator.
     SELECT
       p.osm_id,
+      CASE WHEN p.osm_id < 0 THEN 'R' ELSE 'W' END AS osm_type,
       ST_Union(p.way)         AS way,
       MAX(p.name)             AS name,
       MAX(p.operator)         AS operator,
@@ -116,16 +117,35 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
     JOIN region r ON ST_Within(p.way, r.way)
     WHERE p.leisure = 'playground'
     GROUP BY p.osm_id
+    UNION ALL
+    -- leisure=playground nodes: buffered to a 5 m circle so geometry-based
+    -- joins (tree proximity, equipment containment, ST_Centroid) work uniformly.
+    SELECT
+      n.osm_id,
+      'N'::text               AS osm_type,
+      ST_Transform(
+        ST_Buffer(ST_Transform(n.way, 4326)::geography, 5)::geometry,
+        3857
+      )                       AS way,
+      n.name,
+      n.operator,
+      n.access,
+      n.surface,
+      n.tags
+    FROM planet_osm_point n
+    JOIN region r ON ST_Within(n.way, r.way)
+    WHERE n.leisure = 'playground'
   ),
   tree_counts AS (
     SELECT
       pl.osm_id,
+      pl.osm_type,
       COUNT(t.osm_id)::int AS tree_count
     FROM all_playgrounds pl
     LEFT JOIN planet_osm_point t
       ON ST_DWithin(t.way, pl.way, 15)
       AND t.natural = 'tree'
-    GROUP BY pl.osm_id
+    GROUP BY pl.osm_id, pl.osm_type
   ),
   all_equip AS (
     SELECT osm_id, amenity, leisure, sport, tags, way
@@ -143,6 +163,7 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
   equip_stats AS (
     SELECT
       pl.osm_id,
+      pl.osm_type,
       COUNT(CASE WHEN e.amenity = 'bench'        THEN 1 END)::int AS bench_count,
       COUNT(CASE WHEN e.amenity = 'shelter'      THEN 1 END)::int AS shelter_count,
       COUNT(CASE WHEN e.leisure = 'picnic_table' THEN 1 END)::int AS picnic_count,
@@ -166,13 +187,14 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
                    OR e.tags->'playground' != 'sandpit'))                       AS for_wheelchair
     FROM all_playgrounds pl
     LEFT JOIN all_equip e ON ST_Intersects(pl.way, e.way)
-    GROUP BY pl.osm_id
+    GROUP BY pl.osm_id, pl.osm_type
   ),
   -- Mirrors app/src/lib/completeness.js so the server classification and the
   -- client style function agree. Update both sides together if the rule changes.
   completeness_attrs AS (
     SELECT
       pl.osm_id,
+      pl.osm_type,
       (pl.tags ? 'panoramax'
         OR EXISTS (SELECT 1 FROM skeys(pl.tags) k WHERE k LIKE 'panoramax:%')
       ) AS has_photo,
@@ -188,6 +210,7 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
   )
   SELECT
     tc.osm_id,
+    pl.osm_type,
     tc.tree_count,
     COALESCE(es.bench_count,        0) AS bench_count,
     COALESCE(es.shelter_count,      0) AS shelter_count,
@@ -208,11 +231,11 @@ CREATE MATERIALIZED VIEW public.playground_stats AS
       ELSE 'missing'
     END                                           AS completeness
   FROM all_playgrounds pl
-  LEFT JOIN tree_counts        tc ON tc.osm_id = pl.osm_id
-  LEFT JOIN equip_stats        es ON es.osm_id = pl.osm_id
-  LEFT JOIN completeness_attrs ca ON ca.osm_id = pl.osm_id;
+  LEFT JOIN tree_counts        tc ON tc.osm_id = pl.osm_id AND tc.osm_type = pl.osm_type
+  LEFT JOIN equip_stats        es ON es.osm_id = pl.osm_id AND es.osm_type = pl.osm_type
+  LEFT JOIN completeness_attrs ca ON ca.osm_id = pl.osm_id AND ca.osm_type = pl.osm_type;
 
-CREATE UNIQUE INDEX ON public.playground_stats (osm_id);
+CREATE UNIQUE INDEX ON public.playground_stats (osm_id, osm_type);
 CREATE INDEX        ON public.playground_stats USING GIST (centroid_3857);
 
 -- =========================================================================
@@ -238,6 +261,7 @@ AS $$
   playgrounds AS (
     SELECT
       p.osm_id,
+      CASE WHEN p.osm_id < 0 THEN 'R' ELSE 'W' END        AS osm_type,
       MAX(p.name)                                          AS name,
       MAX(p.leisure)                                       AS leisure,
       MAX(p.operator)                                      AS operator,
@@ -250,6 +274,21 @@ AS $$
     JOIN region r ON ST_Within(p.way, r.way)
     WHERE p.leisure = 'playground'
     GROUP BY p.osm_id
+    UNION ALL
+    SELECT
+      n.osm_id,
+      'N'::text                                            AS osm_type,
+      n.name,
+      n.leisure,
+      n.operator,
+      n.access,
+      n.surface,
+      0                                                    AS area,
+      n.tags,
+      ST_Buffer(ST_Transform(n.way, 4326)::geography, 5)::geometry AS geom
+    FROM planet_osm_point n
+    JOIN region r ON ST_Within(n.way, r.way)
+    WHERE n.leisure = 'playground'
   )
   SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -261,7 +300,7 @@ AS $$
           'properties', (
             jsonb_build_object(
               'osm_id',             abs(pl.osm_id),
-              'osm_type',           CASE WHEN pl.osm_id < 0 THEN 'R' ELSE 'W' END,
+              'osm_type',           pl.osm_type,
               'name',               pl.name,
               'leisure',            pl.leisure,
               'operator',           pl.operator,
@@ -287,7 +326,7 @@ AS $$
     )
   )
   FROM playgrounds pl
-  LEFT JOIN public.playground_stats s ON s.osm_id = pl.osm_id;
+  LEFT JOIN public.playground_stats s ON s.osm_id = pl.osm_id AND s.osm_type = pl.osm_type;
 $$;
 
 GRANT EXECUTE ON FUNCTION api.get_playgrounds(bigint) TO web_anon;
@@ -509,6 +548,7 @@ AS $$
   playgrounds AS (
     SELECT
       p.osm_id,
+      CASE WHEN p.osm_id < 0 THEN 'R' ELSE 'W' END        AS osm_type,
       MAX(p.name)                                          AS name,
       MAX(p.leisure)                                       AS leisure,
       MAX(p.operator)                                      AS operator,
@@ -521,6 +561,21 @@ AS $$
     JOIN ids_in_view i ON i.osm_id = p.osm_id
     WHERE p.leisure = 'playground'
     GROUP BY p.osm_id
+    UNION ALL
+    SELECT
+      n.osm_id,
+      'N'::text                                            AS osm_type,
+      n.name,
+      n.leisure,
+      n.operator,
+      n.access,
+      n.surface,
+      0                                                    AS area,
+      n.tags,
+      ST_Buffer(ST_Transform(n.way, 4326)::geography, 5)::geometry AS geom
+    FROM planet_osm_point n
+    JOIN bbox b ON ST_Intersects(n.way, b.geom)
+    WHERE n.leisure = 'playground'
   )
   SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -532,7 +587,7 @@ AS $$
           'properties', (
             jsonb_build_object(
               'osm_id',             abs(pl.osm_id),
-              'osm_type',           CASE WHEN pl.osm_id < 0 THEN 'R' ELSE 'W' END,
+              'osm_type',           pl.osm_type,
               'name',               pl.name,
               'leisure',            pl.leisure,
               'operator',           pl.operator,
@@ -558,7 +613,7 @@ AS $$
     )
   )
   FROM playgrounds pl
-  LEFT JOIN public.playground_stats s ON s.osm_id = pl.osm_id;
+  LEFT JOIN public.playground_stats s ON s.osm_id = pl.osm_id AND s.osm_type = pl.osm_type;
 $$;
 
 GRANT EXECUTE ON FUNCTION api.get_playgrounds_bbox(float8, float8, float8, float8) TO web_anon;
@@ -578,9 +633,11 @@ RETURNS json
 LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public, api
 AS $$
-  WITH p AS (
+  WITH candidates AS (
+    -- polygon / relation playgrounds (prefer relation over way if same numeric id)
     SELECT
       x.osm_id,
+      CASE WHEN x.osm_id < 0 THEN 'R' ELSE 'W' END AS osm_type,
       x.name,
       x.leisure,
       x.operator,
@@ -588,11 +645,32 @@ AS $$
       x.surface,
       x.way_area::int AS area,
       x.tags,
-      ST_Transform(x.way, 4326) AS geom
+      ST_Transform(x.way, 4326) AS geom,
+      1 AS priority
     FROM planet_osm_polygon x
     WHERE x.leisure = 'playground'
       AND abs(x.osm_id) = abs($1)
-    ORDER BY (x.osm_id < 0) DESC
+    UNION ALL
+    -- node playgrounds (fallback when no polygon exists for this id)
+    SELECT
+      n.osm_id,
+      'N'::text AS osm_type,
+      n.name,
+      n.leisure,
+      n.operator,
+      n.access,
+      n.surface,
+      0 AS area,
+      n.tags,
+      ST_Buffer(ST_Transform(n.way, 4326)::geography, 5)::geometry AS geom,
+      2 AS priority
+    FROM planet_osm_point n
+    WHERE n.leisure = 'playground'
+      AND n.osm_id = abs($1)
+  ),
+  p AS (
+    SELECT * FROM candidates
+    ORDER BY priority ASC, (osm_id < 0) DESC
     LIMIT 1
   )
   SELECT json_build_object(
@@ -601,7 +679,7 @@ AS $$
     'properties', (
       jsonb_build_object(
         'osm_id',             abs(p.osm_id),
-        'osm_type',           CASE WHEN p.osm_id < 0 THEN 'R' ELSE 'W' END,
+        'osm_type',           p.osm_type,
         'name',               p.name,
         'leisure',            p.leisure,
         'operator',           p.operator,
@@ -623,7 +701,7 @@ AS $$
     )
   )
   FROM p
-  LEFT JOIN public.playground_stats s ON abs(s.osm_id) = abs(p.osm_id);
+  LEFT JOIN public.playground_stats s ON s.osm_id = p.osm_id AND s.osm_type = p.osm_type;
 $$;
 
 GRANT EXECUTE ON FUNCTION api.get_playground(bigint) TO web_anon;
@@ -1101,13 +1179,11 @@ AS $$
       SUM(CASE WHEN ps.completeness = 'complete' THEN 1 ELSE 0 END)::int   AS complete,
       SUM(CASE WHEN ps.completeness = 'partial'  THEN 1 ELSE 0 END)::int   AS partial,
       SUM(CASE WHEN ps.completeness = 'missing'  THEN 1 ELSE 0 END)::int   AS missing
-    FROM public.playground_stats ps
-    WHERE EXISTS (
-      SELECT 1 FROM planet_osm_polygon p, region r
-      WHERE p.osm_id = ps.osm_id
-        AND p.leisure = 'playground'
-        AND ST_Within(p.way, r.way)
-    )
+    -- Filter by centroid instead of joining planet_osm_polygon: avoids count
+    -- inflation from multipolygon fragments and covers node playgrounds whose
+    -- geometry lives in planet_osm_point, not planet_osm_polygon.
+    FROM public.playground_stats ps, region r
+    WHERE ST_Within(ps.centroid_3857, r.way)
   ),
   import_status AS (
     -- NULL when no import has run yet (table empty); callers must handle NULL.
@@ -1211,21 +1287,30 @@ AS $$
   region AS (
     SELECT ST_Union(way) AS way FROM planet_osm_polygon WHERE osm_id = -relation_id
   ),
-  nearest AS (
-    SELECT
-      p.osm_id,
-      p.name,
-      p.operator,
-      p.access,
-      p.surface,
-      p.tags,
-      ST_Distance(ST_Transform(p.way, 4326)::geography, c.geog_4326)  AS distance_m,
-      ST_Y(ST_Transform(ST_Centroid(p.way), 4326))                    AS centroid_lat,
-      ST_X(ST_Transform(ST_Centroid(p.way), 4326))                    AS centroid_lon
-    FROM planet_osm_polygon p, center c, region r
+  pg_candidates AS (
+    SELECT p.osm_id, p.name, p.operator, p.access, p.surface, p.tags, p.way
+    FROM planet_osm_polygon p, region r
     WHERE p.leisure = 'playground'
       AND ST_Within(p.way, r.way)
-    ORDER BY p.way <-> c.geom_3857
+    UNION ALL
+    SELECT p.osm_id, p.name, p.operator, p.access, p.surface, p.tags, p.way
+    FROM planet_osm_point p, region r
+    WHERE p.leisure = 'playground'
+      AND ST_Within(p.way, r.way)
+  ),
+  nearest AS (
+    SELECT
+      cand.osm_id,
+      cand.name,
+      cand.operator,
+      cand.access,
+      cand.surface,
+      cand.tags,
+      ST_Distance(ST_Transform(cand.way, 4326)::geography, c.geog_4326) AS distance_m,
+      ST_Y(ST_Transform(ST_Centroid(cand.way), 4326))                   AS centroid_lat,
+      ST_X(ST_Transform(ST_Centroid(cand.way), 4326))                   AS centroid_lon
+    FROM pg_candidates cand, center c
+    ORDER BY cand.way <-> c.geom_3857
     LIMIT max_results
   )
   SELECT COALESCE(
@@ -1257,6 +1342,7 @@ GRANT EXECUTE ON FUNCTION api.get_nearest_playgrounds(float8, float8, bigint, in
 CREATE INDEX IF NOT EXISTS idx_osm_polygon_way  ON planet_osm_polygon USING GIST (way);
 CREATE INDEX IF NOT EXISTS idx_osm_point_way    ON planet_osm_point   USING GIST (way);
 CREATE INDEX IF NOT EXISTS idx_osm_polygon_lei  ON planet_osm_polygon (leisure) WHERE leisure IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_osm_point_lei    ON planet_osm_point   (leisure) WHERE leisure IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_osm_point_amenity ON planet_osm_point  (amenity) WHERE amenity IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_osm_point_shop    ON planet_osm_point  (shop)    WHERE shop    IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_osm_point_highway ON planet_osm_point  (highway) WHERE highway IS NOT NULL;
