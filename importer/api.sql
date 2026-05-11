@@ -678,7 +678,10 @@ AS $$
         OR p.leisure IN ('picnic_table', 'pitch', 'fitness_station')
       )
   ),
-  -- Ways rendered as lines (zip wires, slides mapped as linear ways …)
+  -- Ways rendered as lines (zip wires, slides mapped as linear ways …).
+  -- playground=structure closed ways land here (not in planet_osm_polygon)
+  -- because osm2pgsql's classic schema does not treat that tag as an area.
+  -- Emit them as Polygon so equipmentGrouping.js can use them as containers.
   equip_lines AS (
     SELECT
       p.osm_id,
@@ -688,7 +691,13 @@ AS $$
       p.leisure,
       p.sport,
       p.tags,
-      ST_Transform(p.way, 4326) AS geom
+      CASE
+        WHEN p.tags->'playground' = 'structure'
+             AND ST_IsClosed(p.way)
+             AND ST_NPoints(p.way) >= 4
+        THEN ST_Transform(ST_MakePolygon(p.way), 4326)
+        ELSE ST_Transform(p.way, 4326)
+      END AS geom
     FROM planet_osm_line p, bbox b
     WHERE p.way && b.geom
       AND (
