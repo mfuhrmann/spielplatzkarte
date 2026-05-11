@@ -82,7 +82,7 @@ Polygon-tier RPC. Returns the same `FeatureCollection` shape as the legacy regio
 |---|---|---|
 | `min_lon`, `min_lat`, `max_lon`, `max_lat` | `float8` | WGS84 bounding box |
 
-**Response** — GeoJSON `FeatureCollection`. Each feature's `properties` include `osm_id`, `osm_type` (`R` or `W`), `name`, `leisure`, `operator`, `access`, `surface`, `area`, the playground-stats counts (`tree_count`, `bench_count`, etc.), and the per-equipment booleans (`is_water`, `for_baby`, `for_toddler`, `for_wheelchair`, `has_soccer`, `has_basketball`). The original tag hstore is spread on top so any OSM tag is reachable.
+**Response** — GeoJSON `FeatureCollection`. Each feature's `properties` include `osm_id`, `osm_type` (`R`, `W`, or `N`), `name`, `leisure`, `operator`, `access`, `surface`, `area`, the playground-stats counts (`tree_count`, `bench_count`, etc.), and the per-equipment booleans (`is_water`, `for_baby`, `for_toddler`, `for_wheelchair`, `has_soccer`, `has_basketball`). The original tag hstore is spread on top so any OSM tag is reachable. Node playgrounds (`osm_type = 'N'`) are returned as small circular polygons (5 m radius buffer around the node point).
 
 The equipment booleans are aggregated across all equipment within the playground polygon. `for_baby` is `true` when any equipment has `baby=yes`, `capacity:baby` set, or `playground` ∈ `baby_swing`, `basketswing`, `sandpit`, `springy`. See [Import Pipeline](../contributing/import-pipeline.md#filter-flags-for_baby-for_toddler-is_water-) for the full trigger list.
 
