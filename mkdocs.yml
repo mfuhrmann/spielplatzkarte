@@ -58,6 +58,7 @@ nav:
       - Federation: reference/federation.md
       - registry.json: reference/registry-json.md
       - External Services: reference/external-services.md
+      - Equipment Types: reference/equipment.md
       - Glossary: reference/glossary.md
       - Project Overview: project-overview.md
       - Source Tree: source-tree-analysis.md
