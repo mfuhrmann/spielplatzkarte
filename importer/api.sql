@@ -238,17 +238,18 @@ AS $$
   playgrounds AS (
     SELECT
       p.osm_id,
-      p.name,
-      p.leisure,
-      p.operator,
-      p.access,
-      p.surface,
-      p.way_area::int AS area,
-      p.tags,
-      ST_Transform(p.way, 4326) AS geom
+      MAX(p.name)                                          AS name,
+      MAX(p.leisure)                                       AS leisure,
+      MAX(p.operator)                                      AS operator,
+      MAX(p.access)                                        AS access,
+      MAX(p.surface)                                       AS surface,
+      SUM(p.way_area)::int                                 AS area,
+      (array_agg(p.tags ORDER BY ST_Area(p.way) DESC))[1] AS tags,
+      ST_Transform(ST_Union(p.way), 4326)                  AS geom
     FROM planet_osm_polygon p
     JOIN region r ON ST_Within(p.way, r.way)
     WHERE p.leisure = 'playground'
+    GROUP BY p.osm_id
   )
   SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -495,20 +496,31 @@ AS $$
       3857
     ) AS geom
   ),
-  playgrounds AS (
-    SELECT
-      p.osm_id,
-      p.name,
-      p.leisure,
-      p.operator,
-      p.access,
-      p.surface,
-      p.way_area::int AS area,
-      p.tags,
-      ST_Transform(p.way, 4326) AS geom
+  -- Collect all osm_ids with at least one ring intersecting the viewport.
+  -- Using a separate CTE instead of filtering playgrounds directly ensures that
+  -- multipolygon relations (one osm_id, multiple planet_osm_polygon rows) are
+  -- returned in full even when only one of their rings touches the bbox edge.
+  ids_in_view AS (
+    SELECT DISTINCT p.osm_id
     FROM planet_osm_polygon p
     JOIN bbox b ON ST_Intersects(p.way, b.geom)
     WHERE p.leisure = 'playground'
+  ),
+  playgrounds AS (
+    SELECT
+      p.osm_id,
+      MAX(p.name)                                          AS name,
+      MAX(p.leisure)                                       AS leisure,
+      MAX(p.operator)                                      AS operator,
+      MAX(p.access)                                        AS access,
+      MAX(p.surface)                                       AS surface,
+      SUM(p.way_area)::int                                 AS area,
+      (array_agg(p.tags ORDER BY ST_Area(p.way) DESC))[1] AS tags,
+      ST_Transform(ST_Union(p.way), 4326)                  AS geom
+    FROM planet_osm_polygon p
+    JOIN ids_in_view i ON i.osm_id = p.osm_id
+    WHERE p.leisure = 'playground'
+    GROUP BY p.osm_id
   )
   SELECT json_build_object(
     'type', 'FeatureCollection',
