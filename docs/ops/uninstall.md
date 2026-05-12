@@ -21,14 +21,14 @@ rm -rf spieli-nginx/ install-nginx.sh
 ```bash
 cd spieli
 
-# Stop containers and delete all volumes (database, PBF cache)
-docker compose --profile data-node-ui down -v
+# Stop all containers (all profiles) and delete all volumes (database, PBF cache)
+docker compose down -v
 
 cd ..
 rm -rf spieli/ install.sh
 ```
 
-Replace `data-node-ui` with the profile you chose at install time (`data-node` or `ui`). Check your `.env` for `DEPLOY_MODE` if unsure.
+No `--profile` flag needed — `down` stops all running containers in the project regardless of which profile started them (including watchtower if auto-update was enabled).
 
 ## 3. Remove Docker images (optional)
 
