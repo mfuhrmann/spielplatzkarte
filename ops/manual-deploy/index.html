@@ -658,15 +658,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#uninstall" class="md-nav__link">
-    <span class="md-ellipsis">
-      Uninstall
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -856,6 +847,27 @@
   
   <span class="md-ellipsis">
     Troubleshooting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../uninstall/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Uninstall
   </span>
   
 
@@ -1531,15 +1543,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#uninstall" class="md-nav__link">
-    <span class="md-ellipsis">
-      Uninstall
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1644,23 +1647,7 @@
 <p class="admonition-title">Geolocation on mobile</p>
 <p>Browsers block the geolocation API on plain HTTP. If you need to test the location button on a phone, use Chrome and enable "Insecure origins treated as secure" at <code>chrome://flags</code>, or test against the production HTTPS URL.</p>
 </div>
-<h2 id="uninstall">Uninstall<a class="headerlink" href="#uninstall" title="Permanent link">&para;</a></h2>
-<p>To completely remove the spieli stack and all data:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Stop containers and delete all volumes (database, PBF cache)</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>make<span class="w"> </span>down
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>docker<span class="w"> </span>volume<span class="w"> </span>rm<span class="w"> </span>spieli_pgdata<span class="w"> </span>spieli_pgdata2<span class="w"> </span>spieli_pbf_cache<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">true</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1"># Remove the cloned repository</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nb">cd</span><span class="w"> </span>..
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>rm<span class="w"> </span>-rf<span class="w"> </span>spieli/
-</code></pre></div>
-<p>To also remove the pulled Docker images:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>image<span class="w"> </span>prune<span class="w"> </span>-a
-</code></pre></div>
-<div class="admonition warning">
-<p class="admonition-title">Volume names</p>
-<p>Volume names are prefixed with the directory name of the project. If you cloned into a directory other than <code>spieli/</code>, replace <code>spieli_</code> with the appropriate prefix in the <code>docker volume rm</code> command.</p>
-</div>
+<p>To remove the stack, see <a href="../uninstall/">Uninstall</a>.</p>
 
 
 
