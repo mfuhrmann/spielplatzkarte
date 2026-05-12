@@ -45,6 +45,22 @@ fetch() {
     fi
 }
 
+choose_mode() {
+    while true; do
+        printf "\n${BOLD}── Deployment mode ─────────────────────────────────────────────${RESET}\n"
+        printf "  ${BOLD}1)${RESET} data-node-ui  — full stack with UI (proxies to app on port 8080)\n"
+        printf "  ${BOLD}2)${RESET} data-node     — API only (proxies PostgREST on port 3000, adds CORS)\n\n"
+        printf "${BOLD}Select mode${RESET} [1-2]: "
+        read -r choice
+        case "$choice" in
+            1) NGINX_MODE="data-node-ui"; break ;;
+            2) NGINX_MODE="data-node";    break ;;
+            *) warn "Please enter 1 or 2." ;;
+        esac
+    done
+    success "Mode: ${BOLD}${NGINX_MODE}${RESET}"
+}
+
 # ── Dependency check ───────────────────────────────────────────────────────────
 
 for cmd in docker; do
@@ -64,9 +80,7 @@ printf "Sets up a TLS-terminating reverse proxy in front of the spieli stack.\n\
 ask DEPLOY_DIR "Installation directory" "./spieli-nginx"
 ask DOMAIN     "Domain name pointing to this server (e.g. spieli.example.com)"
 ask EMAIL      "Email address for Let's Encrypt renewal notices"
-
-APP_PORT="8080"
-ask APP_PORT "Port the spieli stack is listening on" "8080"
+choose_mode
 
 # ── Download files ─────────────────────────────────────────────────────────────
 
@@ -77,16 +91,15 @@ mkdir -p "$DEPLOY_DIR/conf.d"
 info "Downloading Compose file..."
 fetch "$BASE_URL/docker-compose.yml" "$DEPLOY_DIR/docker-compose.yml"
 
-info "Downloading nginx config template..."
-fetch "$BASE_URL/conf.d/app.conf.template" "$DEPLOY_DIR/conf.d/app.conf.template"
+if [[ "$NGINX_MODE" == "data-node-ui" ]]; then
+    info "Downloading nginx config template (data-node-ui)..."
+    fetch "$BASE_URL/conf.d/app.conf.template" "$DEPLOY_DIR/conf.d/app.conf.template"
+else
+    info "Downloading nginx config template (data-node)..."
+    fetch "$BASE_URL/conf.d/data-node.conf.template" "$DEPLOY_DIR/conf.d/app.conf.template"
+fi
 
 success "Files downloaded to $DEPLOY_DIR."
-
-# ── Patch app port if non-default ──────────────────────────────────────────────
-
-if [[ "$APP_PORT" != "8080" ]]; then
-    sed -i "s/8080/$APP_PORT/g" "$DEPLOY_DIR/conf.d/app.conf.template"
-fi
 
 # ── Step 1: start nginx with HTTP-only config for ACME challenge ───────────────
 
@@ -139,7 +152,16 @@ printf "  docker compose up -d          # start\n"
 printf "  docker compose down           # stop\n"
 printf "  docker compose logs nginx     # nginx logs\n"
 printf "  docker compose logs certbot   # renewal logs\n\n"
-printf "${BOLD}Next step — install spieli:${RESET}\n"
-printf "  curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh\n"
-printf "  bash install.sh\n\n"
-printf "${YELLOW}Tip:${RESET} when the installer asks for the public URL, enter ${BOLD}https://$DOMAIN${RESET}\n"
+
+if [[ "$NGINX_MODE" == "data-node-ui" ]]; then
+    printf "${BOLD}Next step — install spieli:${RESET}\n"
+    printf "  curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh\n"
+    printf "  bash install.sh\n\n"
+    printf "${YELLOW}Tip:${RESET} when the installer asks for the public URL, enter ${BOLD}https://$DOMAIN${RESET}\n"
+else
+    printf "${BOLD}Next step — install spieli (data-node mode):${RESET}\n"
+    printf "  curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh\n"
+    printf "  bash install.sh\n\n"
+    printf "${YELLOW}Tip:${RESET} choose ${BOLD}data-node${RESET} mode in the installer.\n"
+    printf "Your API will be available at ${CYAN}https://$DOMAIN/api/${RESET}\n"
+fi

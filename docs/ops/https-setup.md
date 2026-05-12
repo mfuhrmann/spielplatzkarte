@@ -1,6 +1,11 @@
 # HTTPS setup (nginx + Let's Encrypt)
 
-The spieli Docker stack listens on port 8080 over plain HTTP. To serve it publicly over HTTPS, use the `deploy/nginx` stack — a self-contained Docker Compose setup that runs **nginx** and **certbot**, terminating TLS and reverse-proxying to port 8080.
+The spieli Docker stack runs over plain HTTP. To serve it publicly over HTTPS, use the `deploy/nginx` stack — a self-contained Docker Compose setup that runs **nginx** and **certbot**. The installer supports two modes:
+
+| Mode | What it proxies | Use when |
+|---|---|---|
+| `data-node-ui` | Port 8080 (full app) | Hosting the complete spieli UI |
+| `data-node` | Port 3000 (PostgREST `/api/`) | Hosting an API-only data node for federation |
 
 Because it is a separate Compose stack it works on any distro without installing anything on the host beyond Docker.
 
@@ -20,7 +25,7 @@ curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/nginx/
 bash install-nginx.sh
 ```
 
-The installer prompts for your domain, email address, and app port (default 8080), then:
+The installer prompts for your domain, email address, and deployment mode, then:
 
 1. Downloads the Compose file and nginx config template
 2. Starts nginx with an HTTP-only config to serve the ACME challenge

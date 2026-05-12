@@ -1,11 +1,21 @@
 #!/usr/bin/env bash
 # First-run script: issue a Let's Encrypt certificate and start the stack.
-# Usage: ./init.sh <domain> <email>
-# Example: ./init.sh play.example.com admin@example.com
+# Usage: ./init.sh <domain> <email> [data-node-ui|data-node]
+# Example: ./init.sh play.example.com admin@example.com data-node-ui
 set -euo pipefail
 
-DOMAIN=${1:?usage: ./init.sh <domain> <email>}
-EMAIL=${2:?usage: ./init.sh <domain> <email>}
+DOMAIN=${1:?usage: ./init.sh <domain> <email> [data-node-ui|data-node]}
+EMAIL=${2:?usage: ./init.sh <domain> <email> [data-node-ui|data-node]}
+MODE=${3:-data-node-ui}
+
+cd "$(dirname "$0")"
+
+# Select the right config template
+case "$MODE" in
+    data-node-ui) TEMPLATE="conf.d/app.conf.template" ;;
+    data-node)    TEMPLATE="conf.d/data-node.conf.template" ;;
+    *) echo "error: MODE must be data-node-ui or data-node" >&2; exit 1 ;;
+esac
 
 cd "$(dirname "$0")"
 
@@ -40,7 +50,7 @@ docker compose run --rm --entrypoint="" certbot certbot certonly --webroot \
 # ── Step 3: switch nginx to full HTTPS config ─────────────────────────────────
 
 echo "==> Switching nginx to HTTPS config"
-sed "s/example.com/$DOMAIN/g" conf.d/app.conf.template > conf.d/app.conf
+sed "s/example.com/$DOMAIN/g" "$TEMPLATE" > conf.d/app.conf
 docker compose exec nginx nginx -s reload
 
 # ── Step 4: start certbot renewal loop ────────────────────────────────────────
@@ -49,5 +59,9 @@ echo "==> Starting certbot renewal loop"
 docker compose up -d certbot
 
 echo ""
-echo "Done. spieli is live at https://$DOMAIN"
-echo "Remember to set SITE_URL=https://$DOMAIN in your .env and run: make docker-build"
+if [[ "$MODE" == "data-node-ui" ]]; then
+    echo "Done. spieli is live at https://$DOMAIN"
+    echo "Remember to set SITE_URL=https://$DOMAIN in your .env and run: make docker-build"
+else
+    echo "Done. API is live at https://$DOMAIN/api/"
+fi
