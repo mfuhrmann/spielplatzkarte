@@ -10,6 +10,9 @@ services:
       - certbot-certs:/etc/letsencrypt:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - proxy
     restart: unless-stopped
     # Reload every 6 h so renewed certs take effect without a container restart
     command: >
@@ -27,3 +30,9 @@ services:
 volumes:
   certbot-www:
   certbot-certs:
+
+networks:
+  default:
+  proxy:
+    name: spieli-proxy
+    external: true
