@@ -2,15 +2,11 @@
 # spieli nginx + Let's Encrypt installer
 # Downloads the reverse-proxy Compose stack and issues a TLS certificate.
 #
-# Usage:
-#   curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/nginx/install-nginx.sh | bash
-#   # or with explicit args:
+# Usage (download first so stdin stays attached to the terminal):
+#   curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/nginx/install-nginx.sh -o install-nginx.sh
 #   bash install-nginx.sh
 
 set -euo pipefail
-
-# When run as `curl | bash`, stdin is the pipe. Re-open it from the terminal.
-exec </dev/tty
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
