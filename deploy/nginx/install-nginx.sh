@@ -70,7 +70,7 @@ ask APP_PORT "Port the spieli stack is listening on" "8080"
 
 # ── Download files ─────────────────────────────────────────────────────────────
 
-BASE_URL="https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/nginx"
+BASE_URL="https://raw.githubusercontent.com/mfuhrmann/spieli/docs/433-nginx-https-guide/deploy/nginx"
 
 mkdir -p "$DEPLOY_DIR/conf.d"
 
