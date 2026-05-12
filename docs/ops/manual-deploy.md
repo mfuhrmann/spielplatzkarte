@@ -86,3 +86,27 @@ Prints your machine's LAN IP and ready-to-use URLs. The Vite dev server and Dock
 
 !!! warning "Geolocation on mobile"
     Browsers block the geolocation API on plain HTTP. If you need to test the location button on a phone, use Chrome and enable "Insecure origins treated as secure" at `chrome://flags`, or test against the production HTTPS URL.
+
+## Uninstall
+
+To completely remove the spieli stack and all data:
+
+```bash
+# Stop containers and delete all volumes (database, PBF cache)
+make down
+docker volume rm spieli_pgdata spieli_pgdata2 spieli_pbf_cache 2>/dev/null || true
+
+# Remove the cloned repository
+cd ..
+rm -rf spieli/
+```
+
+To also remove the pulled Docker images:
+
+```bash
+docker image prune -a
+```
+
+!!! warning "Volume names"
+    Volume names are prefixed with the directory name of the project. If you cloned into a directory other than `spieli/`, replace `spieli_` with the appropriate prefix in the `docker volume rm` command.
+
