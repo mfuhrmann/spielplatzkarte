@@ -101,6 +101,12 @@ fi
 
 success "Files downloaded to $DEPLOY_DIR."
 
+# ── Ensure shared proxy network exists ────────────────────────────────────────
+
+if [[ "$NGINX_MODE" == "data-node" ]]; then
+    docker network create spieli-proxy 2>/dev/null || true
+fi
+
 # ── Step 1: start nginx with HTTP-only config for ACME challenge ───────────────
 
 info "Starting nginx (HTTP only) for certificate issuance..."
