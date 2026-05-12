@@ -1,5 +1,5 @@
-# Host nginx + Let's Encrypt
+# deploy/nginx
 
-This directory contains a sample host-level nginx configuration for terminating TLS in front of the spieli Docker stack. It is **not** part of the Docker Compose setup — it runs on the VM itself.
+Standalone Docker Compose stack (nginx + certbot) that terminates TLS on ports 80/443 and reverse-proxies to the spieli app stack running on port 8080.
 
-See [`docs/ops/https-setup.md`](../../docs/ops/https-setup.md) for the full setup guide.
+See [docs/ops/https-setup.md](../../docs/ops/https-setup.md) for setup instructions.
