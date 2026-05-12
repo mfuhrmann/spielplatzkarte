@@ -58,18 +58,24 @@ docker compose --profile data-node-ui down
 
 Replace `data-node-ui` with whichever mode you chose at install time (`DEPLOY_MODE` in your `.env`).
 
-## Next steps
+## Going public with HTTPS
 
-- [Configuration reference](../ops/configuration.md) — all available environment variables
-- [Troubleshooting](../ops/troubleshooting.md) — common problems and fixes
+The stack runs on plain HTTP (port 8080) by default. For a public deployment, set up a TLS-terminating reverse proxy.
+
+spieli ships a ready-made Docker Compose stack with nginx and Let's Encrypt. Install spieli first, then add the proxy:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/nginx/install-nginx.sh -o install-nginx.sh
+bash install-nginx.sh
+```
+
+See [HTTPS setup](../ops/https-setup.md) for the full walkthrough, firewall rules, and renewal details.
 
 ---
 
-## Joining an existing Hub
+## Contributing your region to a Hub
 
-If someone is running a spieli Hub and you want your region to appear on it, you need to stand up a data-node and send them your API URL. The hub operator then adds you to their `registry.json`.
-
-### Backend operator (you)
+If someone is running a spieli Hub and you want your region to appear on it, stand up a data-node and send them your API URL. The hub operator then adds you to their `registry.json`.
 
 **1. Run the installer**
 
@@ -78,19 +84,11 @@ curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o
 bash install.sh
 ```
 
-When prompted for deployment mode, choose:
-
-- **`data-node-ui`** — easiest path; nginx is included and adds CORS headers automatically.
-- **`data-node`** — db + PostgREST only, no nginx. Choose this if you run your own reverse proxy and will add CORS headers yourself.
-
-Enter your OSM relation ID and Geofabrik PBF URL when asked, and run the import.
+When prompted for deployment mode, choose `data-node` or `data-node-ui`. Run the import when asked.
 
 **2. Expose `/api/` over HTTPS**
 
-Put an HTTPS-terminating reverse proxy (nginx, Caddy, Traefik, …) in front of your stack. The Hub's browser clients fetch your `/api/` cross-origin, so HTTPS and CORS are both required.
-
-- With `data-node-ui`: CORS is already configured in the shipped nginx — nothing extra to do.
-- With `data-node`: add `Access-Control-Allow-Origin: *` (and `Access-Control-Allow-Methods`, `Access-Control-Allow-Headers`) to your proxy's `/api/` location block.
+Run the nginx installer (see above) and select **data-node** mode. This sets up HTTPS and adds the required CORS headers so the Hub's browsers can fetch your API cross-origin.
 
 **3. Verify**
 
@@ -98,16 +96,16 @@ From a different machine:
 
 ```bash
 curl -i https://your-city.example.com/api/rpc/get_meta
-# expect: 200 OK, JSON body, and Access-Control-Allow-Origin: * in the response headers
+# expect: 200 OK, JSON body, Access-Control-Allow-Origin: * header
 ```
 
 **4. Send the hub operator your API URL**: `https://your-city.example.com/api`
 
 ---
 
-### Hub operator
+## Running a Hub
 
-Add the new backend to `registry.json` (the file your Hub serves at `/registry.json`):
+If you operate a spieli Hub and want to add a new backend region, add it to your `registry.json`:
 
 ```json
 {
@@ -124,3 +122,12 @@ The Hub re-reads `registry.json` every 5 minutes — no restart needed.
     The `slug` is optional but recommended — it makes deep-links shareable and stable (e.g. `https://hub.example.com/#new-city/W123456`). Use lowercase ASCII letters, digits, and hyphens only.
 
 For the full federation walkthrough including topology diagrams and verification steps, see [Federated Deployment](../ops/federated-deployment.md).
+
+---
+
+## Next steps
+
+- [HTTPS setup](../ops/https-setup.md) — nginx + Let's Encrypt reverse proxy
+- [Configuration reference](../ops/configuration.md) — all available environment variables
+- [Troubleshooting](../ops/troubleshooting.md) — common problems and fixes
+- [Uninstall](../ops/uninstall.md) — remove the stack completely

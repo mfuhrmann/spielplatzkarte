@@ -11,7 +11,7 @@ Because it is a separate Compose stack it works on any distro without installing
 - A DNS A record pointing your domain to the server IP (e.g. `spieli.example.com → 1.2.3.4`)
 - Ports 80 and 443 open in the firewall (see [Firewall](#firewall))
 
-The spieli app stack does not need to be running first — you can set up TLS before or after.
+**Install spieli before running the nginx installer.** The nginx stack joins a Docker network (`spieli-proxy`) that the spieli stack creates on startup. In `data-node-ui` mode the order is flexible, but installing spieli first is the safer default.
 
 ## 1. Download and run the installer
 
