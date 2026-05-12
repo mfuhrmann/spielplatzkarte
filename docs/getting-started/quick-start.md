@@ -124,3 +124,33 @@ The Hub re-reads `registry.json` every 5 minutes — no restart needed.
     The `slug` is optional but recommended — it makes deep-links shareable and stable (e.g. `https://hub.example.com/#new-city/W123456`). Use lowercase ASCII letters, digits, and hyphens only.
 
 For the full federation walkthrough including topology diagrams and verification steps, see [Federated Deployment](../ops/federated-deployment.md).
+
+## Uninstall
+
+To completely remove a spieli deployment installed via `install.sh`:
+
+```bash
+cd spieli
+
+# Stop containers and delete all volumes (database, PBF cache)
+docker compose --profile data-node-ui down -v
+
+# Remove the directory
+cd ..
+rm -rf spieli/ install.sh
+```
+
+Replace `--profile data-node-ui` with the profile you chose during installation (`data-node` or `ui`).
+
+To also remove pulled Docker images:
+
+```bash
+docker image prune -a
+```
+
+If you also set up the nginx+certbot stack, remove it first:
+
+```bash
+docker compose -f spieli-nginx/docker-compose.yml down -v
+rm -rf spieli-nginx/ install-nginx.sh
+```
