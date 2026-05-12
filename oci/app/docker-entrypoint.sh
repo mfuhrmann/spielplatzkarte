@@ -61,7 +61,7 @@ window.APP_CONFIG = {
   regionPlaygroundWikiUrl:    '${SAFE_WIKI_URL:-https://wiki.openstreetmap.org/wiki/Tag:leisure%3Dplayground}',
   regionChatUrl:              '${SAFE_CHAT_URL}' || null,
   mapZoom:                    ${MAP_ZOOM:-12},
-  mapMinZoom:                 ${MAP_MIN_ZOOM:-10},
+  mapMinZoom:                 ${MAP_MIN_ZOOM:-7},
   poiRadiusM:                 ${POI_RADIUS_M:-5000},
   apiBaseUrl:                 '${SAFE_API_BASE_URL}',
   clusterMaxZoom:             ${CLUSTER_MAX_ZOOM:-13},

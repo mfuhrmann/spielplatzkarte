@@ -175,11 +175,11 @@ fi
 if [[ "$DEPLOY_MODE" != "data-node" ]]; then
     printf "\n${BOLD}── Optional: map display ───────────────────────────────────────${RESET}\n"
     ask MAP_ZOOM      "Initial map zoom level"           "12"
-    ask MAP_MIN_ZOOM  "Minimum zoom level"               "10"
+    ask MAP_MIN_ZOOM  "Minimum zoom level"               "7"
     ask POI_RADIUS_M  "Nearby POI search radius (metres)" "5000"
 else
     MAP_ZOOM="12"
-    MAP_MIN_ZOOM="10"
+    MAP_MIN_ZOOM="7"
     POI_RADIUS_M="5000"
 fi
 
