@@ -65,7 +65,7 @@ function b64urlBytes(buf) {
 // ── Subject URI ────────────────────────────────────────────────────────────
 
 export function mangroveSubject(lat, lon) {
-    return `geo:${lat.toFixed(5)},${lon.toFixed(5)}?u=50`;
+    return `geo:${lat.toFixed(5)},${lon.toFixed(5)}?q=playground&u=50`;
 }
 
 // ── Fetch reviews ──────────────────────────────────────────────────────────
