@@ -25,7 +25,7 @@ echo "==> Starting nginx"
 docker compose up -d nginx
 
 echo "==> Requesting Let's Encrypt certificate for $DOMAIN"
-docker compose run --rm certbot certonly --webroot \
+docker compose run --rm --entrypoint="" certbot certbot certonly --webroot \
   --webroot-path /var/www/certbot \
   --email "$EMAIL" --agree-tos --no-eff-email \
   -d "$DOMAIN"
