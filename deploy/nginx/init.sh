@@ -24,11 +24,16 @@ docker compose run --rm --entrypoint="" certbot sh -c "
 echo "==> Starting nginx"
 docker compose up -d nginx
 
+echo "==> Removing temporary self-signed certificate"
+docker compose run --rm --entrypoint="" certbot sh -c "
+  rm -rf /etc/letsencrypt/live/$DOMAIN \
+         /etc/letsencrypt/archive/$DOMAIN \
+         /etc/letsencrypt/renewal/$DOMAIN.conf 2>/dev/null; true"
+
 echo "==> Requesting Let's Encrypt certificate for $DOMAIN"
 docker compose run --rm --entrypoint="" certbot certbot certonly --webroot \
   --webroot-path /var/www/certbot \
   --email "$EMAIL" --agree-tos --no-eff-email \
-  --force-renewal \
   -d "$DOMAIN"
 
 echo "==> Reloading nginx with real certificate"

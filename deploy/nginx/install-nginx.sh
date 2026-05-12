@@ -115,12 +115,18 @@ docker compose -f "$DEPLOY_DIR/docker-compose.yml" up -d nginx
 
 # ── Issue real certificate ─────────────────────────────────────────────────────
 
+info "Removing temporary self-signed certificate..."
+docker compose -f "$DEPLOY_DIR/docker-compose.yml" \
+    run --rm --entrypoint="" certbot sh -c "
+    rm -rf /etc/letsencrypt/live/$DOMAIN \
+           /etc/letsencrypt/archive/$DOMAIN \
+           /etc/letsencrypt/renewal/$DOMAIN.conf 2>/dev/null; true"
+
 info "Requesting Let's Encrypt certificate for $DOMAIN..."
 docker compose -f "$DEPLOY_DIR/docker-compose.yml" \
     run --rm --entrypoint="" certbot certbot certonly --webroot \
     --webroot-path /var/www/certbot \
     --email "$EMAIL" --agree-tos --no-eff-email \
-    --force-renewal \
     -d "$DOMAIN"
 
 # ── Reload nginx + start renewal loop ─────────────────────────────────────────
