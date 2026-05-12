@@ -9,6 +9,9 @@
 
 set -euo pipefail
 
+# When run as `curl | bash`, stdin is the pipe. Re-open it from the terminal.
+exec </dev/tty
+
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -22,11 +25,11 @@ die()     { printf "${RED}error:${RESET} %s\n" "$*" >&2; exit 1; }
 ask() {
     local var="$1" prompt="$2" default="${3:-}"
     if [[ -n "$default" ]]; then
-        printf "${BOLD}%s${RESET} [%s]: " "$prompt" "$default" >/dev/tty
+        printf "${BOLD}%s${RESET} [%s]: " "$prompt" "$default"
     else
-        printf "${BOLD}%s${RESET}: " "$prompt" >/dev/tty
+        printf "${BOLD}%s${RESET}: " "$prompt"
     fi
-    read -r input </dev/tty
+    read -r input
     if [[ -z "$input" && -n "$default" ]]; then
         printf -v "$var" '%s' "$default"
     elif [[ -n "$input" ]]; then
