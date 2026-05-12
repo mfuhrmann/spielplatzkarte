@@ -23,11 +23,11 @@ ask() {
     # ask <variable> <prompt> [default]
     local var="$1" prompt="$2" default="${3:-}"
     if [[ -n "$default" ]]; then
-        printf "${BOLD}%s${RESET} [%s]: " "$prompt" "$default"
+        printf "${BOLD}%s${RESET} [%s]: " "$prompt" "$default" >/dev/tty
     else
-        printf "${BOLD}%s${RESET}: " "$prompt"
+        printf "${BOLD}%s${RESET}: " "$prompt" >/dev/tty
     fi
-    read -r input
+    read -r input </dev/tty
     if [[ -z "$input" && -n "$default" ]]; then
         printf -v "$var" '%s' "$default"
     elif [[ -n "$input" ]]; then
@@ -40,15 +40,15 @@ ask() {
 ask_optional() {
     # ask_optional <variable> <prompt>
     local var="$1" prompt="$2"
-    printf "${BOLD}%s${RESET} (leave empty to skip): " "$prompt"
-    read -r input
+    printf "${BOLD}%s${RESET} (leave empty to skip): " "$prompt" >/dev/tty
+    read -r input </dev/tty
     printf -v "$var" '%s' "${input:-}"
 }
 
 confirm() {
     # confirm <prompt> — returns 0 for yes, 1 for no
-    printf "${BOLD}%s${RESET} [Y/n]: " "$1"
-    read -r ans
+    printf "${BOLD}%s${RESET} [Y/n]: " "$1" >/dev/tty
+    read -r ans </dev/tty
     [[ "${ans:-y}" =~ ^[Yy]$ ]]
 }
 
@@ -69,8 +69,8 @@ choose_mode() {
         printf "  ${BOLD}1)${RESET} data-node     — database + PostgREST only (no UI)\n"
         printf "  ${BOLD}2)${RESET} ui            — frontend only (connects to a remote data node)\n"
         printf "  ${BOLD}3)${RESET} data-node-ui  — full stack: database + PostgREST + UI\n\n"
-        printf "${BOLD}Select deployment mode${RESET} [1-3]: "
-        read -r choice
+        printf "${BOLD}Select deployment mode${RESET} [1-3]: " >/dev/tty
+        read -r choice </dev/tty
         case "$choice" in
             1) DEPLOY_MODE="data-node";    break ;;
             2) DEPLOY_MODE="ui";           break ;;
@@ -150,8 +150,8 @@ if [[ "$DEPLOY_MODE" == "ui" ]]; then
     printf "Enter the base URL of the PostgREST API on your data node.\n\n"
 
     while true; do
-        printf "${BOLD}Remote API base URL${RESET} (e.g. https://data.example.com/api): "
-        read -r API_BASE_URL
+        printf "${BOLD}Remote API base URL${RESET} (e.g. https://data.example.com/api): " >/dev/tty
+        read -r API_BASE_URL </dev/tty
         [[ -n "$API_BASE_URL" ]] && break
         warn "Remote API base URL is required for UI mode."
     done
@@ -238,8 +238,8 @@ if confirm "Configure legal pages now?"; then
     printf "  ${BOLD}2)${RESET} Link to existing pages I already host\n"
     printf "  ${BOLD}3)${RESET} Skip — I will configure this manually in .env later\n\n"
     while true; do
-        printf "${BOLD}Legal pages option${RESET} [1-3]: "
-        read -r LEGAL_CHOICE
+        printf "${BOLD}Legal pages option${RESET} [1-3]: " >/dev/tty
+        read -r LEGAL_CHOICE </dev/tty
         case "$LEGAL_CHOICE" in
             1|2|3) break ;;
             *) warn "Please enter 1, 2, or 3." ;;

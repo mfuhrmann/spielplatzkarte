@@ -22,11 +22,11 @@ die()     { printf "${RED}error:${RESET} %s\n" "$*" >&2; exit 1; }
 ask() {
     local var="$1" prompt="$2" default="${3:-}"
     if [[ -n "$default" ]]; then
-        printf "${BOLD}%s${RESET} [%s]: " "$prompt" "$default"
+        printf "${BOLD}%s${RESET} [%s]: " "$prompt" "$default" >/dev/tty
     else
-        printf "${BOLD}%s${RESET}: " "$prompt"
+        printf "${BOLD}%s${RESET}: " "$prompt" >/dev/tty
     fi
-    read -r input
+    read -r input </dev/tty
     if [[ -z "$input" && -n "$default" ]]; then
         printf -v "$var" '%s' "$default"
     elif [[ -n "$input" ]]; then
