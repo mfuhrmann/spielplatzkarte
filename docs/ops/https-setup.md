@@ -71,6 +71,21 @@ ufw allow 443/tcp
 ufw deny 8080/tcp
 ```
 
+## Uninstall
+
+To completely remove the nginx+certbot stack:
+
+```bash
+cd spieli-nginx
+
+# Stop containers and delete certificate volumes
+docker compose down -v
+
+# Remove the directory and downloaded scripts
+cd ..
+rm -rf spieli-nginx/ install-nginx.sh
+```
+
 ## Troubleshooting
 
 | Symptom | Likely cause |
