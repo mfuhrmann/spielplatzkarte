@@ -3,7 +3,7 @@
 # Downloads the production compose file and db schema, then walks through
 # configuration interactively.
 #
-# Usage:
+# Usage (download first so stdin stays attached to the terminal):
 #   curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh -o install.sh
 #   bash install.sh
 
