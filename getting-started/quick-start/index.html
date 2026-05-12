@@ -605,6 +605,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#uninstall" class="md-nav__link">
+    <span class="md-ellipsis">
+      Uninstall
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1552,6 +1561,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#uninstall" class="md-nav__link">
+    <span class="md-ellipsis">
+      Uninstall
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1693,6 +1711,25 @@
 <p>The <code>slug</code> is optional but recommended — it makes deep-links shareable and stable (e.g. <code>https://hub.example.com/#new-city/W123456</code>). Use lowercase ASCII letters, digits, and hyphens only.</p>
 </div>
 <p>For the full federation walkthrough including topology diagrams and verification steps, see <a href="../../ops/federated-deployment/">Federated Deployment</a>.</p>
+<h2 id="uninstall">Uninstall<a class="headerlink" href="#uninstall" title="Permanent link">&para;</a></h2>
+<p>To completely remove a spieli deployment installed via <code>install.sh</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">cd</span><span class="w"> </span>spieli
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># Stop containers and delete all volumes (database, PBF cache)</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>data-node-ui<span class="w"> </span>down<span class="w"> </span>-v
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># Remove the directory</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="nb">cd</span><span class="w"> </span>..
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>rm<span class="w"> </span>-rf<span class="w"> </span>spieli/<span class="w"> </span>install.sh
+</code></pre></div>
+<p>Replace <code>--profile data-node-ui</code> with the profile you chose during installation (<code>data-node</code> or <code>ui</code>).</p>
+<p>To also remove pulled Docker images:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>image<span class="w"> </span>prune<span class="w"> </span>-a
+</code></pre></div>
+<p>If you also set up the nginx+certbot stack, remove it first:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>spieli-nginx/docker-compose.yml<span class="w"> </span>down<span class="w"> </span>-v
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>rm<span class="w"> </span>-rf<span class="w"> </span>spieli-nginx/<span class="w"> </span>install-nginx.sh
+</code></pre></div>
 
 
 
