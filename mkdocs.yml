@@ -42,6 +42,7 @@ nav:
       - Monitoring: ops/monitoring.md
       - Security: ops/security.md
       - Troubleshooting: ops/troubleshooting.md
+      - Uninstall: ops/uninstall.md
   - Contributing:
       - Local Development: contributing/local-dev.md
       - Frontend Guide: contributing/frontend-guide.md
