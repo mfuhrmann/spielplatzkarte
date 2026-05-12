@@ -81,6 +81,9 @@ services:
       PGRST_DB_ANON_ROLE:  web_anon
       PGRST_SERVER_PORT:   3000
       PGRST_LOG_LEVEL:     warn
+    networks:
+      - default
+      - proxy
     restart: unless-stopped
 
   # ── Second backend (Hub mode dev testing) ───────────────────────────────────
@@ -180,3 +183,8 @@ volumes:
   pgdata:
   pgdata2:
   pbf_cache:
+
+networks:
+  default:
+  proxy:
+    name: spieli-proxy

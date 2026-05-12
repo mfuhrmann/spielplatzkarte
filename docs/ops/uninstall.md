@@ -21,14 +21,29 @@ rm -rf spieli-nginx/ install-nginx.sh
 ```bash
 cd spieli
 
-# Stop all containers (all profiles) and delete all volumes (database, PBF cache)
-docker compose down -v
+# Stop all containers (all profiles), delete volumes and networks
+docker compose down -v --remove-orphans
 
 cd ..
 rm -rf spieli/ install.sh
 ```
 
-No `--profile` flag needed — `down` stops all running containers in the project regardless of which profile started them (including watchtower if auto-update was enabled).
+No `--profile` flag needed — `down` stops all containers in the project regardless of which profile started them (including watchtower if auto-update was enabled). `--remove-orphans` cleans up dangling networks.
+
+If a volume removal fails with "volume is in use", a stopped container is still referencing it. Prune stopped containers first, then remove the volumes manually:
+
+```bash
+docker container prune -f
+docker volume rm spieli_pgdata spieli_pgdata2 spieli_pbf_cache 2>/dev/null || true
+```
+
+## 2a. Remove the shared proxy network (data-node installs only)
+
+If you ran the nginx installer in **data-node** mode, a shared Docker network was created:
+
+```bash
+docker network rm spieli-proxy 2>/dev/null || true
+```
 
 ## 3. Remove Docker images (optional)
 
