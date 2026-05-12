@@ -9,26 +9,27 @@ EMAIL=${2:?usage: ./init.sh <domain> <email>}
 
 cd "$(dirname "$0")"
 
-echo "==> Generating nginx config for $DOMAIN"
-sed "s/example.com/$DOMAIN/g" conf.d/app.conf.template > conf.d/app.conf
+# ── Step 1: start nginx with HTTP-only config for ACME challenge ───────────────
 
-echo "==> Creating temporary self-signed certificate (so nginx can start)"
-docker compose run --rm --entrypoint="" certbot sh -c "
-  mkdir -p /etc/letsencrypt/live/$DOMAIN &&
-  openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
-    -keyout /etc/letsencrypt/live/$DOMAIN/privkey.pem \
-    -out  /etc/letsencrypt/live/$DOMAIN/fullchain.pem \
-    -subj '/CN=localhost' 2>/dev/null
-  echo 'Dummy cert created.'"
+echo "==> Generating HTTP-only nginx config for $DOMAIN"
+cat > conf.d/app.conf <<EOF
+server {
+    listen 80;
+    server_name $DOMAIN;
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+    location / {
+        return 200 'spieli — TLS setup in progress';
+        add_header Content-Type text/plain;
+    }
+}
+EOF
 
 echo "==> Starting nginx"
 docker compose up -d nginx
 
-echo "==> Removing temporary self-signed certificate"
-docker compose run --rm --entrypoint="" certbot sh -c "
-  rm -rf /etc/letsencrypt/live/$DOMAIN \
-         /etc/letsencrypt/archive/$DOMAIN \
-         /etc/letsencrypt/renewal/$DOMAIN.conf 2>/dev/null; true"
+# ── Step 2: issue real certificate ────────────────────────────────────────────
 
 echo "==> Requesting Let's Encrypt certificate for $DOMAIN"
 docker compose run --rm --entrypoint="" certbot certbot certonly --webroot \
@@ -36,8 +37,13 @@ docker compose run --rm --entrypoint="" certbot certbot certonly --webroot \
   --email "$EMAIL" --agree-tos --no-eff-email \
   -d "$DOMAIN"
 
-echo "==> Reloading nginx with real certificate"
+# ── Step 3: switch nginx to full HTTPS config ─────────────────────────────────
+
+echo "==> Switching nginx to HTTPS config"
+sed "s/example.com/$DOMAIN/g" conf.d/app.conf.template > conf.d/app.conf
 docker compose exec nginx nginx -s reload
+
+# ── Step 4: start certbot renewal loop ────────────────────────────────────────
 
 echo "==> Starting certbot renewal loop"
 docker compose up -d certbot

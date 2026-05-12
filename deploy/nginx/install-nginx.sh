@@ -47,7 +47,7 @@ fetch() {
 
 # ── Dependency check ───────────────────────────────────────────────────────────
 
-for cmd in docker openssl; do
+for cmd in docker; do
     command -v "$cmd" >/dev/null 2>&1 || die "'$cmd' is required but not found in PATH."
 done
 docker compose version >/dev/null 2>&1 || die "Docker Compose plugin is not available."
@@ -85,42 +85,29 @@ success "Files downloaded to $DEPLOY_DIR."
 # ── Patch app port if non-default ──────────────────────────────────────────────
 
 if [[ "$APP_PORT" != "8080" ]]; then
-    sed "s/8080/$APP_PORT/g" "$DEPLOY_DIR/conf.d/app.conf.template" \
-        > "$DEPLOY_DIR/conf.d/app.conf.template.tmp"
-    mv "$DEPLOY_DIR/conf.d/app.conf.template.tmp" "$DEPLOY_DIR/conf.d/app.conf.template"
+    sed -i "s/8080/$APP_PORT/g" "$DEPLOY_DIR/conf.d/app.conf.template"
 fi
 
-# ── Generate nginx config ──────────────────────────────────────────────────────
+# ── Step 1: start nginx with HTTP-only config for ACME challenge ───────────────
 
-info "Generating nginx config for $DOMAIN..."
-sed "s/example.com/$DOMAIN/g" "$DEPLOY_DIR/conf.d/app.conf.template" \
-    > "$DEPLOY_DIR/conf.d/app.conf"
+info "Starting nginx (HTTP only) for certificate issuance..."
+cat > "$DEPLOY_DIR/conf.d/app.conf" <<EOF
+server {
+    listen 80;
+    server_name $DOMAIN;
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+    location / {
+        return 200 'spieli — TLS setup in progress';
+        add_header Content-Type text/plain;
+    }
+}
+EOF
 
-# ── Dummy cert so nginx can start ─────────────────────────────────────────────
-
-info "Creating temporary self-signed certificate..."
-docker compose -f "$DEPLOY_DIR/docker-compose.yml" \
-    run --rm --entrypoint="" certbot sh -c "
-  mkdir -p /etc/letsencrypt/live/$DOMAIN &&
-  openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
-    -keyout /etc/letsencrypt/live/$DOMAIN/privkey.pem \
-    -out    /etc/letsencrypt/live/$DOMAIN/fullchain.pem \
-    -subj '/CN=localhost' 2>/dev/null
-  echo 'Dummy cert created.'"
-
-# ── Start nginx ────────────────────────────────────────────────────────────────
-
-info "Starting nginx..."
 docker compose -f "$DEPLOY_DIR/docker-compose.yml" up -d nginx
 
-# ── Issue real certificate ─────────────────────────────────────────────────────
-
-info "Removing temporary self-signed certificate..."
-docker compose -f "$DEPLOY_DIR/docker-compose.yml" \
-    run --rm --entrypoint="" certbot sh -c "
-    rm -rf /etc/letsencrypt/live/$DOMAIN \
-           /etc/letsencrypt/archive/$DOMAIN \
-           /etc/letsencrypt/renewal/$DOMAIN.conf 2>/dev/null; true"
+# ── Step 2: issue real certificate ────────────────────────────────────────────
 
 info "Requesting Let's Encrypt certificate for $DOMAIN..."
 docker compose -f "$DEPLOY_DIR/docker-compose.yml" \
@@ -129,10 +116,15 @@ docker compose -f "$DEPLOY_DIR/docker-compose.yml" \
     --email "$EMAIL" --agree-tos --no-eff-email \
     -d "$DOMAIN"
 
-# ── Reload nginx + start renewal loop ─────────────────────────────────────────
+# ── Step 3: switch nginx to full HTTPS config ─────────────────────────────────
 
-info "Reloading nginx with real certificate..."
+info "Switching nginx to HTTPS config..."
+sed "s/example.com/$DOMAIN/g" "$DEPLOY_DIR/conf.d/app.conf.template" \
+    > "$DEPLOY_DIR/conf.d/app.conf"
+
 docker compose -f "$DEPLOY_DIR/docker-compose.yml" exec nginx nginx -s reload
+
+# ── Step 4: start certbot renewal loop ────────────────────────────────────────
 
 info "Starting certbot renewal loop..."
 docker compose -f "$DEPLOY_DIR/docker-compose.yml" up -d certbot
