@@ -120,6 +120,7 @@ docker compose -f "$DEPLOY_DIR/docker-compose.yml" \
     run --rm --entrypoint="" certbot certbot certonly --webroot \
     --webroot-path /var/www/certbot \
     --email "$EMAIL" --agree-tos --no-eff-email \
+    --force-renewal \
     -d "$DOMAIN"
 
 # ── Reload nginx + start renewal loop ─────────────────────────────────────────

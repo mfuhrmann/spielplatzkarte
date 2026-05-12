@@ -28,6 +28,7 @@ echo "==> Requesting Let's Encrypt certificate for $DOMAIN"
 docker compose run --rm --entrypoint="" certbot certbot certonly --webroot \
   --webroot-path /var/www/certbot \
   --email "$EMAIL" --agree-tos --no-eff-email \
+  --force-renewal \
   -d "$DOMAIN"
 
 echo "==> Reloading nginx with real certificate"
