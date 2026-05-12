@@ -58,7 +58,7 @@ choose_mode() {
             *) warn "Please enter 1 or 2." ;;
         esac
     done
-    success "Mode: ${NGINX_MODE}"
+    printf "${GREEN}✓${RESET}  Mode: ${BOLD}%s${RESET}\n" "$NGINX_MODE"
 }
 
 # ── Dependency check ───────────────────────────────────────────────────────────
