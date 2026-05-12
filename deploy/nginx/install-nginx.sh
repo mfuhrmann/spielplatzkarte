@@ -105,6 +105,12 @@ success "Files downloaded to $DEPLOY_DIR."
 
 if [[ "$NGINX_MODE" == "data-node" ]]; then
     docker network create spieli-proxy 2>/dev/null || true
+    # Connect an already-running postgrest container if present
+    POSTGREST_CONTAINER=$(docker ps --filter "name=postgrest" --format "{{.Names}}" | head -1)
+    if [[ -n "$POSTGREST_CONTAINER" ]]; then
+        docker network connect --alias postgrest spieli-proxy "$POSTGREST_CONTAINER" 2>/dev/null || true
+        info "Connected $POSTGREST_CONTAINER to spieli-proxy network."
+    fi
 fi
 
 # ── Step 1: start nginx with HTTP-only config for ACME challenge ───────────────
