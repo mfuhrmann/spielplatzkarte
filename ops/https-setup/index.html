@@ -1558,7 +1558,7 @@
 <li>A DNS A record pointing your domain to the server IP (e.g. <code>spieli.example.com → 1.2.3.4</code>)</li>
 <li>Ports 80 and 443 open in the firewall (see <a href="#firewall">Firewall</a>)</li>
 </ul>
-<p>The spieli app stack does not need to be running first — you can set up TLS before or after.</p>
+<p><strong>Install spieli before running the nginx installer.</strong> The nginx stack joins a Docker network (<code>spieli-proxy</code>) that the spieli stack creates on startup. In <code>data-node-ui</code> mode the order is flexible, but installing spieli first is the safer default.</p>
 <h2 id="1-download-and-run-the-installer">1. Download and run the installer<a class="headerlink" href="#1-download-and-run-the-installer" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/nginx/install-nginx.sh<span class="w"> </span>-o<span class="w"> </span>install-nginx.sh
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>bash<span class="w"> </span>install-nginx.sh
