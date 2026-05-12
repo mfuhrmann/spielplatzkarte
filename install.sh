@@ -78,7 +78,7 @@ choose_mode() {
             *) warn "Invalid choice — please enter 1, 2, or 3." ;;
         esac
     done
-    success "Deployment mode: ${BOLD}${DEPLOY_MODE}${RESET}"
+    printf "${GREEN}✓${RESET}  Deployment mode: ${BOLD}%s${RESET}\n" "$DEPLOY_MODE"
 }
 
 # ── Dependency check ───────────────────────────────────────────────────────────
