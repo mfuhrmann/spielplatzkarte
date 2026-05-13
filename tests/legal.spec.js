@@ -10,40 +10,36 @@ import {
 
 // ── Standalone mode ───────────────────────────────────────────────────────────
 
-test.describe('Standalone — LegalButton', () => {
-  test('button always present even when both URLs null', async ({ page }) => {
+test.describe('Standalone — legal links in About modal', () => {
+  test('About button always present', async ({ page }) => {
     await injectApiConfig(page);
     await stubApiRoutes(page);
     await page.goto('/');
-    await expect(page.locator('button[aria-label="Imprint and Privacy"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('button[aria-label="About"]')).toBeVisible({ timeout: 5000 });
   });
 
-  test('button visible and opens modal when impressumUrl is set', async ({ page }) => {
+  test('imprint link shown in About modal when impressumUrl is set', async ({ page }) => {
     await injectApiConfig(page, { impressumUrl: 'https://example.com/impressum', privacyUrl: null });
     await stubApiRoutes(page);
     await page.goto('/');
 
-    const btn = page.locator('button[aria-label="Imprint and Privacy"]');
-    await expect(btn).toBeVisible({ timeout: 5000 });
-    await btn.click();
+    await page.locator('button[aria-label="About"]').click();
 
-    const modal = page.locator('[role="dialog"]').filter({ hasText: 'Legal' });
+    const modal = page.locator('[role="dialog"]').filter({ hasText: 'About' });
     await expect(modal).toBeVisible();
     await expect(modal.locator('a', { hasText: 'Imprint' })).toBeVisible();
-    // privacyUrl is null → Datenschutz link must not appear
+    // privacyUrl is null → Privacy policy link must not appear
     await expect(modal.locator('a', { hasText: 'Privacy policy' })).toHaveCount(0);
   });
 
-  test('button visible and opens modal when privacyUrl is set', async ({ page }) => {
+  test('privacy link shown in About modal when privacyUrl is set', async ({ page }) => {
     await injectApiConfig(page, { impressumUrl: null, privacyUrl: 'https://example.com/datenschutz' });
     await stubApiRoutes(page);
     await page.goto('/');
 
-    const btn = page.locator('button[aria-label="Imprint and Privacy"]');
-    await expect(btn).toBeVisible({ timeout: 5000 });
-    await btn.click();
+    await page.locator('button[aria-label="About"]').click();
 
-    const modal = page.locator('[role="dialog"]').filter({ hasText: 'Legal' });
+    const modal = page.locator('[role="dialog"]').filter({ hasText: 'About' });
     await expect(modal).toBeVisible();
     await expect(modal.locator('a', { hasText: 'Privacy policy' })).toBeVisible();
     await expect(modal.locator('a', { hasText: 'Imprint' })).toHaveCount(0);
@@ -57,8 +53,8 @@ test.describe('Standalone — LegalButton', () => {
     await stubApiRoutes(page);
     await page.goto('/');
 
-    await page.locator('button[aria-label="Imprint and Privacy"]').click();
-    const modal = page.locator('[role="dialog"]').filter({ hasText: 'Legal' });
+    await page.locator('button[aria-label="About"]').click();
+    const modal = page.locator('[role="dialog"]').filter({ hasText: 'About' });
     await expect(modal.locator('a', { hasText: 'Imprint' })).toHaveCount(1);
     await expect(modal.locator('a', { hasText: 'Privacy policy' })).toHaveCount(1);
   });
@@ -68,7 +64,7 @@ test.describe('Standalone — LegalButton', () => {
     await stubApiRoutes(page);
     await page.goto('/');
 
-    await page.locator('button[aria-label="Imprint and Privacy"]').click();
+    await page.locator('button[aria-label="About"]').click();
     const link = page.locator('[role="dialog"] a', { hasText: 'Imprint' });
     await expect(link).toHaveAttribute('href', 'https://example.com/impressum');
     await expect(link).toHaveAttribute('target', '_blank');
@@ -79,10 +75,10 @@ test.describe('Standalone — LegalButton', () => {
     await stubApiRoutes(page);
     await page.goto('/');
 
-    await page.locator('button[aria-label="Imprint and Privacy"]').click();
-    await expect(page.locator('[role="dialog"]').filter({ hasText: 'Legal' })).toBeVisible();
+    await page.locator('button[aria-label="About"]').click();
+    await expect(page.locator('[role="dialog"]').filter({ hasText: 'About' })).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.locator('[role="dialog"]').filter({ hasText: 'Legal' })).toHaveCount(0);
+    await expect(page.locator('[role="dialog"]').filter({ hasText: 'About' })).toHaveCount(0);
   });
 });
 
