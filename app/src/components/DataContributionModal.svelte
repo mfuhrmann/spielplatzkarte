@@ -5,6 +5,10 @@
   export let open = false;
   /** Community chat URL; hidden when null/falsy. */
   export let chatUrl = null;
+  /** Imprint URL; hidden when null/falsy. */
+  export let impressumUrl = null;
+  /** Privacy policy URL; hidden when null/falsy. */
+  export let privacyUrl = null;
 
   function close() { open = false; }
 
@@ -46,6 +50,12 @@
             <a href={chatUrl} target="_blank" rel="noopener">{$_('modal.addData.community.simpleChatLabel')} ↗</a>
           {/if}
           <a href="https://github.com/mfuhrmann/spieli" target="_blank" rel="noopener">{$_('modal.addData.githubLabel')} ↗</a>
+          {#if impressumUrl}
+            <a href={impressumUrl} target="_blank" rel="noopener">{$_('legal.impressum')} ↗</a>
+          {/if}
+          {#if privacyUrl}
+            <a href={privacyUrl} target="_blank" rel="noopener">{$_('legal.datenschutz')} ↗</a>
+          {/if}
         </div>
 
         <p class="version">v{version}</p>

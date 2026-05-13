@@ -10,10 +10,9 @@
   import EquipmentTooltip from './EquipmentTooltip.svelte';
   import NearbyPlaygrounds from './NearbyPlaygrounds.svelte';
   import DataContributionModal from './DataContributionModal.svelte';
-  import LegalModal from './LegalModal.svelte';
   import CompletenessLegend from './CompletenessLegend.svelte';
   import { onDestroy, onMount } from 'svelte';
-  import { Info, Plus, Minus, ArrowLeft, Scale } from 'lucide-svelte';
+  import { Info, Plus, Minus, ArrowLeft } from 'lucide-svelte';
   import { _ } from 'svelte-i18n';
   import GeoJSON from 'ol/format/GeoJSON.js';
   import { mapStore } from '../stores/map.js';
@@ -297,7 +296,6 @@
   });
 
   let dataModalOpen  = false;
-  let legalModalOpen = false;
 
   // Nearest-playground suggestions panel
   let nearbyLocation = null;  // { lat, lon } | null
@@ -463,14 +461,6 @@
       >
         <Info class="h-5 w-5" />
       </button>
-      <button
-        class="control-btn"
-        onclick={() => legalModalOpen = true}
-        title={$_('legal.title')}
-        aria-label={$_('legal.buttonLabel')}
-      >
-        <Scale class="h-5 w-5" />
-      </button>
       <FilterPanel />
     </div>
 
@@ -540,10 +530,6 @@
   <DataContributionModal
     bind:open={dataModalOpen}
     chatUrl={dataContribLinks.chatUrl}
-  />
-
-  <LegalModal
-    bind:open={legalModalOpen}
     {impressumUrl}
     {privacyUrl}
   />
