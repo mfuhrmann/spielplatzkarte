@@ -42,7 +42,7 @@ test.describe('Hub smoke', () => {
     await expect(page.locator('.controls-bottom-right')).toBeVisible();
 
     // Filter + contribution buttons in the top-right cluster.
-    await expect(page.locator('.controls-top-right .control-btn')).toHaveCount(3);
+    await expect(page.locator('.controls-top-right .control-btn')).toHaveCount(2);
 
     // Zoom controls.
     await expect(page.locator('.zoom-btn.zoom-in')).toBeVisible();
