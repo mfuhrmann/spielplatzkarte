@@ -28,3 +28,4 @@ docs/project-scan-report.json
 # MkDocs
 site/
 .venv
+/spieli/

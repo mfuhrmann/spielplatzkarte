@@ -62,14 +62,14 @@ Replace `data-node-ui` with whichever mode you chose at install time (`DEPLOY_MO
 
 The stack runs on plain HTTP (port 8080) by default. For a public deployment, set up a TLS-terminating reverse proxy.
 
-spieli ships a ready-made Docker Compose stack with nginx and Let's Encrypt. Install spieli first, then add the proxy:
+spieli ships a ready-made Docker Compose stack with Traefik and Let's Encrypt. Install spieli first, then add the proxy:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/nginx/install-nginx.sh -o install-nginx.sh
-bash install-nginx.sh
+curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/traefik/install-traefik.sh -o install-traefik.sh
+bash install-traefik.sh
 ```
 
-See [HTTPS setup](../ops/https-setup.md) for the full walkthrough, firewall rules, and renewal details.
+Traefik handles certificate issuance and renewal automatically — no manual cert steps. See [HTTPS setup](../ops/https-setup.md) for the full walkthrough and firewall rules.
 
 ---
 
@@ -88,7 +88,7 @@ When prompted for deployment mode, choose `data-node` or `data-node-ui`. Run the
 
 **2. Expose `/api/` over HTTPS**
 
-Run the nginx installer (see above) and select **data-node** mode. This sets up HTTPS and adds the required CORS headers so the Hub's browsers can fetch your API cross-origin.
+Run the Traefik installer (see above) and select **data-node** mode. This sets up HTTPS and adds the required CORS headers so the Hub's browsers can fetch your API cross-origin.
 
 **3. Verify**
 
@@ -127,7 +127,7 @@ For the full federation walkthrough including topology diagrams and verification
 
 ## Next steps
 
-- [HTTPS setup](../ops/https-setup.md) — nginx + Let's Encrypt reverse proxy
+- [HTTPS setup](../ops/https-setup.md) — Traefik + Let's Encrypt reverse proxy
 - [Configuration reference](../ops/configuration.md) — all available environment variables
 - [Troubleshooting](../ops/troubleshooting.md) — common problems and fixes
 - [Uninstall](../ops/uninstall.md) — remove the stack completely
