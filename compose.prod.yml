@@ -85,6 +85,7 @@ services:
     environment:
       WATCHTOWER_POLL_INTERVAL: 86400
       WATCHTOWER_CLEANUP: "true"
+      DOCKER_API_VERSION: "1.47"
     restart: unless-stopped
 
   # ── PostgREST — auto-generates REST API from the api schema ─────────────────
