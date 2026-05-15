@@ -97,8 +97,13 @@
   let geolocDone = false;
   let geolocCoord = null; // [lon, lat] in EPSG:4326, or null if unavailable
 
+  // Fallback extent when no backend bbox is available (e.g. all backends
+  // are currently importing). Covers Germany so the map is usable.
+  const FALLBACK_BBOX = [5.87, 47.27, 15.04, 55.06];
+
   function tryFit() {
-    if (fitDone || !latestMap || !latestBbox || !backendsSettled || !geolocDone) return;
+    if (fitDone || !latestMap || !backendsSettled || !geolocDone) return;
+    if (!geolocCoord && !latestBbox) return;
     if (geolocCoord) {
       latestMap.getView().animate({
         center: fromLonLat(geolocCoord),
@@ -106,7 +111,7 @@
         duration: 0,
       });
     } else {
-      // No location — fall back to aggregated bbox.
+      // No location — fall back to aggregated bbox, or Germany if no bbox.
       // Single-backend hubs always clamp to clusterMaxZoom + 1 (spec §6.1):
       // a single small city's bbox fitted with normal padding lands in the
       // macro tier, where one giant ring covers a city the user already
@@ -120,7 +125,7 @@
       const fitOpts = { padding: [20, 20, 20, 380], duration: 0 };
       if (backendCount <= 1) fitOpts.maxZoom = clusterMaxZoom + 1;
       latestMap.getView().fit(
-        transformExtent(latestBbox, 'EPSG:4326', 'EPSG:3857'),
+        transformExtent(latestBbox ?? FALLBACK_BBOX, 'EPSG:4326', 'EPSG:3857'),
         fitOpts,
       );
     }

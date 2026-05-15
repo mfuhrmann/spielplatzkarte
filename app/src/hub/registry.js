@@ -88,7 +88,7 @@ export function createRegistry() {
         if (meta) {
           patch.version         = meta.version ?? null;
           patch.region          = meta.name    ?? null;
-          patch.bbox            = Array.isArray(meta.bbox) && meta.bbox.length === 4 ? meta.bbox : null;
+          patch.bbox            = Array.isArray(meta.bbox) && meta.bbox.length === 4 && meta.bbox.every(Number.isFinite) ? meta.bbox : null;
           patch.playgroundCount = meta.playground_count ?? 0;
           // Pre-P1 backends omit the three completeness fields. Use a null
           // sentinel for `completeness` in that case so the macro view can
