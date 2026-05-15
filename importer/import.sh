@@ -19,6 +19,10 @@
 #                                Both MIN and MAX must be set to enable daemon mode.
 #   REIMPORT_INTERVAL_MAX_DAYS   Maximum days between automatic re-imports (daemon mode).
 #                                A uniformly random interval in [MIN, MAX] is chosen each cycle.
+#   API_ONLY                     When non-empty, skip PBF download and osm2pgsql import.
+#                                Only re-apply api.sql and reload PostgREST. Use to update
+#                                API functions (e.g. after a version bump) without a full
+#                                re-import: docker compose run --rm -e API_ONLY=true importer
 
 # `-e` aborts on any unchecked non-zero exit. The script's shebang is
 # `#!/bin/sh` and the importer image's /bin/sh is busybox / dash, neither of
@@ -53,6 +57,7 @@ PG_WORK_MEM="${PG_WORK_MEM:-32MB}"
 
 REIMPORT_INTERVAL_MIN_DAYS="${REIMPORT_INTERVAL_MIN_DAYS:-}"
 REIMPORT_INTERVAL_MAX_DAYS="${REIMPORT_INTERVAL_MAX_DAYS:-}"
+API_ONLY="${API_ONLY:-}"
 
 # Validate PG_* before they reach envsubst → SQL. Strict regexes prevent
 # both injection (the values flow into raw SQL via `SET … = '${VAR}';`) and
@@ -412,10 +417,41 @@ run_import() (
 )
 
 # =========================================================================== #
+# run_api_apply — apply api.sql only, skip PBF/osm2pgsql (API_ONLY=true).
+# =========================================================================== #
+run_api_apply() (
+    set -e
+
+    echo "[importer] API_ONLY mode — skipping PBF download and osm2pgsql import."
+
+    echo "[importer] Waiting for PostgreSQL at ${POSTGRES_HOST}:${POSTGRES_PORT}..."
+    until pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q; do
+        sleep 2
+    done
+    echo "[importer] PostgreSQL is ready."
+
+    echo "[importer] Applying API schema..."
+    TMP_API_SQL=$(mktemp)
+    trap 'rm -f "$TMP_API_SQL"' EXIT
+    envsubst '$OSM_RELATION_ID $PG_MAX_PARALLEL_WORKERS $PG_MAX_PARALLEL_WORKERS_PER_GATHER $PG_MAX_PARALLEL_MAINTENANCE_WORKERS $PG_MAINTENANCE_WORK_MEM $PG_WORK_MEM $SPIELI_VERSION $IMPRESSUM_URL $PRIVACY_URL $SITE_URL' < /api.sql > "$TMP_API_SQL"
+    psql -v ON_ERROR_STOP=1 \
+        -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+        -f "$TMP_API_SQL"
+
+    psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+        -c "NOTIFY pgrst, 'reload schema';"
+
+    echo "[importer] Done. PostgREST schema reloaded."
+)
+
+# =========================================================================== #
 # Execution — one-shot or daemon mode
 # =========================================================================== #
 
-if [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" ]; then
+if [ -n "$API_ONLY" ]; then
+    # ── API-only mode ────────────────────────────────────────────────────── #
+    run_api_apply
+elif [ -n "$REIMPORT_INTERVAL_MIN_DAYS" ] && [ -n "$REIMPORT_INTERVAL_MAX_DAYS" ]; then
     # ── Daemon mode ─────────────────────────────────────────────────────────── #
     echo "[importer] Daemon mode: interval ${REIMPORT_INTERVAL_MIN_DAYS}–${REIMPORT_INTERVAL_MAX_DAYS} days."
 
