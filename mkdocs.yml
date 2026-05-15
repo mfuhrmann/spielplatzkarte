@@ -38,6 +38,7 @@ nav:
       - Federated Deployment: ops/federated-deployment.md
       - Configuration: ops/configuration.md
       - Upgrading: ops/upgrade.md
+      - Switching Regions: ops/switch-region.md
       - Scheduled Import: ops/scheduled-import.md
       - Backup and Restore: ops/backup-restore.md
       - Monitoring: ops/monitoring.md
