@@ -686,7 +686,7 @@
           </button>
           {#if openSections.has('reviews')}
             <div class="pb-3">
-              <ReviewsPanel lat={centerLat} lon={centerLon} />
+              <ReviewsPanel lat={centerLat} lon={centerLon} osmId={attr?.osm_id} />
             </div>
           {/if}
         </div>
