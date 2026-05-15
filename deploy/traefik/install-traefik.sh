@@ -37,15 +37,6 @@ ask() {
     fi
 }
 
-fetch() {
-    if command -v curl >/dev/null 2>&1; then
-        curl -fsSL "$1" -o "$2"
-    elif command -v wget >/dev/null 2>&1; then
-        wget -qO "$2" "$1"
-    else
-        die "Neither curl nor wget found. Please install one and retry."
-    fi
-}
 
 choose_mode() {
     while true; do
@@ -84,15 +75,30 @@ ask DOMAIN     "Domain name pointing to this server (e.g. spieli.example.com)"
 ask EMAIL      "Email address for Let's Encrypt renewal notices"
 choose_mode
 
-# ── Download Compose file ──────────────────────────────────────────────────────
-
-BASE_URL="https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/traefik"
+# ── Write Compose file ─────────────────────────────────────────────────────────
 
 mkdir -p "$DEPLOY_DIR/dynamic"
 
-info "Downloading Compose file..."
-fetch "$BASE_URL/docker-compose.yml" "$DEPLOY_DIR/docker-compose.yml"
-success "Files downloaded to $DEPLOY_DIR."
+info "Writing Compose file..."
+cat > "$DEPLOY_DIR/docker-compose.yml" <<'COMPOSEOF'
+services:
+  traefik:
+    image: traefik:v3
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic:/etc/traefik/dynamic:ro
+      - letsencrypt:/letsencrypt
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  letsencrypt:
+COMPOSEOF
+success "Files written to $DEPLOY_DIR."
 
 # ── Generate Traefik static config ─────────────────────────────────────────────
 
