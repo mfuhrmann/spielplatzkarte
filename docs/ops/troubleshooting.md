@@ -2,7 +2,7 @@
 
 ## Port 8080 is already in use
 
-**Symptom:** `make up` fails with `address already in use` or `port is already allocated`.
+**Symptom:** `docker compose up` fails with `address already in use` or `port is already allocated`.
 
 **Fix:** Stop whatever is using port 8080, or change the port in `.env`:
 
@@ -10,7 +10,11 @@
 APP_PORT=8081
 ```
 
-Then run `make up` again.
+Then restart the stack:
+
+```bash
+docker compose -f compose.prod.yml --profile <mode> up -d
+```
 
 ---
 
@@ -36,9 +40,12 @@ If you are using the local development setup, `make import` is equivalent. If th
 
 **Possible causes:**
 
-1. **Import not run** — Run the importer after starting the stack (`docker compose --profile <mode> run --rm importer`, or `make import` for local dev). Playground data is not loaded automatically.
+1. **Import not run** — Run the importer after starting the stack. Playground data is not loaded automatically:
+   ```bash
+   docker compose -f compose.prod.yml --profile <mode> run --rm importer
+   ```
 2. **Wrong relation ID** — Check `OSM_RELATION_ID` in `.env`. An incorrect ID filters out all playgrounds. Verify at [nominatim.openstreetmap.org](https://nominatim.openstreetmap.org).
-3. **Docker stack not running** — The app requires a live PostgREST backend. Confirm the stack is running and healthy before starting `make dev`.
+3. **Docker stack not running** — The app requires a live PostgREST backend. Confirm the stack is running and healthy (`docker compose ps`).
 4. **Browser cache** — Try a hard reload: `Ctrl+Shift+R` (Windows/Linux) or `Cmd+Shift+R` (Mac).
 
 ---
@@ -59,6 +66,9 @@ If you are using the local development setup, `make import` is equivalent. If th
 
 ## Dev server starts but changes don't appear
 
+!!! note "Source-clone / local dev only"
+    This section applies when running the Vite dev server (`make dev`) from a source clone. Skip if using pre-built images.
+
 **Symptom:** You edited a JS or CSS file, but the browser still shows the old version.
 
 **Fix:** Vite hot-reload should pick up changes automatically. If it doesn't:
@@ -67,14 +77,20 @@ If you are using the local development setup, `make import` is equivalent. If th
 2. Try a hard reload: `Ctrl+Shift+R` / `Cmd+Shift+R`.
 3. If you changed `index.html` or a file in `public/`, stop and restart `make dev`.
 
-!!! note
-    When testing via `make docker-build` (the Docker stack), you must run `make docker-build` again after every change — there is no hot-reload in that mode.
+When testing against the Docker stack, rebuild and restart the app container after changes:
+
+```bash
+docker compose -f compose.prod.yml --profile <mode> up -d --build app
+```
 
 ---
 
-## `make lan-url` prints "Could not detect LAN IP"
+## LAN IP for mobile testing
 
-**Fix:** Run this command directly and use the output as your LAN IP:
+!!! note "Source-clone / local dev only"
+    `make lan-url` is only available from a source clone. Skip if using pre-built images.
+
+Run this command to find your LAN IP:
 
 ```bash
 ip route get 1 | awk '{print $7; exit}'
@@ -92,7 +108,7 @@ Then open `http://<that-ip>:8080` on your phone.
 
 1. **PostgREST container not running** — Check `docker compose ps`. The `postgrest` service should be running and healthy.
 2. **Database not ready** — PostgREST starts before PostgreSQL finishes initialising on first launch. It retries automatically, but a `docker compose restart postgrest` usually resolves it.
-3. **Schema cache stale** — After running `make db-apply`, PostgREST needs a schema reload. The apply script sends `NOTIFY pgrst, 'reload schema'` automatically, but if that notification was missed, restart PostgREST: `docker compose restart postgrest`.
+3. **Schema cache stale** — After applying schema changes, PostgREST needs a schema reload. The importer sends `NOTIFY pgrst, 'reload schema'` automatically, but if that notification was missed, restart PostgREST: `docker compose restart postgrest`.
 4. **`web_anon` role missing** — `db/init.sql` creates this role on first init. If you deleted and recreated the `pgdata` volume without re-running init.sql (e.g. by running `docker volume rm` but not recreating via `docker compose up`), the role is missing. Run `docker compose up -d` to let init.sql re-run, or run it manually.
 
 ---
@@ -129,20 +145,25 @@ The importer validates the source PBF with `osmium fileinfo` before using it and
 
 ---
 
-## `make db-apply` fails with "permission denied"
+## Importer fails with "permission denied" on schema apply
 
-**Symptom:** `psql` reports `permission denied` when running `api.sql`.
+**Symptom:** `psql` reports `permission denied` when the importer runs `api.sql`.
 
-**Cause:** The SQL runs as the database user configured in `.env`. This user needs `SUPERUSER` or at minimum `pg_signal_backend` (to terminate PostgREST connections) and `CREATE` on the `public` schema. The default `compose.yml` user (`osm`) is a superuser — if you changed `POSTGRES_USER`, verify the role has these privileges.
+**Cause:** The SQL runs as the database user configured in `.env`. This user needs `SUPERUSER` or at minimum `pg_signal_backend` (to terminate PostgREST connections) and `CREATE` on the `public` schema. The default user (`osm`) is a superuser — if you changed `POSTGRES_USER`, verify the role has these privileges.
 
 **Fix:**
 
 ```bash
-make db-shell
+docker compose -f compose.prod.yml exec db psql -U osm osm
 # in psql:
 ALTER ROLE your_user SUPERUSER;
 \q
-make db-apply
+```
+
+Then re-run the importer:
+
+```bash
+docker compose -f compose.prod.yml --profile <mode> run --rm importer
 ```
 
 ---
@@ -156,10 +177,7 @@ make db-apply
 **Fix:** Run VACUUM FULL (briefly locks the table):
 
 ```bash
-make db-shell
-# in psql:
-VACUUM FULL public.playground_stats;
-\q
+docker compose -f compose.prod.yml exec db psql -U osm osm -c "VACUUM FULL public.playground_stats;"
 ```
 
 Or simply recreate the data volume after a re-import — the volume will start clean.
@@ -198,16 +216,16 @@ The Hub will pick up the corrected value on its next poll cycle (within 60 secon
 
 **Cause:** The HTML files are generated by `docker-entrypoint.sh` at container startup. A rebuild is required to pick up changed env vars.
 
-**Fix:**
+**Fix:** Restart the app container to regenerate legal pages from current env vars:
 
 ```bash
-make docker-build   # rebuilds and restarts the app container
+docker compose -f compose.prod.yml --profile <mode> up -d app
 ```
 
-If `get_meta()` still returns the old `impressum_url` / `privacy_url` after the rebuild, also re-apply the DB schema (legal URLs are baked in at import time via envsubst):
+If `get_meta()` still returns the old `impressum_url` / `privacy_url`, the legal URLs are baked into the database at import time. Re-run the importer to apply them:
 
 ```bash
-set -a && source .env && set +a && make db-apply
+docker compose -f compose.prod.yml --profile <mode> run --rm importer
 ```
 
 **Symptom:** `/impressum` returns 404 despite `IMPRESSUM_NAME` being set.

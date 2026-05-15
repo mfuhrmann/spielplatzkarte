@@ -9,7 +9,7 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `DEPLOY_MODE` | — | — | Deployment mode: `data-node`, `ui`, or `data-node-ui`. Written by the installer. |
 | `APP_MODE` | `standalone` | both | App mode: `standalone` (regional map) or `hub` (aggregation map). `hub` requires `REGISTRY_URL` and must be paired with `DEPLOY_MODE=ui`. See [Federated Deployment](federated-deployment.md). |
 | `OSM_RELATION_ID` | `62700` | data-node, data-node-ui | OSM relation ID of the region to display |
-| `OSM_RELATION_ID2` | `454881` | dev only | OSM relation ID for the second local backend (`db2`); used by `make import2` / `make seed-load2` |
+| `OSM_RELATION_ID2` | `454881` | dev only | OSM relation ID for the second local backend (`db2`); used by `make import2` / `make seed-load2` (source clone only) |
 | `PBF_URL` | Hessen extract | data-node, data-node-ui | Geofabrik `.osm.pbf` download URL |
 | `REGISTRY_URL` | `/registry.json` | hub | URL of the registry JSON listing backends. Default is same-origin; bind-mount or bake in a custom file. See [Federated Deployment](federated-deployment.md) and [`registry.json` reference](../reference/registry-json.md). |
 | `API_BASE_URL` | `/api` | ui, data-node-ui | Base URL of the PostgREST API. Set to the remote URL for `ui` mode (e.g. `https://data.example.com/api`). |
@@ -28,11 +28,14 @@ All variables are set in `.env` (copy from `.env.example`). The installer genera
 | `PG_MAINTENANCE_WORK_MEM` | `256MB` | data-node, data-node-ui | Memory per maintenance operation (index builds etc.). Total peak ≈ `value × (PG_MAX_PARALLEL_MAINTENANCE_WORKERS + 1)`. **Must include a unit suffix** (`kB`, `MB`, `GB`, `TB`); a bare integer is interpreted as kilobytes by PostgreSQL. |
 | `PG_WORK_MEM` | `32MB` | data-node, data-node-ui | Memory per sort/hash operation inside parallel workers. Total peak per query ≈ `value × (PG_MAX_PARALLEL_WORKERS_PER_GATHER + 1) × hash/sort nodes`. **Must include a unit suffix** (`kB`, `MB`, `GB`, `TB`); a bare integer is interpreted as kilobytes by PostgreSQL. |
 
-> **How `PG_*` values are applied.** `make db-apply` (and `make import`) runs
-> `ALTER SYSTEM SET …` at the top of `api.sql`, then `SELECT pg_reload_conf()`.
-> The values are persisted to `postgresql.auto.conf` inside the data volume
-> and apply to every connection — including PostgREST — without restarting
-> the database container. To re-tune, edit `.env` and run `make db-apply`.
+> **How `PG_*` values are applied.** The importer runs `ALTER SYSTEM SET …`
+> at the top of `api.sql`, then `SELECT pg_reload_conf()`. The values are
+> persisted to `postgresql.auto.conf` inside the data volume and apply to
+> every connection — including PostgREST — without restarting the database
+> container. To re-tune, edit `.env` and re-run the importer:
+> ```bash
+> docker compose -f compose.prod.yml --profile <mode> run --rm importer
+> ```
 
 ### RAM sizing
 
@@ -69,8 +72,14 @@ so the budget is the larger of the two plus baseline (~700 MB for
 | `PRIVACY_URL` | *(unset)* | ui, data-node-ui | Override URL for an existing Datenschutzerklärung page. When set, the generated `datenschutz.html` is skipped. |
 
 > **Legal pages — two-step update.** Changing `IMPRESSUM_*` or `SITE_URL` requires two steps to take full effect:
-> 1. `make docker-build` — rebuilds the app container; `docker-entrypoint.sh` regenerates `impressum.html` / `datenschutz.html` and updates `config.js`.
-> 2. `make db-apply` — re-applies `api.sql` so `get_meta()` returns the updated `impressum_url` / `privacy_url`. Run with the vars exported: `set -a && source .env && set +a && make db-apply`.
+> 1. Restart the app container — `docker-entrypoint.sh` regenerates `impressum.html` / `datenschutz.html` and updates `config.js`:
+>    ```bash
+>    docker compose -f compose.prod.yml --profile <mode> up -d app
+>    ```
+> 2. Re-run the importer to update `get_meta()` — legal URLs are baked into the database at import time:
+>    ```bash
+>    docker compose -f compose.prod.yml --profile <mode> run --rm importer
+>    ```
 
 ## Compose profiles
 
