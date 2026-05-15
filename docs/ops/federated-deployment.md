@@ -149,7 +149,7 @@ Then restart the app service: `docker compose -f compose.prod.yml --profile ui u
 
 **Option B — custom image**
 
-Build your own image from source with your `registry.json` placed at `app/public/registry.json` before `make docker-build`. No override file needed in this case.
+Build your own image from source with your `registry.json` placed at `app/public/registry.json` before building. No override file needed in this case. (Source clone required — skip if using pre-built images.)
 
 ### Start the Hub
 
