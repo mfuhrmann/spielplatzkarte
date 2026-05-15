@@ -1,7 +1,9 @@
 <script>
   import GeoJSON from 'ol/format/GeoJSON.js';
+  import { get } from 'svelte/store';
   import { playgroundSourceStore } from '../stores/playgroundSource.js';
   import { selection } from '../stores/selection.js';
+  import { mapStore } from '../stores/map.js';
   import { playgroundCompleteness } from '../lib/completeness.js';
   import { fetchPlaygroundByOsmId } from '../lib/api.js';
   import { _ } from 'svelte-i18n';
@@ -98,6 +100,14 @@
     if (signal.aborted) return;
     if (feature) {
       selection.select(feature, feature.get('_backendUrl') ?? backendUrl);
+      const map = get(mapStore);
+      if (map) {
+        map.getView().fit(feature.getGeometry().getExtent(), {
+          padding: [40, 40, 40, 420],
+          maxZoom: 19,
+          duration: 400,
+        });
+      }
     }
     if (ondismiss) ondismiss();
   }
