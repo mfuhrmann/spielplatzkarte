@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#https-setup-nginx-lets-encrypt" class="md-skip">
+        <a href="#https-setup-traefik-lets-encrypt" class="md-skip">
           Skip to content
         </a>
       
@@ -1548,9 +1548,8 @@
   
 
 
-<h1 id="https-setup-nginx-lets-encrypt">HTTPS setup (nginx + Let's Encrypt)<a class="headerlink" href="#https-setup-nginx-lets-encrypt" title="Permanent link">&para;</a></h1>
-<p>The spieli Docker stack listens on port 8080 over plain HTTP. To serve it publicly over HTTPS, use the <code>deploy/nginx</code> stack — a self-contained Docker Compose setup that runs <strong>nginx</strong> and <strong>certbot</strong>, terminating TLS and reverse-proxying to port 8080.</p>
-<p>Because it is a separate Compose stack it works on any distro without installing anything on the host beyond Docker.</p>
+<h1 id="https-setup-traefik-lets-encrypt">HTTPS setup (Traefik + Let's Encrypt)<a class="headerlink" href="#https-setup-traefik-lets-encrypt" title="Permanent link">&para;</a></h1>
+<p>The spieli Docker stack listens on port 8080 over plain HTTP. To serve it publicly over HTTPS, use the <code>deploy/traefik</code> stack — a single Traefik v3 container that terminates TLS and reverse-proxies to port 8080. Traefik handles certificate issuance and renewal automatically — no certbot container, no manual cert steps.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <ul>
 <li>A VM with a public IP address</li>
@@ -1558,44 +1557,41 @@
 <li>A DNS A record pointing your domain to the server IP (e.g. <code>spieli.example.com → 1.2.3.4</code>)</li>
 <li>Ports 80 and 443 open in the firewall (see <a href="#firewall">Firewall</a>)</li>
 </ul>
-<p><strong>Install spieli before running the nginx installer.</strong> The nginx stack joins a Docker network (<code>spieli-proxy</code>) that the spieli stack creates on startup. In <code>data-node-ui</code> mode the order is flexible, but installing spieli first is the safer default.</p>
 <h2 id="1-download-and-run-the-installer">1. Download and run the installer<a class="headerlink" href="#1-download-and-run-the-installer" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/nginx/install-nginx.sh<span class="w"> </span>-o<span class="w"> </span>install-nginx.sh
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>bash<span class="w"> </span>install-nginx.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/traefik/install-traefik.sh<span class="w"> </span>-o<span class="w"> </span>install-traefik.sh
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>bash<span class="w"> </span>install-traefik.sh
 </code></pre></div>
-<p>The installer prompts for your domain, email address, and app port (default 8080), then:</p>
+<p>The installer prompts for your domain, email address, and deployment mode, then:</p>
 <ol>
-<li>Downloads the Compose file and nginx config template</li>
-<li>Starts nginx with an HTTP-only config to serve the ACME challenge</li>
-<li>Runs certbot to issue a Let's Encrypt certificate via HTTP-01 challenge</li>
-<li>Reloads nginx with the full HTTPS config</li>
-<li>Starts the certbot container in renewal-loop mode</li>
+<li>Downloads the Compose file</li>
+<li>Generates <code>traefik.yml</code> with your email for Let's Encrypt</li>
+<li>Generates <code>dynamic/app.yml</code> with your domain and routing rules</li>
+<li>Starts Traefik</li>
 </ol>
+<p>Traefik issues the TLS certificate on the first HTTPS request (takes ~10 seconds). If your browser shows a certificate error immediately after startup, wait a moment and reload.</p>
 <h2 id="2-install-spieli">2. Install spieli<a class="headerlink" href="#2-install-spieli" title="Permanent link">&para;</a></h2>
-<p>If you haven't installed the spieli app stack yet, do it now:</p>
+<p>If you haven't installed the spieli app stack yet:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/mfuhrmann/spieli/main/install.sh<span class="w"> </span>-o<span class="w"> </span>install.sh
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>bash<span class="w"> </span>install.sh
 </code></pre></div>
 <p>When the installer asks for the public URL, enter <code>https://yourdomain.example.com</code>.</p>
 <h2 id="renewal">Renewal<a class="headerlink" href="#renewal" title="Permanent link">&para;</a></h2>
-<p>The certbot container checks for renewal every 12 hours and renews automatically when the certificate has less than 30 days remaining. The nginx container reloads its config every 6 hours to pick up renewed certificates without a restart.</p>
-<p>No cron jobs or systemd timers needed — both loops run inside their containers and restart automatically with <code>restart: unless-stopped</code>.</p>
-<p>To trigger a manual renewal check:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">cd</span><span class="w"> </span>spieli-nginx
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>certbot<span class="w"> </span>certbot<span class="w"> </span>renew
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>nginx<span class="w"> </span>nginx<span class="w"> </span>-s<span class="w"> </span>reload
-</code></pre></div>
+<p>Traefik renews certificates automatically before they expire. No cron jobs or manual steps needed.</p>
 <h2 id="stopping-and-starting">Stopping and starting<a class="headerlink" href="#stopping-and-starting" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">cd</span><span class="w"> </span>spieli-nginx
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>down<span class="w">   </span><span class="c1"># stop</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w">  </span><span class="c1"># start (certs already exist — no need to re-run the installer)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">cd</span><span class="w"> </span>spieli-traefik
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>down<span class="w">   </span><span class="c1"># stop</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w">  </span><span class="c1"># start (cert is stored in the letsencrypt volume — no re-issue needed)</span>
 </code></pre></div>
 <h2 id="firewall">Firewall<a class="headerlink" href="#firewall" title="Permanent link">&para;</a></h2>
-<p>Open ports 80 (ACME challenge) and 443 (HTTPS). Block 8080 from public access — traffic should only reach it through the nginx proxy.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>ufw<span class="w"> </span>allow<span class="w"> </span><span class="m">80</span>/tcp
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>ufw<span class="w"> </span>allow<span class="w"> </span><span class="m">443</span>/tcp
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>ufw<span class="w"> </span>deny<span class="w"> </span><span class="m">8080</span>/tcp
+<p>Open ports 80 (ACME challenge) and 443 (HTTPS). Block 8080 from public access — traffic should only reach it through Traefik.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>ufw<span class="w"> </span>allow<span class="w"> </span><span class="m">80</span>/tcp
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>ufw<span class="w"> </span>allow<span class="w"> </span><span class="m">443</span>/tcp
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>ufw<span class="w"> </span>deny<span class="w"> </span><span class="m">8080</span>/tcp
 </code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Cloud provider firewalls</p>
+<p>Many VPS providers (Hetzner, DigitalOcean, etc.) have a separate firewall in their control panel that acts before UFW. If the ACME challenge fails with "connection refused", check that ports 80 and 443 are open there too.</p>
+</div>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1610,20 +1606,20 @@
 <td>spieli stack not running on port 8080 — run <code>docker compose ps</code> from the spieli directory</td>
 </tr>
 <tr>
-<td><code>host.docker.internal</code> not resolved</td>
-<td>Docker Engine &lt; 20.10 — upgrade Docker or replace with the host IP in <code>conf.d/app.conf</code></td>
+<td>Certificate not issued</td>
+<td>Port 80 blocked (cloud firewall or UFW), or DNS not yet pointing to this server</td>
 </tr>
 <tr>
-<td>Certificate challenge fails</td>
-<td>Port 80 blocked, or DNS not yet pointing to this server</td>
+<td><code>host.docker.internal</code> not resolved</td>
+<td>Docker Engine &lt; 20.10 — upgrade Docker</td>
 </tr>
 <tr>
 <td>Mixed-content warnings</td>
 <td><code>SITE_URL</code> not set to <code>https://</code> — re-run the spieli installer or edit <code>.env</code></td>
 </tr>
 <tr>
-<td>Cert not renewed</td>
-<td>Check <code>docker compose logs certbot</code> from the <code>spieli-nginx/</code> directory</td>
+<td>Logs</td>
+<td><code>docker compose logs -f</code> from the <code>spieli-traefik/</code> directory</td>
 </tr>
 </tbody>
 </table>
