@@ -149,6 +149,16 @@
       }
     });
 
+    // Zoom level at which the current playground was selected; null when nothing selected.
+    // Used to auto-clear selection when the user zooms out 2+ levels.
+    let selectionZoom = null;
+    olMap.on('moveend', () => {
+      if (selectionZoom !== null && view.getZoom() <= selectionZoom - 4) {
+        selection.clear();
+        selectionZoom = null;
+      }
+    });
+
     // Click handler: tier-aware.
     //  - Polygon tier: select + fit-to-extent (existing behaviour).
     //  - Cluster tier (§4.5): zoom in ~2 levels toward the cluster centre;
@@ -166,10 +176,12 @@
       if (polygonHit) {
         const backendUrl = polygonHit.get('_backendUrl') ?? defaultBackendUrl;
         selection.select(polygonHit, backendUrl);
+        selectionZoom = null;
         view.fit(polygonHit.getGeometry().getExtent(), {
           padding: [40, 40, 40, 420], // right/top/bottom clear; 420 = sidebar width + margin
           maxZoom: 19,
           duration: 400,
+          callback: () => { selectionZoom = view.getZoom(); },
         });
         return;
       }
