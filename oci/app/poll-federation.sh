@@ -95,6 +95,7 @@ while IFS="	" read -r SLUG URL; do
     IMPRESSUM_URL_VAL="null"
     PRIVACY_URL_VAL="null"
     HAS_LEGAL_VAL="false"
+    VERSION_VAL="null"
     if [ "$UP" = "1" ] && [ -f "$META_TMP" ]; then
         RAW=$(cat "$META_TMP")
         # api.get_meta returns a JSON object directly (PostgREST scalar-RPC),
@@ -112,6 +113,7 @@ while IFS="	" read -r SLUG URL; do
         IMPRESSUM_URL_VAL=$(printf '%s' "$RAW" | jq '.impressum_url // null' 2>/dev/null || echo null)
         PRIVACY_URL_VAL=$(printf '%s' "$RAW" | jq '.privacy_url // null' 2>/dev/null || echo null)
         HAS_LEGAL_VAL=$(printf '%s' "$RAW" | jq '.has_legal // false' 2>/dev/null || echo false)
+        VERSION_VAL=$(printf '%s' "$RAW" | jq '.version // null' 2>/dev/null || echo null)
         if [ -n "$LAST_IMPORT_AT" ]; then
             LAST_IMPORT_AT_JSON=$(printf '%s' "$LAST_IMPORT_AT" | jq -Rs .)
         fi
@@ -154,7 +156,8 @@ while IFS="	" read -r SLUG URL; do
     BACKENDS_JSON="${BACKENDS_JSON}\"importing\":${IMPORTING},"
     BACKENDS_JSON="${BACKENDS_JSON}\"impressum_url\":${IMPRESSUM_URL_VAL},"
     BACKENDS_JSON="${BACKENDS_JSON}\"privacy_url\":${PRIVACY_URL_VAL},"
-    BACKENDS_JSON="${BACKENDS_JSON}\"has_legal\":${HAS_LEGAL_VAL}"
+    BACKENDS_JSON="${BACKENDS_JSON}\"has_legal\":${HAS_LEGAL_VAL},"
+    BACKENDS_JSON="${BACKENDS_JSON}\"version\":${VERSION_VAL}"
     BACKENDS_JSON="${BACKENDS_JSON}}"
 
     # Append Prometheus metrics. Prometheus disallows `"` and `\` inside
