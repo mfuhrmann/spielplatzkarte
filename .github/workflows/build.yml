@@ -131,3 +131,4 @@ jobs:
           push: true
           tags: ${{ steps.meta-importer.outputs.tags }}
           labels: ${{ steps.meta-importer.outputs.labels }}
+          build-args: VERSION=${{ steps.meta-importer.outputs.version }}
