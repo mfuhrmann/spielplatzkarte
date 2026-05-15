@@ -132,11 +132,11 @@ Notes:
 
 ### Replace the bundled `registry.json` (required)
 
-The Hub's shipped image bundles a development `registry.json` pointing at local `/api` and `/api2`. Those paths have no upstream in the `ui` profile, so a Hub started without this step will load with every backend marked red. Pick one of the following — **neither is optional**:
+The Hub's shipped image bundles a default `registry.json` pointing at `/api` (the local backend). That path has no upstream in the `ui` profile, so a Hub started without this step will load with every backend marked red. Pick one of the following — **neither is optional**:
 
 **Option A — bind-mount (recommended, no rebuild)**
 
-Drop your file alongside `compose.prod.yml` as `registry.json`, then create `compose.override.yml` next to it:
+Drop your file alongside `compose.prod.yml` as `registry.json`. The `compose.prod.yml` app service already has the bind-mount line — uncomment the `volumes:` block:
 
 ```yaml
 services:
@@ -145,7 +145,7 @@ services:
       - ./registry.json:/usr/share/nginx/html/registry.json:ro
 ```
 
-Compose **does not** auto-merge `compose.override.yml` when you pass `-f compose.prod.yml` explicitly. With Option A you must list both files on every invocation (see the Start command below); Option B doesn't need the override file at all.
+Then restart the app service: `docker compose -f compose.prod.yml --profile ui up -d`. No rebuild required; nginx serves the file immediately.
 
 **Option B — custom image**
 
@@ -180,6 +180,97 @@ The Hub has no importer, no database, no `run --rm importer` step.
 5. Click a playground in each region — the selection panel opens with that region's data.
 
 If any data-node request fails in DevTools, the instance drawer marks that backend red with the error message. Check the data-node's CORS headers (Step 1 verification) and that its URL in `registry.json` is reachable from the browser, not only from the Hub host.
+
+## Running Hub and backend on the same host
+
+You can co-locate the Hub frontend and one or more data-nodes on a single machine. The Hub serves the map UI and `registry.json`; each data-node runs its own db + PostgREST stack. Typical use-case: a single operator hosting their own region while also aggregating it in a Hub.
+
+### Topology
+
+```
+Same host, one Docker engine
+├── spieli-hub        (DEPLOY_MODE=ui, APP_MODE=hub, APP_PORT=8080)
+│     └── app  →  serves registry.json listing the data-node below
+└── spieli-fulda      (DEPLOY_MODE=data-node-ui, APP_PORT=8081)
+      ├── db
+      ├── postgrest
+      └── app  →  nginx at :8081, exposes /api/ with CORS
+```
+
+Each stack is a separate Compose project (`COMPOSE_PROJECT_NAME`) so port bindings and Docker resource names don't collide.
+
+### Step 1 — Stand up the data-node
+
+Follow [Step 1](#step-1--stand-up-each-data-node) from the main walkthrough. Give it a distinct port and project name:
+
+```env
+# .env for the data-node stack
+COMPOSE_PROJECT_NAME=spieli-fulda
+DEPLOY_MODE=data-node-ui
+APP_PORT=8081
+OSM_RELATION_ID=454863
+PBF_URL=https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf
+POSTGRES_PASSWORD=<strong-random-password>
+```
+
+```bash
+docker compose -f compose.prod.yml --profile data-node-ui up -d
+docker compose -f compose.prod.yml --profile data-node-ui run --rm importer
+```
+
+### Step 2 — Prepare `registry.json` for the Hub
+
+The data-node's `/api/` is only reachable within the Docker host at `http://localhost:8081/api`. From a browser over HTTPS the Hub must refer to the public URL:
+
+```json
+{
+  "instances": [
+    {
+      "slug": "fulda",
+      "url":  "https://your-domain.example.com/fulda/api",
+      "name": "Fulda"
+    }
+  ]
+}
+```
+
+Route `/fulda/api` to `localhost:8081/api` with your reverse proxy (Traefik or nginx). The data-node's nginx already adds CORS headers, so no extra proxy config is needed for those.
+
+If the Hub itself is at the same domain, a relative URL in `registry.json` also works:
+
+```json
+{ "instances": [{ "slug": "fulda", "url": "/fulda/api", "name": "Fulda" }] }
+```
+
+### Step 3 — Stand up the Hub
+
+```env
+# .env for the Hub stack
+COMPOSE_PROJECT_NAME=spieli-hub
+DEPLOY_MODE=ui
+APP_MODE=hub
+REGISTRY_URL=/registry.json
+APP_PORT=8080
+```
+
+Uncomment the `registry.json` bind-mount in `compose.prod.yml` (see [Replace the bundled registry.json](#replace-the-bundled-registryjson-required)), place your `registry.json` next to `compose.prod.yml`, then start:
+
+```bash
+docker compose -f compose.prod.yml --profile ui up -d
+```
+
+To update `registry.json` later (add/remove a data-node), edit the file and restart only the app container — no rebuild needed:
+
+```bash
+docker compose -f compose.prod.yml --profile ui restart app
+```
+
+### Port layout example
+
+| Stack | `APP_PORT` | Public URL (via reverse proxy) |
+|---|---|---|
+| Hub | 8080 | `https://your-domain.example.com/` |
+| Fulda data-node | 8081 | `https://your-domain.example.com/fulda/api` |
 
 ## See also
 

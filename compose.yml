@@ -177,6 +177,10 @@ services:
       IMPRESSUM_PHONE:             ${IMPRESSUM_PHONE:-}
       IMPRESSUM_URL:               ${IMPRESSUM_URL:-}
       PRIVACY_URL:                 ${PRIVACY_URL:-}
+    # Uncomment to serve a custom registry.json without rebuilding the image.
+    # Place registry.json next to compose.yml and enable the line below.
+    # volumes:
+    #   - ./registry.json:/usr/share/nginx/html/registry.json:ro
     restart: unless-stopped
 
 volumes:
