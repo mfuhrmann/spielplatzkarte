@@ -6,6 +6,8 @@
   export let lat = 0;
   /** @type {number} Playground centre longitude (WGS84) */
   export let lon = 0;
+  /** @type {string|number|null} OSM ID of the playground — scopes reviews to this specific location. */
+  export let osmId = null;
 
   let reviews = [];
   let loading = true;
@@ -18,15 +20,19 @@
   let submitting = false;
   let submitStatus = '';       // success/error message
 
-  $: if (lat && lon) loadReviews();
+  let abortCtrl = null;
+
+  $: if (osmId) loadReviews();
 
   async function loadReviews() {
+    abortCtrl?.abort();
+    abortCtrl = new AbortController();
     loading = true;
     error = false;
     try {
-      reviews = await fetchReviews(lat, lon);
-    } catch {
-      error = true;
+      reviews = await fetchReviews(lat, lon, osmId, abortCtrl.signal);
+    } catch (e) {
+      if (e?.name !== 'AbortError') error = true;
     } finally {
       loading = false;
     }
@@ -37,7 +43,7 @@
     submitting = true;
     submitStatus = '';
     try {
-      const ok = await submitReview(lat, lon, selectedRating, opinion.trim() || null);
+      const ok = await submitReview(lat, lon, osmId, selectedRating, opinion.trim() || null);
       if (ok) {
         submitStatus = 'success';
         selectedRating = null;
@@ -54,8 +60,9 @@
   }
 
   $: displayRating = hoverRating ?? selectedRating;
-  $: avgRating = reviews.length
-    ? reviews.reduce((s, r) => s + r.payload.rating, 0) / reviews.length
+  $: ratedReviews = reviews.filter(r => typeof r.payload?.rating === 'number');
+  $: avgRating = ratedReviews.length
+    ? ratedReviews.reduce((s, r) => s + r.payload.rating, 0) / ratedReviews.length
     : null;
 </script>
 
@@ -67,22 +74,26 @@
 
 {:else}
   <!-- Aggregate score card -->
-  {#if reviews.length > 0}
+  {#if ratedReviews.length > 0}
     <div class="review-aggregate">
       <span class="review-score">{(avgRating / 20).toFixed(1)}</span>
       <div>
         {@html starsHtml(avgRating)}
         <span class="text-muted" style="font-size:11px">
-          ({$_('reviews.count', { values: { count: reviews.length } })})
+          ({$_('reviews.count', { values: { count: ratedReviews.length } })})
         </span>
       </div>
     </div>
+  {/if}
 
+  {#if reviews.length > 0}
     {#each reviews as r}
       {@const p = r.payload}
       <div class="review-card">
         <div class="review-card__header">
-          {@html starsHtml(p.rating, '#f59e0b')}
+          {#if typeof p.rating === 'number'}
+            {@html starsHtml(p.rating, '#f59e0b')}
+          {/if}
           <span class="review-date">{relativeDate(p.iat, $_)}</span>
         </div>
         {#if p.opinion}

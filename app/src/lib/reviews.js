@@ -64,16 +64,17 @@ function b64urlBytes(buf) {
 
 // ── Subject URI ────────────────────────────────────────────────────────────
 
-export function mangroveSubject(lat, lon) {
-    return `geo:${lat.toFixed(5)},${lon.toFixed(5)}?q=playground&u=50`;
+export function mangroveSubject(lat, lon, osmId) {
+    const q = osmId ? `osm_playground_${osmId}` : 'playground';
+    return `geo:${lat.toFixed(5)},${lon.toFixed(5)}?q=${q}&u=50`;
 }
 
 // ── Fetch reviews ──────────────────────────────────────────────────────────
 
-export async function fetchReviews(lat, lon) {
-    const sub = mangroveSubject(lat, lon);
+export async function fetchReviews(lat, lon, osmId, signal) {
+    const sub = mangroveSubject(lat, lon, osmId);
     const url = `${MANGROVE_API}/reviews?sub=${encodeURIComponent(sub)}&latest_edits_only=true`;
-    const res = await fetch(url);
+    const res = await fetch(url, { signal });
     if (!res.ok) return [];
     const data = await res.json();
     return (data.reviews ?? []).filter(r => !r.payload?.action);
@@ -81,10 +82,10 @@ export async function fetchReviews(lat, lon) {
 
 // ── Submit review ──────────────────────────────────────────────────────────
 
-export async function submitReview(lat, lon, rating100, opinion) {
+export async function submitReview(lat, lon, osmId, rating100, opinion) {
     const kp  = await loadOrGenerateKeypair();
     const pem = await publicKeyToPem(kp.publicKey);
-    const sub = mangroveSubject(lat, lon);
+    const sub = mangroveSubject(lat, lon, osmId);
 
     const header  = { alg: 'ES256', typ: 'JWT', kid: pem };
     const payload = { iat: Math.floor(Date.now() / 1000), sub, rating: rating100 };
