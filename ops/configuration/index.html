@@ -1628,7 +1628,7 @@
 <td><code>OSM_RELATION_ID2</code></td>
 <td><code>454881</code></td>
 <td>dev only</td>
-<td>OSM relation ID for the second local backend (<code>db2</code>); used by <code>make import2</code> / <code>make seed-load2</code></td>
+<td>OSM relation ID for the second local backend (<code>db2</code>); used by <code>make import2</code> / <code>make seed-load2</code> (source clone only)</td>
 </tr>
 <tr>
 <td><code>PBF_URL</code></td>
@@ -1735,11 +1735,13 @@
 </tbody>
 </table>
 <blockquote>
-<p><strong>How <code>PG_*</code> values are applied.</strong> <code>make db-apply</code> (and <code>make import</code>) runs
-<code>ALTER SYSTEM SET …</code> at the top of <code>api.sql</code>, then <code>SELECT pg_reload_conf()</code>.
-The values are persisted to <code>postgresql.auto.conf</code> inside the data volume
-and apply to every connection — including PostgREST — without restarting
-the database container. To re-tune, edit <code>.env</code> and run <code>make db-apply</code>.</p>
+<p><strong>How <code>PG_*</code> values are applied.</strong> The importer runs <code>ALTER SYSTEM SET …</code>
+at the top of <code>api.sql</code>, then <code>SELECT pg_reload_conf()</code>. The values are
+persisted to <code>postgresql.auto.conf</code> inside the data volume and apply to
+every connection — including PostgREST — without restarting the database
+container. To re-tune, edit <code>.env</code> and re-run the importer:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+</code></pre></div></p>
 </blockquote>
 <h3 id="ram-sizing">RAM sizing<a class="headerlink" href="#ram-sizing" title="Permanent link">&para;</a></h3>
 <p>Defaults are sized for a <strong>2-core / 4 GB host</strong> (peak ≈ 1.5 GB during the
@@ -1802,8 +1804,12 @@ so the budget is the larger of the two plus baseline (~700 MB for
 | <code>PRIVACY_URL</code> | <em>(unset)</em> | ui, data-node-ui | Override URL for an existing Datenschutzerklärung page. When set, the generated <code>datenschutz.html</code> is skipped. |</p>
 <blockquote>
 <p><strong>Legal pages — two-step update.</strong> Changing <code>IMPRESSUM_*</code> or <code>SITE_URL</code> requires two steps to take full effect:
-1. <code>make docker-build</code> — rebuilds the app container; <code>docker-entrypoint.sh</code> regenerates <code>impressum.html</code> / <code>datenschutz.html</code> and updates <code>config.js</code>.
-2. <code>make db-apply</code> — re-applies <code>api.sql</code> so <code>get_meta()</code> returns the updated <code>impressum_url</code> / <code>privacy_url</code>. Run with the vars exported: <code>set -a &amp;&amp; source .env &amp;&amp; set +a &amp;&amp; make db-apply</code>.</p>
+1. Restart the app container — <code>docker-entrypoint.sh</code> regenerates <code>impressum.html</code> / <code>datenschutz.html</code> and updates <code>config.js</code>:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
+</code></pre></div>
+2. Re-run the importer to update <code>get_meta()</code> — legal URLs are baked into the database at import time:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+</code></pre></div></p>
 </blockquote>
 <h2 id="compose-profiles">Compose profiles<a class="headerlink" href="#compose-profiles" title="Permanent link">&para;</a></h2>
 <table>
@@ -1837,24 +1843,24 @@ so the budget is the larger of the two plus baseline (~700 MB for
 <h3 id="daemon-mode-recommended">Daemon mode (recommended)<a class="headerlink" href="#daemon-mode-recommended" title="Permanent link">&para;</a></h3>
 <p>Set <code>REIMPORT_INTERVAL_MIN_DAYS</code> and <code>REIMPORT_INTERVAL_MAX_DAYS</code> in <code>.env</code> (the installer does this when you choose the auto-update option). The importer container runs in a loop: after each successful import it sleeps for a random number of days within the configured range, then re-imports.</p>
 <p>When combined with the <code>auto-update</code> profile (Watchtower), new spieli releases are applied automatically: Watchtower restarts the importer container after an image update, and the startup grace check reads <code>last_import_at</code> from the database — if the last import ran recently (within the configured interval), the container sleeps until the next scheduled time instead of re-importing immediately.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># .env — daemon mode</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nv">REIMPORT_INTERVAL_MIN_DAYS</span><span class="o">=</span><span class="m">2</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nv">REIMPORT_INTERVAL_MAX_DAYS</span><span class="o">=</span><span class="m">10</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># .env — daemon mode</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nv">REIMPORT_INTERVAL_MIN_DAYS</span><span class="o">=</span><span class="m">2</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nv">REIMPORT_INTERVAL_MAX_DAYS</span><span class="o">=</span><span class="m">10</span>
 </code></pre></div>
 <h3 id="manual-systemd-timer">Manual / systemd timer<a class="headerlink" href="#manual-systemd-timer" title="Permanent link">&para;</a></h3>
 <p>If you prefer to manage scheduling outside Docker, leave the interval variables unset. The importer then runs once and exits (one-shot mode). You can trigger it on a schedule using a systemd timer or cron:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># one-shot import</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># one-shot import</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>data-node<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
 </code></pre></div>
 <p>Example systemd unit files for timer-based scheduling are available in <code>deploy/</code>.</p>
 <h2 id="applying-changes">Applying changes<a class="headerlink" href="#applying-changes" title="Permanent link">&para;</a></h2>
 <p>After editing <code>.env</code>, restart the relevant containers. Replace <code>&lt;mode&gt;</code> with your <code>DEPLOY_MODE</code> value (<code>data-node</code>, <code>ui</code>, or <code>data-node-ui</code>):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Restart app only (config changes)</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Full restart</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>down
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Restart app only (config changes)</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Full restart</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>down
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 
 

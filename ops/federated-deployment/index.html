@@ -1951,7 +1951,7 @@
 </code></pre></div>
 <p>Then restart the app service: <code>docker compose -f compose.prod.yml --profile ui up -d</code>. No rebuild required; nginx serves the file immediately.</p>
 <p><strong>Option B — custom image</strong></p>
-<p>Build your own image from source with your <code>registry.json</code> placed at <code>app/public/registry.json</code> before <code>make docker-build</code>. No override file needed in this case.</p>
+<p>Build your own image from source with your <code>registry.json</code> placed at <code>app/public/registry.json</code> before building. No override file needed in this case. (Source clone required — skip if using pre-built images.)</p>
 <h3 id="start-the-hub">Start the Hub<a class="headerlink" href="#start-the-hub" title="Permanent link">&para;</a></h3>
 <p>With Option A (bind-mount):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>-f<span class="w"> </span>compose.override.yml<span class="w"> </span>--profile<span class="w"> </span>ui<span class="w"> </span>up<span class="w"> </span>-d
