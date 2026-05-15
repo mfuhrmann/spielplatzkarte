@@ -1,14 +1,9 @@
 {
   "instances": [
     {
-      "slug": "fulda",
+      "slug": "local",
       "url":  "/api",
-      "name": "Fulda"
-    },
-    {
-      "slug": "neuhof",
-      "url":  "/api2",
-      "name": "Neuhof"
+      "name": "Local"
     }
   ]
 }
