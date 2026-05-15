@@ -202,6 +202,7 @@ export function createRegistry() {
           impressumUrl:       entry.impressum_url ?? null,
           privacyUrl:         entry.privacy_url  ?? null,
           hasLegal:           entry.has_legal     ?? false,
+          version:            entry.version       ?? null,
         });
       }
     });
