@@ -2,18 +2,18 @@
 
 Steps to completely remove a spieli deployment from a server.
 
-## 1. Remove the nginx+certbot stack
+## 1. Remove the Traefik stack
 
-If you set up the nginx+certbot reverse proxy:
+If you set up the Traefik reverse proxy:
 
 ```bash
-cd spieli-nginx
+cd spieli-traefik
 
 # Stop containers and delete certificate volumes
 docker compose down -v
 
 cd ..
-rm -rf spieli-nginx/ install-nginx.sh
+rm -rf spieli-traefik/ install-traefik.sh
 ```
 
 ## 2. Remove the spieli stack
@@ -35,14 +35,6 @@ If a volume removal fails with "volume is in use", a stopped container is still 
 ```bash
 docker container prune -f
 docker volume rm spieli_pgdata spieli_pgdata2 spieli_pbf_cache 2>/dev/null || true
-```
-
-## 2a. Remove the shared proxy network (data-node installs only)
-
-If you ran the nginx installer in **data-node** mode, a shared Docker network was created:
-
-```bash
-docker network rm spieli-proxy 2>/dev/null || true
 ```
 
 ## 3. Remove Docker images (optional)

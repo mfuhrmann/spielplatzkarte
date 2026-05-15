@@ -32,35 +32,18 @@ The password is used only internally between PostgREST and PostgreSQL — it nev
 
 The Docker stack listens on plain HTTP (port `APP_PORT`, default 8080). In production, put an HTTPS-terminating reverse proxy in front of it.
 
-### nginx (host-level)
+### Traefik (recommended)
 
-```nginx
-server {
-    listen 443 ssl;
-    server_name playground.example.com;
+Use the bundled installer — it configures Traefik with Let's Encrypt and handles certificate issuance and renewal automatically:
 
-    ssl_certificate     /etc/letsencrypt/live/playground.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/playground.example.com/privkey.pem;
-
-    location / {
-        proxy_pass         http://127.0.0.1:8080;
-        proxy_set_header   Host              $host;
-        proxy_set_header   X-Real-IP         $remote_addr;
-        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header   X-Forwarded-Proto $scheme;
-    }
-}
-
-server {
-    listen 80;
-    server_name playground.example.com;
-    return 301 https://$host$request_uri;
-}
+```bash
+curl -fsSL https://raw.githubusercontent.com/mfuhrmann/spieli/main/deploy/traefik/install-traefik.sh -o install-traefik.sh
+bash install-traefik.sh
 ```
 
-Use [Certbot](https://certbot.eff.org/) to obtain a free Let's Encrypt certificate.
+See [HTTPS setup](https-setup.md) for the full walkthrough.
 
-### Caddy
+### Caddy (alternative)
 
 ```caddyfile
 playground.example.com {
@@ -69,20 +52,6 @@ playground.example.com {
 ```
 
 Caddy handles HTTPS automatically with Let's Encrypt.
-
-### Traefik (Docker Compose label-based)
-
-Add labels to the `app` service in `compose.prod.yml` (or an override file):
-
-```yaml
-services:
-  app:
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.spieli.rule=Host(`playground.example.com`)"
-      - "traefik.http.routers.spieli.entrypoints=websecure"
-      - "traefik.http.routers.spieli.tls.certresolver=letsencrypt"
-```
 
 ## Restrict database port exposure
 
