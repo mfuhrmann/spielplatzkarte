@@ -9,6 +9,8 @@
   export let impressumUrl = null;
   /** Privacy policy URL; hidden when null/falsy. */
   export let privacyUrl = null;
+  /** Show hub-specific third-party data note. */
+  export let isHub = false;
 
   function close() { open = false; }
 
@@ -57,6 +59,15 @@
             <a href={privacyUrl} target="_blank" rel="noopener">{$_('legal.datenschutz')} ↗</a>
           {/if}
         </div>
+
+        {#if isHub}
+          <p class="small hub-privacy">
+            {@html $_('modal.addData.hubPrivacyNote', { values: {
+              osmLink: '<a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>',
+              panoramaxLink: '<a href="https://panoramax.openstreetmap.fr/" target="_blank" rel="noopener">Panoramax</a>'
+            } })}
+          </p>
+        {/if}
 
         <p class="version">v{version}</p>
       </div>
@@ -112,6 +123,7 @@
   .modal-body { padding: 1rem; }
 
   .small { font-size: 0.875rem; color: #495057; margin: 0 0 1rem; }
+  .hub-privacy { border-top: 1px solid #dee2e6; padding-top: 0.75rem; color: #6c757d; }
 
   .links {
     display: flex;

@@ -338,7 +338,8 @@
         "chatLabel": "local OSM community chat",
         "simpleText": "Questions and discussion in the",
         "simpleChatLabel": "local chat"
-      }
+      },
+      "hubPrivacyNote": "In hub mode, data is loaded from multiple independent instances. Their operators, {osmLink}, and {panoramaxLink} may each log access data."
     },
     "about": {
       "history": {
