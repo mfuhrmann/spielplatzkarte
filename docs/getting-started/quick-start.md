@@ -18,12 +18,14 @@ bash install.sh
 ## What the installer does
 
 1. Asks for a deployment directory (default: `./spieli`)
-2. Asks for your deployment mode (`data-node`, `ui`, or `data-node-ui`)
-3. Asks for your OSM relation ID and Geofabrik PBF URL (for data-node and data-node-ui modes)
-4. Prompts for optional settings (port, UI links, zoom levels)
-5. Generates a secure database password automatically
-6. Downloads `compose.yml` and `db/init.sql` into the deployment directory
-7. Offers to pull images, start the stack, and run the first import
+2. Asks for your **deployment mode** (`data-node`, `ui`, or `data-node-ui`) — which services to run
+3. Asks for your **app mode** (`standalone` or `hub`) — how the frontend behaves (skipped for `data-node`)
+4. Asks for your OSM relation ID and Geofabrik PBF URL (for data-node and data-node-ui modes)
+5. Prompts for optional settings (port, UI links, zoom levels, hub registry URL)
+6. Generates a secure database password automatically
+7. Downloads `compose.yml` and `db/init.sql` into the deployment directory
+8. Generates `registry.json` for hub mode and enables its bind-mount in `compose.yml`
+9. Offers to pull images, start the stack, and run the first import
 
 !!! tip "Finding your OSM relation ID"
     Search for your city, Kreis, or district on [Nominatim](https://nominatim.openstreetmap.org). The relation ID appears in the URL — e.g. `openstreetmap.org/relation/62700` → ID is `62700`.
@@ -31,13 +33,21 @@ bash install.sh
 !!! tip "Finding a PBF extract"
     Browse [download.geofabrik.de](https://download.geofabrik.de) for an extract covering your region. The PBF only needs to *contain* your region — a Bundesland extract works fine for a single Kreis.
 
-## Deployment modes
+## Installation scenarios
 
-| Mode | What starts | Use when |
-|---|---|---|
-| `data-node` | DB + PostgREST only | Shared backend for multiple UI instances |
-| `ui` | App only | Frontend connecting to a remote data node |
-| `data-node-ui` | Full stack | Single self-contained regional deployment |
+The installer guides you through five supported scenarios. Two variables combine to define your setup: `DEPLOY_MODE` (which services run) and `APP_MODE` (how the frontend behaves).
+
+| Scenario | `DEPLOY_MODE` | `APP_MODE` | What starts | Use when |
+|---|---|---|---|---|
+| **Standalone** | `data-node-ui` | `standalone` | DB + PostgREST + app | Single self-contained regional map (default) |
+| **Standalone + federated** | `data-node-ui` | `standalone` | DB + PostgREST + app | Own regional map that also appears as a backend in an external hub |
+| **Hub only** | `ui` | `hub` | App only | Aggregate multiple remote backends into one map |
+| **Hub + local backend** | `data-node-ui` | `hub` | DB + PostgREST + app | Hub UI with a local data backend on the same host |
+| **Backend only** | `data-node` | — | DB + PostgREST | Provide data to an external hub, no local UI |
+
+For standalone + federated: the installer asks for `PARENT_ORIGIN` (the hub's origin) to enable cross-origin embedding.
+
+For hub scenarios: the installer asks for `REGISTRY_URL` and generates a starter `registry.json`. Edit it after setup to list your backends.
 
 ## Managing the stack
 

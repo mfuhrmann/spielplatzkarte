@@ -67,8 +67,12 @@ choose_mode() {
     while true; do
         printf "\n${BOLD}── Deployment mode ─────────────────────────────────────────────${RESET}\n"
         printf "  ${BOLD}1)${RESET} data-node     — database + PostgREST only (no UI)\n"
-        printf "  ${BOLD}2)${RESET} ui            — frontend only (connects to a remote data node)\n"
-        printf "  ${BOLD}3)${RESET} data-node-ui  — full stack: database + PostgREST + UI\n\n"
+        printf "               suitable as a backend for an external hub\n"
+        printf "  ${BOLD}2)${RESET} ui            — frontend only (no local database)\n"
+        printf "               standalone: connects to one remote backend\n"
+        printf "               hub: aggregates multiple backends into one map\n"
+        printf "  ${BOLD}3)${RESET} data-node-ui  — full stack: database + PostgREST + UI\n"
+        printf "               standalone regional map, or hub with local backend\n\n"
         printf "${BOLD}Select deployment mode${RESET} [1-3]: "
         read -r choice
         case "$choice" in
@@ -79,6 +83,22 @@ choose_mode() {
         esac
     done
     printf "${GREEN}✓${RESET}  Deployment mode: ${BOLD}%s${RESET}\n" "$DEPLOY_MODE"
+}
+
+choose_app_mode() {
+    while true; do
+        printf "\n${BOLD}── App mode ─────────────────────────────────────────────────────${RESET}\n"
+        printf "  ${BOLD}1)${RESET} standalone — serve a single-region playground map\n"
+        printf "  ${BOLD}2)${RESET} hub        — aggregate multiple backends into one map\n\n"
+        printf "${BOLD}Select app mode${RESET} [1-2]: "
+        read -r choice
+        case "$choice" in
+            1) APP_MODE="standalone"; break ;;
+            2) APP_MODE="hub";        break ;;
+            *) warn "Invalid choice — please enter 1 or 2." ;;
+        esac
+    done
+    printf "${GREEN}✓${RESET}  App mode: ${BOLD}%s${RESET}\n" "$APP_MODE"
 }
 
 # ── Dependency check ───────────────────────────────────────────────────────────
@@ -103,12 +123,14 @@ mkdir -p "$DEPLOY_DIR/db"
 
 EXISTING_PASSWORD=""
 DEPLOY_MODE=""
+APP_MODE=""
 EXISTING_ENV=false
 if [[ -f "$DEPLOY_DIR/.env" ]]; then
     EXISTING_ENV=true
     warn ".env already exists in $DEPLOY_DIR"
     EXISTING_PASSWORD="$(grep '^POSTGRES_PASSWORD=' "$DEPLOY_DIR/.env" 2>/dev/null | cut -d= -f2 || true)"
     DEPLOY_MODE="$(grep '^DEPLOY_MODE=' "$DEPLOY_DIR/.env" 2>/dev/null | cut -d= -f2 || true)"
+    APP_MODE="$(grep '^APP_MODE=' "$DEPLOY_DIR/.env" 2>/dev/null | cut -d= -f2 || true)"
     confirm "Overwrite it?" || die "Aborted."
 fi
 
@@ -128,6 +150,18 @@ else
     choose_mode
 fi
 
+# ── App mode selection (ui and data-node-ui only) ─────────────────────────────
+
+if [[ "$DEPLOY_MODE" != "data-node" ]]; then
+    if [[ -n "$APP_MODE" && ("$APP_MODE" == "standalone" || "$APP_MODE" == "hub") ]]; then
+        warn "Existing APP_MODE=${APP_MODE} detected — keeping it. (Re-run to change.)"
+    else
+        choose_app_mode
+    fi
+else
+    APP_MODE=""
+fi
+
 # ── Region configuration (data-node and data-node-ui only) ────────────────────
 
 if [[ "$DEPLOY_MODE" != "ui" ]]; then
@@ -143,9 +177,9 @@ else
     PBF_URL=""
 fi
 
-# ── Remote API URL (ui mode only) ─────────────────────────────────────────────
+# ── Remote API URL (standalone ui mode only) ──────────────────────────────────
 
-if [[ "$DEPLOY_MODE" == "ui" ]]; then
+if [[ "$DEPLOY_MODE" == "ui" && "$APP_MODE" == "standalone" ]]; then
     printf "\n${BOLD}── Remote data node ────────────────────────────────────────────${RESET}\n"
     printf "Enter the base URL of the PostgREST API on your data node.\n\n"
 
@@ -153,29 +187,66 @@ if [[ "$DEPLOY_MODE" == "ui" ]]; then
         printf "${BOLD}Remote API base URL${RESET} (e.g. https://data.example.com/api): "
         read -r API_BASE_URL
         [[ -n "$API_BASE_URL" ]] && break
-        warn "Remote API base URL is required for UI mode."
+        warn "Remote API base URL is required for standalone UI mode."
     done
-else
+elif [[ "$DEPLOY_MODE" == "data-node-ui" ]]; then
     API_BASE_URL="/api"
+else
+    # hub mode — API_BASE_URL not used; hub reads from registry.json
+    API_BASE_URL=""
 fi
 
-# ── Optional UI links (ui and data-node-ui only) ───────────────────────────────
+# ── Hub registry (hub mode only) ──────────────────────────────────────────────
 
-if [[ "$DEPLOY_MODE" != "data-node" ]]; then
+REGISTRY_URL=""
+HUB_POLL_INTERVAL=""
+if [[ "$APP_MODE" == "hub" ]]; then
+    printf "\n${BOLD}── Hub registry ────────────────────────────────────────────────${RESET}\n"
+
+    if [[ "$DEPLOY_MODE" == "data-node-ui" ]]; then
+        printf "This instance serves both a hub UI and a local data backend.\n"
+        printf "A registry.json pointing to the local backend will be generated.\n\n"
+    else
+        printf "The hub aggregates backends listed in a registry.json file.\n"
+        printf "A placeholder registry.json will be generated — edit it to add your backends.\n\n"
+    fi
+
+    ask REGISTRY_URL "Registry URL" "/registry.json"
+    ask_optional HUB_POLL_INTERVAL "Hub poll interval in seconds (leave empty for default: 300)"
+fi
+
+# ── Hub federation — register with external hub (standalone only) ──────────────
+
+PARENT_ORIGIN=""
+if [[ "$APP_MODE" == "standalone" && "$DEPLOY_MODE" != "data-node" ]]; then
+    printf "\n${BOLD}── Hub federation (optional) ────────────────────────────────────${RESET}\n"
+    printf "If this instance will appear as a backend in an external hub,\n"
+    printf "set the hub's full origin to enable cross-origin embedding.\n\n"
+    ask_optional PARENT_ORIGIN "External hub origin (e.g. https://hub.example.com)"
+    [[ -n "$PARENT_ORIGIN" ]] && success "PARENT_ORIGIN set — this instance will accept embedding from ${BOLD}${PARENT_ORIGIN}${RESET}."
+fi
+
+# ── Optional UI links (standalone mode only) ───────────────────────────────────
+
+REGION_PLAYGROUND_WIKI_URL=""
+REGION_CHAT_URL=""
+if [[ "$DEPLOY_MODE" != "data-node" && "$APP_MODE" != "hub" ]]; then
     printf "\n${BOLD}── Optional: UI links ──────────────────────────────────────────${RESET}\n"
     ask_optional REGION_PLAYGROUND_WIKI_URL "Wiki page for 'Contribute data' modal"
     ask_optional REGION_CHAT_URL           "Community chat URL shown in 'Contribute data' modal"
-else
-    REGION_PLAYGROUND_WIKI_URL=""
-    REGION_CHAT_URL=""
 fi
 
 # ── Optional: map display (ui and data-node-ui only) ──────────────────────────
 
 if [[ "$DEPLOY_MODE" != "data-node" ]]; then
     printf "\n${BOLD}── Optional: map display ───────────────────────────────────────${RESET}\n"
-    ask MAP_ZOOM      "Initial map zoom level"           "12"
-    ask MAP_MIN_ZOOM  "Minimum zoom level"               "7"
+    if [[ "$APP_MODE" == "hub" ]]; then
+        ask MAP_ZOOM      "Initial map zoom level (hub shows overview — lower is wider)" "6"
+        ask MAP_MIN_ZOOM  "Minimum zoom level"                                           "4"
+    else
+        ask MAP_ZOOM      "Initial map zoom level"                                       "12"
+        ask MAP_MIN_ZOOM  "Minimum zoom level"                                           "7"
+    fi
     ask POI_RADIUS_M  "Nearby POI search radius (metres)" "5000"
 else
     MAP_ZOOM="12"
@@ -208,7 +279,7 @@ if [[ "$DEPLOY_MODE" != "ui" ]]; then
         AUTO_UPDATE=true
         success "Auto-update enabled."
     else
-        warn "Manual mode selected. See instructions at the end of this setup."
+        warn "Auto-update disabled. See instructions at the end of this setup."
     fi
 fi
 
@@ -291,7 +362,7 @@ fi
 BASE_URL="https://raw.githubusercontent.com/mfuhrmann/spieli/main"
 
 printf "\n"
-info "Downloading compose.prod.yml..."
+info "Downloading compose.yml..."
 fetch "$BASE_URL/compose.prod.yml" "$DEPLOY_DIR/compose.yml"
 
 if [[ "$DEPLOY_MODE" != "ui" ]]; then
@@ -299,14 +370,42 @@ if [[ "$DEPLOY_MODE" != "ui" ]]; then
     fetch "$BASE_URL/db/init.sql" "$DEPLOY_DIR/db/init.sql"
 fi
 
+# Enable registry.json bind-mount in compose.yml for hub mode
+if [[ "$APP_MODE" == "hub" && "$REGISTRY_URL" == "/registry.json" ]]; then
+    sed -i \
+        -e 's/^    # volumes:$/    volumes:/' \
+        -e 's|^    #   - \./registry\.json:/usr/share/nginx/html/registry\.json:ro$|      - ./registry.json:/usr/share/nginx/html/registry.json:ro|' \
+        "$DEPLOY_DIR/compose.yml"
+fi
+
 success "Files downloaded."
+
+# ── Generate registry.json for hub mode ───────────────────────────────────────
+
+if [[ "$APP_MODE" == "hub" && "$REGISTRY_URL" == "/registry.json" ]]; then
+    if [[ "$DEPLOY_MODE" == "data-node-ui" ]]; then
+        printf '{"instances":[{"slug":"local","url":"/api","name":"Local backend"}]}\n' \
+            > "$DEPLOY_DIR/registry.json"
+        success "Generated registry.json with local backend entry."
+        info "Edit $DEPLOY_DIR/registry.json to add more backends."
+    else
+        printf '{"instances":[{"slug":"backend-1","url":"https://data1.example.com/api","name":"Region 1"}]}\n' \
+            > "$DEPLOY_DIR/registry.json"
+        success "Generated placeholder registry.json."
+        info "Edit $DEPLOY_DIR/registry.json and replace the example entry with your real backends."
+    fi
+fi
 
 # ── Write .env ─────────────────────────────────────────────────────────────────
 
 {
     printf "# Generated by install.sh — %s\n\n" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
     printf "# ── Deployment mode ─────────────────────────────────────────────\n"
-    printf "DEPLOY_MODE=%s\n\n" "$DEPLOY_MODE"
+    printf "DEPLOY_MODE=%s\n" "$DEPLOY_MODE"
+    if [[ -n "$APP_MODE" ]]; then
+        printf "APP_MODE=%s\n" "$APP_MODE"
+    fi
+    printf "\n"
 
     if [[ "$DEPLOY_MODE" != "ui" ]]; then
         printf "# ── Required: region ────────────────────────────────────────────\n"
@@ -314,26 +413,44 @@ success "Files downloaded."
         printf "PBF_URL=%s\n\n" "$PBF_URL"
     fi
 
-    if [[ "$DEPLOY_MODE" != "data-node" ]]; then
+    if [[ "$APP_MODE" == "standalone" && "$DEPLOY_MODE" == "ui" ]]; then
         printf "# ── API base URL ─────────────────────────────────────────────────\n"
         printf "API_BASE_URL=%s\n\n" "$API_BASE_URL"
     fi
 
-    if [[ "$DEPLOY_MODE" != "data-node" ]]; then
+    if [[ "$APP_MODE" == "hub" ]]; then
+        printf "# ── Hub registry ─────────────────────────────────────────────────\n"
+        printf "REGISTRY_URL=%s\n" "$REGISTRY_URL"
+        if [[ -n "$HUB_POLL_INTERVAL" ]]; then
+            printf "HUB_POLL_INTERVAL=%s\n" "$HUB_POLL_INTERVAL"
+        fi
+        printf "\n"
+    fi
+
+    if [[ "$APP_MODE" == "standalone" && "$DEPLOY_MODE" != "data-node" ]]; then
+        if [[ -n "$PARENT_ORIGIN" ]]; then
+            printf "# ── Hub federation ──────────────────────────────────────────────\n"
+            printf "# This instance is registered as a backend in an external hub.\n"
+            printf "PARENT_ORIGIN=%s\n\n" "$PARENT_ORIGIN"
+        else
+            printf "# ── Hub federation (optional) ───────────────────────────────────\n"
+            printf "# Set to the hub's full origin if this instance is registered in an external hub.\n"
+            printf "# PARENT_ORIGIN=\n\n"
+        fi
+    fi
+
+    if [[ "$DEPLOY_MODE" != "data-node" && "$APP_MODE" != "hub" ]]; then
         printf "# ── Optional: UI links ──────────────────────────────────────────\n"
         printf "REGION_PLAYGROUND_WIKI_URL=%s\n" "$REGION_PLAYGROUND_WIKI_URL"
         printf "REGION_CHAT_URL=%s\n\n" "$REGION_CHAT_URL"
+    fi
 
+    if [[ "$DEPLOY_MODE" != "data-node" ]]; then
         printf "# ── Optional: map display ───────────────────────────────────────\n"
         printf "MAP_ZOOM=%s\n" "$MAP_ZOOM"
         printf "MAP_MIN_ZOOM=%s\n" "$MAP_MIN_ZOOM"
         printf "POI_RADIUS_M=%s\n\n" "$POI_RADIUS_M"
     fi
-
-    printf "# ── Optional: Hub integration ───────────────────────────────────\n"
-    printf "# Set to the Hub's full origin (e.g. https://hub.example.com) when embedding\n"
-    printf "# this instance in a spieli Hub. Leave empty for standalone deployments.\n"
-    printf "# PARENT_ORIGIN=\n\n"
 
     printf "# ── Legal pages (Impressum / Datenschutzerklärung) ─────────────\n"
     printf "# SITE_URL: public base URL — used to build impressum_url/privacy_url in get_meta().\n"
@@ -456,6 +573,11 @@ if [[ "$DEPLOY_MODE" != "data-node" ]]; then
     printf "  App:    ${CYAN}http://localhost:${APP_PORT}${RESET}\n"
 fi
 printf "  Dir:    ${CYAN}%s${RESET}\n\n" "$(cd "$DEPLOY_DIR" && pwd)"
+
+if [[ "$APP_MODE" == "hub" ]]; then
+    printf "${YELLOW}Next step:${RESET} edit ${CYAN}%s/registry.json${RESET} to list your backends.\n\n" \
+        "$(cd "$DEPLOY_DIR" && pwd)"
+fi
 
 printf "Useful commands (run from ${CYAN}%s${RESET}):\n" "$(cd "$DEPLOY_DIR" && pwd)"
 printf "  docker compose --profile %s up -d        # start the stack\n" "$DEPLOY_MODE"
