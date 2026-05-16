@@ -13,7 +13,7 @@ APP_PORT=8081
 Then restart the stack:
 
 ```bash
-docker compose -f compose.prod.yml --profile <mode> up -d
+docker compose -f compose.yml --profile <mode> up -d
 ```
 
 ---
@@ -42,11 +42,12 @@ If you are using the local development setup, `make import` is equivalent. If th
 
 1. **Import not run** — Run the importer after starting the stack. Playground data is not loaded automatically:
    ```bash
-   docker compose -f compose.prod.yml --profile <mode> run --rm importer
+   docker compose --profile <mode> run --rm importer
    ```
 2. **Wrong relation ID** — Check `OSM_RELATION_ID` in `.env`. An incorrect ID filters out all playgrounds. Verify at [nominatim.openstreetmap.org](https://nominatim.openstreetmap.org).
-3. **Docker stack not running** — The app requires a live PostgREST backend. Confirm the stack is running and healthy (`docker compose ps`).
-4. **Browser cache** — Try a hard reload: `Ctrl+Shift+R` (Windows/Linux) or `Cmd+Shift+R` (Mac).
+3. **PBF doesn't cover the relation** — The PBF extract must geographically contain the relation. If `OSM_RELATION_ID` is a large region (e.g. a whole state), the `PBF_URL` must point to a matching extract — a district or city PBF will silently produce 0 playgrounds. Check [download.geofabrik.de](https://download.geofabrik.de) for the right extract.
+4. **Docker stack not running** — The app requires a live PostgREST backend. Confirm the stack is running and healthy (`docker compose ps`).
+5. **Browser cache** — Try a hard reload: `Ctrl+Shift+R` (Windows/Linux) or `Cmd+Shift+R` (Mac).
 
 ---
 
@@ -80,7 +81,7 @@ If you are using the local development setup, `make import` is equivalent. If th
 When testing against the Docker stack, rebuild and restart the app container after changes:
 
 ```bash
-docker compose -f compose.prod.yml --profile <mode> up -d --build app
+docker compose -f compose.yml --profile <mode> up -d --build app
 ```
 
 ---
@@ -145,6 +146,70 @@ The importer validates the source PBF with `osmium fileinfo` before using it and
 
 ---
 
+## Hub shows a backend as reachable but with 0 playgrounds
+
+**Symptom:** A data-node appears in the Hub instance drawer with a green or yellow indicator, but its playground count is 0 and no playgrounds are drawn from that backend.
+
+**Hub operator — diagnose remotely:**
+
+```bash
+curl https://the-data-node.example.com/api/rpc/get_meta
+```
+
+If `playground_count` is `0` and `bbox` is `[null,null,null,null]`, the database has no playground data. Pass the findings to the data-node operator.
+
+**Data-node operator — possible causes:**
+
+1. **Import not run** — The stack started but the importer was never triggered:
+   ```bash
+   cd ~/spieli   # or wherever spieli was installed
+   docker compose --profile data-node run --rm importer
+   # or watch daemon logs if auto-update is enabled:
+   docker compose logs -f importer
+   ```
+2. **PBF doesn't cover the relation** — See [Map loads but shows no playgrounds](#map-loads-but-shows-no-playgrounds), cause 3.
+3. **Outdated image** — See [Hub backend returns "function not found" errors](#hub-backend-returns-function-not-found-errors).
+
+---
+
+## Hub backend returns "function not found" errors
+
+**Symptom:** The hub operator checks the data-node API and gets:
+
+```json
+{"code":"PGRST202","message":"Could not find the function api.get_playgrounds_bbox(bbox) in the schema cache."}
+```
+
+The Hub shows 0 playgrounds for that backend.
+
+**Hub operator — diagnose remotely:**
+
+```bash
+curl https://the-data-node.example.com/api/rpc/get_meta
+# check "version" — if older than v0.4.9, the image needs updating
+```
+
+**Data-node operator — fix:**
+
+The image predates the tiered-fetch functions added in v0.4.9. Update and re-import:
+
+```bash
+cd ~/spieli   # or wherever spieli was installed
+docker compose pull
+docker compose --profile data-node down
+docker compose --profile data-node up -d
+docker compose --profile data-node run --rm importer
+```
+
+**Hub operator — verify after the data-node operator confirms the update:**
+
+```bash
+curl https://the-data-node.example.com/api/rpc/get_meta
+# playground_count should now be > 0
+```
+
+---
+
 ## Importer fails with "permission denied" on schema apply
 
 **Symptom:** `psql` reports `permission denied` when the importer runs `api.sql`.
@@ -154,7 +219,7 @@ The importer validates the source PBF with `osmium fileinfo` before using it and
 **Fix:**
 
 ```bash
-docker compose -f compose.prod.yml exec db psql -U osm osm
+docker compose -f compose.yml exec db psql -U osm osm
 # in psql:
 ALTER ROLE your_user SUPERUSER;
 \q
@@ -163,7 +228,7 @@ ALTER ROLE your_user SUPERUSER;
 Then re-run the importer:
 
 ```bash
-docker compose -f compose.prod.yml --profile <mode> run --rm importer
+docker compose -f compose.yml --profile <mode> run --rm importer
 ```
 
 ---
@@ -177,7 +242,7 @@ docker compose -f compose.prod.yml --profile <mode> run --rm importer
 **Fix:** Run VACUUM FULL (briefly locks the table):
 
 ```bash
-docker compose -f compose.prod.yml exec db psql -U osm osm -c "VACUUM FULL public.playground_stats;"
+docker compose -f compose.yml exec db psql -U osm osm -c "VACUUM FULL public.playground_stats;"
 ```
 
 Or simply recreate the data volume after a re-import — the volume will start clean.
@@ -219,13 +284,13 @@ The Hub will pick up the corrected value on its next poll cycle (within 60 secon
 **Fix:** Restart the app container to regenerate legal pages from current env vars:
 
 ```bash
-docker compose -f compose.prod.yml --profile <mode> up -d app
+docker compose -f compose.yml --profile <mode> up -d app
 ```
 
 If `get_meta()` still returns the old `impressum_url` / `privacy_url`, the legal URLs are baked into the database at import time. Re-run the importer to apply them:
 
 ```bash
-docker compose -f compose.prod.yml --profile <mode> run --rm importer
+docker compose -f compose.yml --profile <mode> run --rm importer
 ```
 
 **Symptom:** `/impressum` returns 404 despite `IMPRESSUM_NAME` being set.
