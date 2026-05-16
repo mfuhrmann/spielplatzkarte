@@ -1,7 +1,7 @@
 <script>
   import VectorSource from 'ol/source/Vector.js';
   import { onDestroy, onMount } from 'svelte';
-  import { get } from 'svelte/store';
+  import { get, readable } from 'svelte/store';
   import { transformExtent, fromLonLat } from 'ol/proj';
 
   import AppShell from '../components/AppShell.svelte';
@@ -44,6 +44,25 @@
     aggregatedBbox,
     fetchNearestAcrossBackends,
   } = createRegistry();
+
+  // Track current map viewport in EPSG:4326 for search biasing — same pattern
+  // as StandaloneApp. aggregatedBbox covers all backends and is far too coarse.
+  const viewportExtent = readable(null, (set) => {
+    let detach = null;
+    const unsub = mapStore.subscribe((map) => {
+      if (detach) { detach(); detach = null; }
+      if (!map) return;
+      const update = () => {
+        const size = map.getSize();
+        if (!size) return;
+        set(transformExtent(map.getView().calculateExtent(size), 'EPSG:3857', 'EPSG:4326'));
+      };
+      map.on('moveend', update);
+      detach = () => map.un('moveend', update);
+      update();
+    });
+    return () => { if (detach) detach(); unsub(); };
+  });
 
   const dataContribLinks = { chatUrl: null };
 
@@ -207,7 +226,7 @@
   playgroundSource={polygonSource}
   {clusterSource}
   {macroSource}
-  searchExtent={aggregatedBbox}
+  searchExtent={viewportExtent}
   nearestFetcher={fetchNearestAcrossBackends}
   {resolveSlugToBackendUrl}
   {getAllBackendUrls}
