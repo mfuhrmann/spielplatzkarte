@@ -338,8 +338,7 @@
         "chatLabel": "lokalen OSM-Community-Chat",
         "simpleText": "Fragen und Austausch im",
         "simpleChatLabel": "regionalen Chat"
-      },
-      "hubPrivacyNote": "Im Hub-Modus werden Daten von mehreren unabhängigen Instanzen geladen. Die jeweiligen Betreiber, {osmLink} sowie {panoramaxLink} können dabei Zugriffsdaten protokollieren."
+      }
     },
     "about": {
       "history": {

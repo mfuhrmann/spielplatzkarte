@@ -9,8 +9,6 @@
   export let impressumUrl = null;
   /** Privacy policy URL; hidden when null/falsy. */
   export let privacyUrl = null;
-  /** Show hub-specific third-party data note. */
-  export let isHub = false;
 
   function close() { open = false; }
 
@@ -39,35 +37,41 @@
         <button type="button" class="close-btn" onclick={close} aria-label={$_('info.closeBtn')}>✕</button>
       </div>
       <div class="modal-body">
-        <p class="small">
+        <p class="intro">
           {@html $_('modal.addData.introText', { values: {
             osmLink: '<a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>',
             mapcompleteLink: '<a href="https://mapcomplete.org/playgrounds.html" target="_blank" rel="noopener">MapComplete</a>'
           } })}
         </p>
 
-        <div class="links">
-          <a href={osmWikiUrl} target="_blank" rel="noopener">{$_('modal.addData.wikiLinkText')} ↗</a>
+        <div class="link-grid">
+          <a class="link-card" href={osmWikiUrl} target="_blank" rel="noopener">
+            <span class="link-icon">🗺️</span>
+            <span>{$_('modal.addData.wikiLinkText')}</span>
+          </a>
           {#if chatUrl}
-            <a href={chatUrl} target="_blank" rel="noopener">{$_('modal.addData.community.simpleChatLabel')} ↗</a>
+            <a class="link-card" href={chatUrl} target="_blank" rel="noopener">
+              <span class="link-icon">💬</span>
+              <span>{$_('modal.addData.community.simpleChatLabel')}</span>
+            </a>
           {/if}
-          <a href="https://github.com/mfuhrmann/spieli" target="_blank" rel="noopener">{$_('modal.addData.githubLabel')} ↗</a>
+          <a class="link-card" href="https://github.com/mfuhrmann/spieli" target="_blank" rel="noopener">
+            <span class="link-icon">⚙️</span>
+            <span>{$_('modal.addData.githubLabel')}</span>
+          </a>
           {#if impressumUrl}
-            <a href={impressumUrl} target="_blank" rel="noopener">{$_('legal.impressum')} ↗</a>
+            <a class="link-card" href={impressumUrl} target="_blank" rel="noopener">
+              <span class="link-icon">📋</span>
+              <span>{$_('legal.impressum')}</span>
+            </a>
           {/if}
           {#if privacyUrl}
-            <a href={privacyUrl} target="_blank" rel="noopener">{$_('legal.datenschutz')} ↗</a>
+            <a class="link-card" href={privacyUrl} target="_blank" rel="noopener">
+              <span class="link-icon">🔒</span>
+              <span>{$_('legal.datenschutz')}</span>
+            </a>
           {/if}
         </div>
-
-        {#if isHub}
-          <p class="small hub-privacy">
-            {@html $_('modal.addData.hubPrivacyNote', { values: {
-              osmLink: '<a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>',
-              panoramaxLink: '<a href="https://panoramax.openstreetmap.fr/" target="_blank" rel="noopener">Panoramax</a>'
-            } })}
-          </p>
-        {/if}
 
         <p class="version">v{version}</p>
       </div>
@@ -91,62 +95,82 @@
 
   .modal-box {
     background: #fff;
-    border-radius: 6px;
-    width: min(90vw, 440px);
+    border-radius: 10px;
+    width: min(92vw, 420px);
     max-height: 80vh;
     overflow-y: auto;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.22);
   }
 
   .modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #dee2e6;
+    padding: 1rem 1.125rem 0.75rem;
+    border-bottom: 1px solid #f0f0f0;
   }
 
-  .modal-title { margin: 0; font-size: 1rem; font-weight: 600; }
+  .modal-title { margin: 0; font-size: 1rem; font-weight: 700; color: #1a1a1a; }
 
   .close-btn {
     background: none;
     border: none;
     font-size: 1rem;
     line-height: 1;
-    color: #6c757d;
+    color: #9ca3af;
     cursor: pointer;
     padding: 0.25rem;
     border-radius: 4px;
   }
-  .close-btn:hover { color: #000; background: #f0f0f0; }
+  .close-btn:hover { color: #111; background: #f3f4f6; }
 
-  .modal-body { padding: 1rem; }
+  .modal-body { padding: 1rem 1.125rem; }
 
-  .small { font-size: 0.875rem; color: #495057; margin: 0 0 1rem; }
-  .hub-privacy { border-top: 1px solid #dee2e6; padding-top: 0.75rem; color: #6c757d; }
-
-  .links {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    margin-bottom: 1rem;
-  }
-
-  .links a {
+  .intro {
     font-size: 0.875rem;
-    color: #6c757d;
+    color: #374151;
+    margin: 0 0 1.125rem;
+    line-height: 1.55;
   }
-  .links a:hover { color: #343a40; }
+
+  .link-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 1.125rem;
+  }
+
+  .link-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: 7px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    font-size: 0.8125rem;
+    color: #374151;
+    text-decoration: none;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .link-card:hover {
+    background: #fff3e8;
+    border-color: #ed7014;
+    color: #c05e0f;
+  }
+
+  .link-icon { font-size: 1rem; flex-shrink: 0; }
 
   .version {
-    font-size: 0.75rem;
-    color: #adb5bd;
+    font-size: 0.7rem;
+    color: #9ca3af;
     margin: 0;
+    text-align: right;
   }
 
   .modal-footer {
-    padding: 0.5rem 1rem;
-    border-top: 1px solid #dee2e6;
+    padding: 0.625rem 1.125rem;
+    border-top: 1px solid #f0f0f0;
     display: flex;
     justify-content: flex-end;
   }
@@ -155,10 +179,12 @@
     background: #ed7014;
     color: #fff;
     border: none;
-    border-radius: 4px;
-    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    padding: 0.375rem 1rem;
     font-size: 0.875rem;
+    font-weight: 600;
     cursor: pointer;
+    transition: background 0.12s;
   }
   .ok-btn:hover { background: #d16212; }
 </style>

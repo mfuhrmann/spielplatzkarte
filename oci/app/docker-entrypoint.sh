@@ -112,13 +112,32 @@ fi
 
 if [ -z "${PRIVACY_URL:-}" ]; then
     if [ -n "$SAFE_IMP_NAME" ] && [ -n "$SAFE_IMP_EMAIL" ] && [ -f /datenschutz.template.html ]; then
+        # Build hub privacy section into a temp file; awk inlines it at
+        # {{HUB_PRIVACY_SECTION}} — avoids sed multiline / & escaping issues.
+        HUB_SECTION_FILE=$(mktemp)
+        if [ "$APP_MODE" = "hub" ]; then
+            cat > "$HUB_SECTION_FILE" <<'HUB_HTML'
+  <h2>Hub-Modus: Mehrere Instanzen</h2>
+  <p>Diese Instanz betreibt einen Hub, der Daten von mehreren unabhängigen Backends lädt. Die jeweiligen Betreiber der eingebundenen Instanzen sowie die Dienste <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a> und <a href="https://panoramax.xyz/" target="_blank" rel="noopener">Panoramax</a> können dabei Zugriffsdaten protokollieren. Die Datenschutzerklärungen der jeweiligen Betreiber sind maßgeblich.</p>
+
+HUB_HTML
+        fi
         # Escape & and / so they are literal in the sed replacement position.
         SAFE_IMP_NAME_FOR_SED=$(printf '%s'  "$SAFE_IMP_NAME"  | sed 's/[\/&]/\\&/g')
         SAFE_IMP_EMAIL_FOR_SED=$(printf '%s' "$SAFE_IMP_EMAIL" | sed 's/[\/&]/\\&/g')
         sed \
             -e "s/{{IMPRESSUM_NAME}}/$SAFE_IMP_NAME_FOR_SED/g" \
             -e "s/{{IMPRESSUM_EMAIL}}/$SAFE_IMP_EMAIL_FOR_SED/g" \
-            /datenschutz.template.html > "$WEBROOT/datenschutz.html"
+            /datenschutz.template.html | \
+        awk -v hubfile="$HUB_SECTION_FILE" '
+            /\{\{HUB_PRIVACY_SECTION\}\}/ {
+                while ((getline line < hubfile) > 0) print line
+                close(hubfile)
+                next
+            }
+            { print }
+        ' > "$WEBROOT/datenschutz.html"
+        rm -f "$HUB_SECTION_FILE"
     else
         {
             printf '<!DOCTYPE html>\n<html lang="de">\n<head>\n'
