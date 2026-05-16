@@ -150,17 +150,17 @@ The importer validates the source PBF with `osmium fileinfo` before using it and
 
 **Symptom:** A data-node appears in the Hub instance drawer with a green or yellow indicator, but its playground count is 0 and no playgrounds are drawn from that backend.
 
-**Diagnose first** — check the data-node's meta endpoint directly:
+**Hub operator — diagnose remotely:**
 
 ```bash
-curl https://your-data-node.example.com/api/rpc/get_meta
+curl https://the-data-node.example.com/api/rpc/get_meta
 ```
 
-Look at `playground_count`. If it is `0` and `bbox` is `[null,null,null,null]`, the database has no playground data.
+If `playground_count` is `0` and `bbox` is `[null,null,null,null]`, the database has no playground data. Pass the findings to the data-node operator.
 
-**Possible causes:**
+**Data-node operator — possible causes:**
 
-1. **Import not run** — The stack started but the importer was never triggered. On the data-node host:
+1. **Import not run** — The stack started but the importer was never triggered:
    ```bash
    cd ~/spieli   # or wherever spieli was installed
    docker compose --profile data-node run --rm importer
@@ -174,7 +174,7 @@ Look at `playground_count`. If it is `0` and `bbox` is `[null,null,null,null]`, 
 
 ## Hub backend returns "function not found" errors
 
-**Symptom:** Calls to the data-node's API return an error like:
+**Symptom:** The hub operator checks the data-node API and gets:
 
 ```json
 {"code":"PGRST202","message":"Could not find the function api.get_playgrounds_bbox(bbox) in the schema cache."}
@@ -182,9 +182,16 @@ Look at `playground_count`. If it is `0` and `bbox` is `[null,null,null,null]`, 
 
 The Hub shows 0 playgrounds for that backend.
 
-**Cause:** The data-node is running an outdated image that predates the `get_playgrounds_bbox` (and other tiered-fetch) functions added in v0.4.9.
+**Hub operator — diagnose remotely:**
 
-**Fix:** Update the image and re-import on the data-node host:
+```bash
+curl https://the-data-node.example.com/api/rpc/get_meta
+# check "version" — if older than v0.4.9, the image needs updating
+```
+
+**Data-node operator — fix:**
+
+The image predates the tiered-fetch functions added in v0.4.9. Update and re-import:
 
 ```bash
 cd ~/spieli   # or wherever spieli was installed
@@ -194,10 +201,10 @@ docker compose --profile data-node up -d
 docker compose --profile data-node run --rm importer
 ```
 
-After the importer completes, verify with:
+**Hub operator — verify after the data-node operator confirms the update:**
 
 ```bash
-curl https://your-data-node.example.com/api/rpc/get_meta
+curl https://the-data-node.example.com/api/rpc/get_meta
 # playground_count should now be > 0
 ```
 
