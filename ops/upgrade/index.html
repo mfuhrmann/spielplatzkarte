@@ -698,9 +698,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#upgrading-the-docker-compose-file" class="md-nav__link">
+  <a href="#upgrading-the-compose-file" class="md-nav__link">
     <span class="md-ellipsis">
-      Upgrading the Docker Compose file
+      Upgrading the Compose file
     </span>
   </a>
   
@@ -1511,9 +1511,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#upgrading-the-docker-compose-file" class="md-nav__link">
+  <a href="#upgrading-the-compose-file" class="md-nav__link">
     <span class="md-ellipsis">
-      Upgrading the Docker Compose file
+      Upgrading the Compose file
     </span>
   </a>
   
@@ -1572,9 +1572,11 @@
 <h1 id="upgrading-spieli">Upgrading spieli<a class="headerlink" href="#upgrading-spieli" title="Permanent link">&para;</a></h1>
 <p>This guide explains how to update a running spieli deployment to a newer release.</p>
 <h2 id="check-the-current-version">Check the current version<a class="headerlink" href="#check-the-current-version" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>app<span class="w"> </span>cat<span class="w"> </span>/usr/share/nginx/html/config.js<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>version
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># or look at the image tag:</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>ps
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Read the OCI version label baked into the running image:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>docker<span class="w"> </span>inspect<span class="w"> </span>spieli-app-1<span class="w"> </span>--format<span class="w"> </span><span class="s1">&#39;{{index .Config.Labels &quot;org.opencontainers.image.version&quot;}}&#39;</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Or list all running images and their tags:</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>images
 </code></pre></div>
 <p>Check <a href="https://github.com/mfuhrmann/spieli/releases">GitHub Releases</a> for the latest version and any breaking changes.</p>
 <h2 id="standard-upgrade-same-minor-version">Standard upgrade (same minor version)<a class="headerlink" href="#standard-upgrade-same-minor-version" title="Permanent link">&para;</a></h2>
@@ -1582,43 +1584,45 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>/path/to/your/spieli-deployment
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Pull the latest images</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>pull
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Restart app container (zero-database-downtime)</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>app
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># If the API SQL changed (check the release notes), re-run the importer:</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># Re-apply api.sql — updates DB functions and the version reported by get_meta()</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-e<span class="w"> </span><span class="nv">API_ONLY</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>importer
 </code></pre></div>
 <p>Replace <code>&lt;mode&gt;</code> with your <code>DEPLOY_MODE</code> (<code>data-node</code>, <code>ui</code>, or <code>data-node-ui</code>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>API_ONLY=1</code> step is required on every upgrade, not just when the release notes mention SQL changes. The version number visible in the Hub regions panel comes from the database (written by the importer), not the app image — skipping this step leaves the reported version stale.</p>
+</div>
 <h2 id="when-to-run-a-full-re-import">When to run a full re-import<a class="headerlink" href="#when-to-run-a-full-re-import" title="Permanent link">&para;</a></h2>
-<p>A full re-import (<code>docker compose -f compose.prod.yml --profile &lt;mode&gt; run --rm importer</code>) is needed when:</p>
+<p>A full re-import (without <code>API_ONLY</code>) is needed when:</p>
 <ul>
 <li>The release notes say "re-import after upgrading"</li>
-<li><code>importer/api.sql</code> changed in a way that requires rebuilding the <code>playground_stats</code> materialised view</li>
 <li>A new OSM tag type was added to <code>processing/lua/osm_import.lua</code> — the new columns won't exist in existing data until a fresh import</li>
 </ul>
-<p>Re-running the importer applies <code>api.sql</code> automatically and is safe — it drops and recreates PostgREST functions without touching the <code>planet_osm_*</code> tables when OSM data hasn't changed.</p>
-<h2 id="upgrading-the-docker-compose-file">Upgrading the Docker Compose file<a class="headerlink" href="#upgrading-the-docker-compose-file" title="Permanent link">&para;</a></h2>
-<p>When the <code>compose.prod.yml</code> itself changes (new services, new volume mounts, etc.):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># From a source clone:</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>git<span class="w"> </span>pull
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Or download the updated file directly:</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>curl<span class="w"> </span>-O<span class="w"> </span>https://raw.githubusercontent.com/mfuhrmann/spieli/main/compose.prod.yml
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Then recreate:</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>down
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>importer
+</code></pre></div>
+<p>A full re-import also re-applies <code>api.sql</code>, so the separate <code>API_ONLY=1</code> step is not needed when you do a full re-import.</p>
+<h2 id="upgrading-the-compose-file">Upgrading the Compose file<a class="headerlink" href="#upgrading-the-compose-file" title="Permanent link">&para;</a></h2>
+<p>When <code>compose.yml</code> itself changes (new services, new volume mounts, etc.):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Download the updated file directly:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>curl<span class="w"> </span>-O<span class="w"> </span>https://raw.githubusercontent.com/mfuhrmann/spieli/main/compose.yml
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Then recreate:</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>down
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <h2 id="hub-upgrades">Hub upgrades<a class="headerlink" href="#hub-upgrades" title="Permanent link">&para;</a></h2>
 <p>Upgrade each data-node first, verify it works, then upgrade the Hub UI. The Hub is backwards-compatible with older data-nodes (it falls back to the legacy <code>get_playgrounds</code> RPC if the tiered RPCs return 404), but an older Hub is not guaranteed to understand new data-node response fields.</p>
 <h2 id="downgrading">Downgrading<a class="headerlink" href="#downgrading" title="Permanent link">&para;</a></h2>
 <p>Downgrading is supported only within the same minor version. Images are tagged <code>:X.Y.Z</code> and <code>:X.Y</code>, so:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Pin to a specific version:</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># Edit compose.prod.yml to use ghcr.io/mfuhrmann/spieli:0.4.0 instead of :latest</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>pull
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>compose.prod.yml<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Pin to a specific version by editing compose.yml:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># Change ghcr.io/mfuhrmann/spieli:latest to ghcr.io/mfuhrmann/spieli:0.4.0</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>pull
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <p>The database schema is <strong>not</strong> automatically rolled back on a downgrade. If the new version added new columns or functions, the older app may ignore them safely, but this is not tested. When in doubt, re-import from scratch.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
