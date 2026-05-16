@@ -2058,7 +2058,7 @@
 <hr />
 <h2 id="get_standalone_equipmentbbox"><code>get_standalone_equipment(bbox)</code><a class="headerlink" href="#get_standalone_equipmentbbox" title="Permanent link">&para;</a></h2>
 <p>Returns pitches, benches, shelters, picnic tables, and fitness stations that do <strong>not</strong> lie within any <code>leisure=playground</code> polygon. Used by the standalone pitch layer (<code>filterStore.standalonePitches</code>).</p>
-<p>Same parameter and response shape as <code>get_equipment</code>. Returns an empty <code>FeatureCollection</code> when <code>apiBaseUrl</code> is empty (Overpass/dev mode).</p>
+<p>Same parameter and response shape as <code>get_equipment</code>. Returns an empty <code>FeatureCollection</code> when <code>apiBaseUrl</code> is empty (Overpass fallback, used in local frontend dev without a database).</p>
 <p><strong>Example</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>curl<span class="w"> </span><span class="s1">&#39;https://example.com/api/rpc/get_standalone_equipment?min_lon=9.60&amp;min_lat=50.50&amp;max_lon=9.80&amp;max_lat=50.60&#39;</span>
 </code></pre></div>
@@ -2282,7 +2282,7 @@
 </code></pre></div>
 <hr />
 <h2 id="get_nearest_playgroundslat-lon"><code>get_nearest_playgrounds(lat, lon)</code><a class="headerlink" href="#get_nearest_playgroundslat-lon" title="Permanent link">&para;</a></h2>
-<p>Returns the nearest playgrounds to a WGS84 point, ordered by distance ascending. Used by the <code>NearbyPlaygrounds</code> component. Returns an empty array when <code>apiBaseUrl</code> is empty (Overpass/dev mode).</p>
+<p>Returns the nearest playgrounds to a WGS84 point, ordered by distance ascending. Used by the <code>NearbyPlaygrounds</code> component. Returns an empty array when <code>apiBaseUrl</code> is empty (Overpass fallback, used in local frontend dev without a database).</p>
 <p><strong>Parameters</strong></p>
 <table>
 <thead>

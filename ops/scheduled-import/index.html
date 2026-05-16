@@ -1632,6 +1632,10 @@
 <h1 id="scheduled-import">Scheduled Import<a class="headerlink" href="#scheduled-import" title="Permanent link">&para;</a></h1>
 <p>Geofabrik publishes updated OSM extracts daily. Running the importer on a schedule keeps your playground data fresh without manual intervention.</p>
 <h2 id="daemon-mode-recommended">Daemon mode (recommended)<a class="headerlink" href="#daemon-mode-recommended" title="Permanent link">&para;</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Terminology</p>
+<p>"Daemon mode" here refers to the importer container's <strong>scheduling behaviour</strong> — whether it loops and re-imports automatically or exits after one run. This is separate from <code>DEPLOY_MODE</code> (which services start) and <code>APP_MODE</code> (standalone vs hub frontend).</p>
+</div>
 <p>The importer container has a built-in daemon mode: set <code>REIMPORT_INTERVAL_MIN_DAYS</code> and <code>REIMPORT_INTERVAL_MAX_DAYS</code> in <code>.env</code> and the container loops forever, re-importing at a random interval within that range. No host cron, no systemd unit — the container manages its own schedule.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>REIMPORT_INTERVAL_MIN_DAYS=6
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>REIMPORT_INTERVAL_MAX_DAYS=8
