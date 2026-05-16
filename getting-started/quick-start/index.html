@@ -546,9 +546,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deployment-modes" class="md-nav__link">
+  <a href="#installation-scenarios" class="md-nav__link">
     <span class="md-ellipsis">
-      Deployment modes
+      Installation scenarios
     </span>
   </a>
   
@@ -1529,9 +1529,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deployment-modes" class="md-nav__link">
+  <a href="#installation-scenarios" class="md-nav__link">
     <span class="md-ellipsis">
-      Deployment modes
+      Installation scenarios
     </span>
   </a>
   
@@ -1620,11 +1620,13 @@
 <h2 id="what-the-installer-does">What the installer does<a class="headerlink" href="#what-the-installer-does" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Asks for a deployment directory (default: <code>./spieli</code>)</li>
-<li>Asks for your deployment mode (<code>data-node</code>, <code>ui</code>, or <code>data-node-ui</code>)</li>
+<li>Asks for your <strong>deployment mode</strong> (<code>data-node</code>, <code>ui</code>, or <code>data-node-ui</code>) — which services to run</li>
+<li>Asks for your <strong>app mode</strong> (<code>standalone</code> or <code>hub</code>) — how the frontend behaves (skipped for <code>data-node</code>)</li>
 <li>Asks for your OSM relation ID and Geofabrik PBF URL (for data-node and data-node-ui modes)</li>
-<li>Prompts for optional settings (port, UI links, zoom levels)</li>
+<li>Prompts for optional settings (port, UI links, zoom levels, hub registry URL)</li>
 <li>Generates a secure database password automatically</li>
 <li>Downloads <code>compose.yml</code> and <code>db/init.sql</code> into the deployment directory</li>
+<li>Generates <code>registry.json</code> for hub mode and enables its bind-mount in <code>compose.yml</code></li>
 <li>Offers to pull images, start the stack, and run the first import</li>
 </ol>
 <div class="admonition tip">
@@ -1635,33 +1637,58 @@
 <p class="admonition-title">Finding a PBF extract</p>
 <p>Browse <a href="https://download.geofabrik.de">download.geofabrik.de</a> for an extract covering your region. The PBF only needs to <em>contain</em> your region — a Bundesland extract works fine for a single Kreis.</p>
 </div>
-<h2 id="deployment-modes">Deployment modes<a class="headerlink" href="#deployment-modes" title="Permanent link">&para;</a></h2>
+<h2 id="installation-scenarios">Installation scenarios<a class="headerlink" href="#installation-scenarios" title="Permanent link">&para;</a></h2>
+<p>The installer guides you through five supported scenarios. Two variables combine to define your setup: <code>DEPLOY_MODE</code> (which services run) and <code>APP_MODE</code> (how the frontend behaves).</p>
 <table>
 <thead>
 <tr>
-<th>Mode</th>
+<th>Scenario</th>
+<th><code>DEPLOY_MODE</code></th>
+<th><code>APP_MODE</code></th>
 <th>What starts</th>
 <th>Use when</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>data-node</code></td>
-<td>DB + PostgREST only</td>
-<td>Shared backend for multiple UI instances</td>
-</tr>
-<tr>
-<td><code>ui</code></td>
-<td>App only</td>
-<td>Frontend connecting to a remote data node</td>
-</tr>
-<tr>
+<td><strong>Standalone</strong></td>
 <td><code>data-node-ui</code></td>
-<td>Full stack</td>
-<td>Single self-contained regional deployment</td>
+<td><code>standalone</code></td>
+<td>DB + PostgREST + app</td>
+<td>Single self-contained regional map (default)</td>
+</tr>
+<tr>
+<td><strong>Standalone + federated</strong></td>
+<td><code>data-node-ui</code></td>
+<td><code>standalone</code></td>
+<td>DB + PostgREST + app</td>
+<td>Own regional map that also appears as a backend in an external hub</td>
+</tr>
+<tr>
+<td><strong>Hub only</strong></td>
+<td><code>ui</code></td>
+<td><code>hub</code></td>
+<td>App only</td>
+<td>Aggregate multiple remote backends into one map</td>
+</tr>
+<tr>
+<td><strong>Hub + local backend</strong></td>
+<td><code>data-node-ui</code></td>
+<td><code>hub</code></td>
+<td>DB + PostgREST + app</td>
+<td>Hub UI with a local data backend on the same host</td>
+</tr>
+<tr>
+<td><strong>Backend only</strong></td>
+<td><code>data-node</code></td>
+<td>—</td>
+<td>DB + PostgREST</td>
+<td>Provide data to an external hub, no local UI</td>
 </tr>
 </tbody>
 </table>
+<p>For standalone + federated: the installer asks for <code>PARENT_ORIGIN</code> (the hub's origin) to enable cross-origin embedding.</p>
+<p>For hub scenarios: the installer asks for <code>REGISTRY_URL</code> and generates a starter <code>registry.json</code>. Edit it after setup to list your backends.</p>
 <h2 id="managing-the-stack">Managing the stack<a class="headerlink" href="#managing-the-stack" title="Permanent link">&para;</a></h2>
 <p>After setup, manage the stack from your deployment directory:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>spieli
