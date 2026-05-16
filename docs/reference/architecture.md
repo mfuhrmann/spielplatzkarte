@@ -64,11 +64,11 @@ The compose file supports three profiles, selected at install time via `DEPLOY_M
 
 |                           | `APP_MODE=standalone`                                                                                 | `APP_MODE=hub`                                                                                                  |
 |---------------------------|-------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
-| `DEPLOY_MODE=data-node`   | N/A — no frontend, `APP_MODE` is ignored                                                              | N/A — no frontend to run in hub mode                                                                            |
-| `DEPLOY_MODE=ui`          | Remote-frontend for one region (`API_BASE_URL` points at a remote `/api/` — that backend must enable [CORS](../ops/federated-deployment.md#expose-api-to-the-hub)) | **Federated Hub** — aggregates multiple data-nodes                                                          |
-| `DEPLOY_MODE=data-node-ui`| Default single-region deployment                                                                      | Hub co-located with a local data-node — replace the bundled `registry.json` (see walkthrough), or the Hub will point at dev paths |
+| `DEPLOY_MODE=data-node`   | N/A — no frontend, `APP_MODE` is ignored                                                              | N/A — no frontend                                                                                               |
+| `DEPLOY_MODE=ui`          | Remote-frontend for one region (`API_BASE_URL` points at a remote `/api/` — that backend must enable [CORS](../ops/federated-deployment.md#expose-api-to-the-hub)) | **Hub only** — aggregates multiple remote data-nodes via `registry.json`                                    |
+| `DEPLOY_MODE=data-node-ui`| **Standalone** — default single-region deployment. Add `PARENT_ORIGIN` to also register this instance as a backend in an external hub (**standalone + federated**). | **Hub + local backend** — hub UI co-located with a local data-node; `registry.json` lists `/api` plus any additional remote backends |
 
-For the federated Hub topology (`DEPLOY_MODE=ui` + `APP_MODE=hub`), see [Federated Deployment](../ops/federated-deployment.md).
+The installer guides all five scenarios. See [Federated Deployment](../ops/federated-deployment.md) for the hub topologies.
 
 ## Tiered playground delivery
 
