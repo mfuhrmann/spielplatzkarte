@@ -221,9 +221,13 @@
               <div class="device-detail">
                 {#if uuids.length}
                   <PanoramaxViewer {uuids} mcUrl={firstDetail.mcUrl} />
-                {:else}
-                  <MapCompleteLink href={firstDetail.mcUrl} label={$_('popup.addPhoto')} />
                 {/if}
+                {#each items as f (f.properties.osm_id)}
+                  {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
+                  {#if !detail.panoramaxUuid}
+                    <MapCompleteLink href={detail.mcUrl} label={$_('popup.addPhoto')} />
+                  {/if}
+                {/each}
               </div>
             {/if}
           </li>
@@ -273,9 +277,13 @@
               <div class="device-detail">
                 {#if uuids.length}
                   <PanoramaxViewer {uuids} mcUrl={firstDetail.mcUrl} />
-                {:else}
-                  <MapCompleteLink href={firstDetail.mcUrl} label={$_('popup.addPhoto')} />
                 {/if}
+                {#each items as f (f.properties.osm_id)}
+                  {@const detail = getEquipmentAttributesFromProps(f.properties, $_)}
+                  {#if !detail.panoramaxUuid}
+                    <MapCompleteLink href={detail.mcUrl} label={$_('popup.addPhoto')} />
+                  {/if}
+                {/each}
               </div>
             {/if}
           </li>
