@@ -237,7 +237,7 @@ curl 'https://example.com/api/rpc/get_equipment?min_lon=9.70&min_lat=50.53&max_l
 
 Returns pitches, benches, shelters, picnic tables, and fitness stations that do **not** lie within any `leisure=playground` polygon. Used by the standalone pitch layer (`filterStore.standalonePitches`).
 
-Same parameter and response shape as `get_equipment`. Returns an empty `FeatureCollection` when `apiBaseUrl` is empty (Overpass/dev mode).
+Same parameter and response shape as `get_equipment`. Returns an empty `FeatureCollection` when `apiBaseUrl` is empty (Overpass fallback, used in local frontend dev without a database).
 
 **Example**
 
@@ -395,7 +395,7 @@ curl 'https://example.com/api/rpc/get_legal?type=impressum'
 
 ## `get_nearest_playgrounds(lat, lon)`
 
-Returns the nearest playgrounds to a WGS84 point, ordered by distance ascending. Used by the `NearbyPlaygrounds` component. Returns an empty array when `apiBaseUrl` is empty (Overpass/dev mode).
+Returns the nearest playgrounds to a WGS84 point, ordered by distance ascending. Used by the `NearbyPlaygrounds` component. Returns an empty array when `apiBaseUrl` is empty (Overpass fallback, used in local frontend dev without a database).
 
 **Parameters**
 

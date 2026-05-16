@@ -361,7 +361,7 @@ success "Files downloaded."
 
         if [[ "$AUTO_UPDATE" == "true" ]]; then
             printf "# ── Auto-update: re-import interval ─────────────────────────────\n"
-            printf "# The importer will re-run every 2–10 days (randomised) in daemon mode.\n"
+            printf "# The importer will re-run every 2–10 days (randomised) using its built-in daemon scheduling.\n"
             printf "# Watchtower pulls updated images daily (requires --profile auto-update).\n"
             printf "REIMPORT_INTERVAL_MIN_DAYS=2\n"
             printf "REIMPORT_INTERVAL_MAX_DAYS=10\n\n"
@@ -429,7 +429,7 @@ if confirm "Start the stack now?"; then
     if [[ "$DEPLOY_MODE" != "ui" ]]; then
         printf "\n"
         if [[ "$AUTO_UPDATE" == "true" ]]; then
-            success "The importer is running in daemon mode and will begin the first import automatically."
+            success "The importer is running with daemon scheduling and will begin the first import automatically."
             printf "  Monitor progress with: ${CYAN}docker compose -f %s/compose.yml logs -f importer${RESET}\n" \
                 "$DEPLOY_DIR"
         else
