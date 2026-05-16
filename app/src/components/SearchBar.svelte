@@ -25,18 +25,33 @@
     }
     searching = true;
     try {
-      let url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=10`;
+      const base = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=10`;
       let viewCenterLon = null;
       let viewCenterLat = null;
+      let hits;
       if (regionExtent) {
         const [minLon, minLat, maxLon, maxLat] = regionExtent;
-        url += `&viewbox=${minLon},${minLat},${maxLon},${maxLat}&bounded=0`;
+        const viewboxParam = `&viewbox=${minLon},${minLat},${maxLon},${maxLat}`;
         viewCenterLon = (minLon + maxLon) / 2;
         viewCenterLat = (minLat + maxLat) / 2;
+        // Phase 1: bounded=1 — only results within the current viewport.
+        // Handles common street names that would otherwise be drowned out by
+        // same-named streets in larger cities.
+        const res1 = await fetch(base + viewboxParam + '&bounded=1');
+        if (!res1.ok) throw new Error(`Nominatim error: ${res1.status}`);
+        hits = await res1.json();
+        // Phase 2: fall back to unbounded if the viewport returned nothing —
+        // preserves the ability to search for a city name to navigate there.
+        if (!hits.length) {
+          const res2 = await fetch(base + viewboxParam + '&bounded=0');
+          if (!res2.ok) throw new Error(`Nominatim error: ${res2.status}`);
+          hits = await res2.json();
+        }
+      } else {
+        const res = await fetch(base);
+        if (!res.ok) throw new Error(`Nominatim error: ${res.status}`);
+        hits = await res.json();
       }
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Nominatim error: ${res.status}`);
-      let hits = await res.json();
       if (viewCenterLon !== null) {
         hits = hits.slice().sort((a, b) => {
           const da = (parseFloat(a.lon) - viewCenterLon) ** 2 + (parseFloat(a.lat) - viewCenterLat) ** 2;
