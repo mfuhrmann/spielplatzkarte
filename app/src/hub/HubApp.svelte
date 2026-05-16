@@ -213,7 +213,6 @@
   {getAllBackendUrls}
   onBackendsUpdate={subscribeBackendsForHashRetry}
   {dataContribLinks}
-  isHub={true}
 >
   {#snippet instancePanel()}
     <InstancePanel {backends} {registryError} />

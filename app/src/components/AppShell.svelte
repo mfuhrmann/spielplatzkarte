@@ -66,9 +66,6 @@
    */
   export let dataContribLinks;
 
-  /** Show hub-specific third-party privacy note in the About modal. */
-  export let isHub = false;
-
   /** Fallback backend URL applied to features that don't carry `_backendUrl`. */
   export let defaultBackendUrl = '';
 
@@ -535,7 +532,6 @@
     chatUrl={dataContribLinks.chatUrl}
     {impressumUrl}
     {privacyUrl}
-    {isHub}
   />
 </div>
 
