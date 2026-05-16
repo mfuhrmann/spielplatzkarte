@@ -5,9 +5,11 @@ This guide explains how to update a running spieli deployment to a newer release
 ## Check the current version
 
 ```bash
-docker compose exec app cat /usr/share/nginx/html/config.js | grep version
-# or look at the image tag:
-docker compose ps
+# Read the OCI version label baked into the running image:
+docker inspect spieli-app-1 --format '{{index .Config.Labels "org.opencontainers.image.version"}}'
+
+# Or list all running images and their tags:
+docker compose images
 ```
 
 Check [GitHub Releases](https://github.com/mfuhrmann/spieli/releases) for the latest version and any breaking changes.
@@ -20,41 +22,44 @@ For patch and minor version upgrades with no breaking changes:
 cd /path/to/your/spieli-deployment
 
 # Pull the latest images
-docker compose -f compose.prod.yml pull
+docker compose pull
 
 # Restart app container (zero-database-downtime)
-docker compose -f compose.prod.yml --profile <mode> up -d app
+docker compose --profile <mode> up -d app
 
-# If the API SQL changed (check the release notes), re-run the importer:
-docker compose -f compose.prod.yml --profile <mode> run --rm importer
+# Re-apply api.sql — updates DB functions and the version reported by get_meta()
+docker compose --profile <mode> run --rm -e API_ONLY=1 importer
 ```
 
 Replace `<mode>` with your `DEPLOY_MODE` (`data-node`, `ui`, or `data-node-ui`).
 
+!!! note
+    The `API_ONLY=1` step is required on every upgrade, not just when the release notes mention SQL changes. The version number visible in the Hub regions panel comes from the database (written by the importer), not the app image — skipping this step leaves the reported version stale.
+
 ## When to run a full re-import
 
-A full re-import (`docker compose -f compose.prod.yml --profile <mode> run --rm importer`) is needed when:
+A full re-import (without `API_ONLY`) is needed when:
 
 - The release notes say "re-import after upgrading"
-- `importer/api.sql` changed in a way that requires rebuilding the `playground_stats` materialised view
 - A new OSM tag type was added to `processing/lua/osm_import.lua` — the new columns won't exist in existing data until a fresh import
 
-Re-running the importer applies `api.sql` automatically and is safe — it drops and recreates PostgREST functions without touching the `planet_osm_*` tables when OSM data hasn't changed.
+```bash
+docker compose --profile <mode> run --rm importer
+```
 
-## Upgrading the Docker Compose file
+A full re-import also re-applies `api.sql`, so the separate `API_ONLY=1` step is not needed when you do a full re-import.
 
-When the `compose.prod.yml` itself changes (new services, new volume mounts, etc.):
+## Upgrading the Compose file
+
+When `compose.yml` itself changes (new services, new volume mounts, etc.):
 
 ```bash
-# From a source clone:
-git pull
-
-# Or download the updated file directly:
-curl -O https://raw.githubusercontent.com/mfuhrmann/spieli/main/compose.prod.yml
+# Download the updated file directly:
+curl -O https://raw.githubusercontent.com/mfuhrmann/spieli/main/compose.yml
 
 # Then recreate:
-docker compose -f compose.prod.yml --profile <mode> down
-docker compose -f compose.prod.yml --profile <mode> up -d
+docker compose --profile <mode> down
+docker compose --profile <mode> up -d
 ```
 
 ## Hub upgrades
@@ -66,10 +71,10 @@ Upgrade each data-node first, verify it works, then upgrade the Hub UI. The Hub 
 Downgrading is supported only within the same minor version. Images are tagged `:X.Y.Z` and `:X.Y`, so:
 
 ```bash
-# Pin to a specific version:
-# Edit compose.prod.yml to use ghcr.io/mfuhrmann/spieli:0.4.0 instead of :latest
-docker compose -f compose.prod.yml pull
-docker compose -f compose.prod.yml --profile <mode> up -d
+# Pin to a specific version by editing compose.yml:
+# Change ghcr.io/mfuhrmann/spieli:latest to ghcr.io/mfuhrmann/spieli:0.4.0
+docker compose pull
+docker compose --profile <mode> up -d
 ```
 
 The database schema is **not** automatically rolled back on a downgrade. If the new version added new columns or functions, the older app may ignore them safely, but this is not tested. When in doubt, re-import from scratch.
