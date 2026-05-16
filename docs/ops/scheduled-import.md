@@ -4,6 +4,9 @@ Geofabrik publishes updated OSM extracts daily. Running the importer on a schedu
 
 ## Daemon mode (recommended)
 
+!!! note "Terminology"
+    "Daemon mode" here refers to the importer container's **scheduling behaviour** — whether it loops and re-imports automatically or exits after one run. This is separate from `DEPLOY_MODE` (which services start) and `APP_MODE` (standalone vs hub frontend).
+
 The importer container has a built-in daemon mode: set `REIMPORT_INTERVAL_MIN_DAYS` and `REIMPORT_INTERVAL_MAX_DAYS` in `.env` and the container loops forever, re-importing at a random interval within that range. No host cron, no systemd unit — the container manages its own schedule.
 
 ```env
